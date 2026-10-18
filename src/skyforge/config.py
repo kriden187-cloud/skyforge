@@ -76,8 +76,21 @@ class StretchConfig(_Strict):
     black: float = Field(0.5, ge=0, lt=100, description="процентиль фона → 0")
     white: float = Field(99.8, gt=0, le=100, description="процентиль ярких деталей → 1")
     a: float = Field(0.02, gt=0, description="сила растяжки: меньше — сильнее")
-    # Переопределения для отдельных фильтров: {F187N: {white: 99.9}}
+    # Переопределения для отдельных фильтров: {F187N: {white: 99.9}}; неуказанное берётся из общих полей.
     per_filter: dict[str, dict[str, float]] = {}
+
+    @model_validator(mode="before")
+    @classmethod
+    def _default_section(cls, data: object) -> object:
+        """stretch.default: {black, white, a} — то же, что общие поля stretch, просто нагляднее рядом с per_filter."""
+        if isinstance(data, dict) and "default" in data:
+            data = dict(data)
+            default = data.pop("default") or {}
+            both = sorted(set(default) & set(data) - {"per_filter"})
+            if both:
+                raise ValueError(f"stretch: {both} заданы и в default, и рядом — оставь одно место")
+            data.update(default)
+        return data
 
     @model_validator(mode="after")
     def _check(self) -> StretchConfig:
@@ -98,6 +111,15 @@ class StretchConfig(_Strict):
         return self.model_copy(update={**params, "per_filter": {}})
 
 
+class ShadowsConfig(_Strict):
+    # Подъём теней после смешивания: asinh(k·яркость)/asinh(k), оттенок не меняется.
+    # БОЛЬШЕ — СИЛЬНЕЕ, 0 — выкл. (Прежний lift: value = 1/lift, lift 0.25 → 4.)
+    value: float = Field(0.0, ge=0)
+    # all — по всему кадру; nebula — только внутри маски туманности (этап clean), фон остаётся на чёрной точке.
+    scope: Literal["all", "nebula"] = "all"
+    feather_px: float = Field(20.0, gt=0, description="ширина мягкого края маски, px сетки")
+
+
 class ColorConfig(_Strict):
     mode: Literal["wavelength", "manual"] = "wavelength"
     # Оттенок (градусы HSV) для самой короткой и самой длинной волны: 240 синий, 0 красный.
@@ -106,9 +128,8 @@ class ColorConfig(_Strict):
     # ярче, но при 4+ фильтрах сводит туманность в белый и жёлтый.
     blend: Literal["average", "screen"] = "average"
     saturation: float = Field(1.0, ge=0)
-    # Подъём теней после смешивания: asinh(k·яркость)/asinh(k), оттенок не меняется.
-    # БОЛЬШЕ — СИЛЬНЕЕ, 0 — выкл. (Прежний lift: shadows = 1/lift, lift 0.25 → shadows 4.)
-    shadows: float = Field(0.0, ge=0)
+    # Подъём теней: число (= value) или {value, scope, feather_px}.
+    shadows: ShadowsConfig = ShadowsConfig()
     # Насыщенность звёзд поля внутри маски звёзд (stars.*): 1 — как есть, 0 — серые с той же яркостью.
     star_saturation: float = Field(1.0, ge=0, le=1)
     overrides: dict[str, str] = {}
@@ -124,6 +145,8 @@ class ColorConfig(_Strict):
             hint = f"shadows: {1 / lift:g}" if lift else "shadows: 0"
             raise ValueError(f"color.lift переименован в color.shadows с обратной шкалой (больше — сильнее): "
                              f"вместо lift: {lift} напиши {hint}")
+        if isinstance(data, dict) and isinstance(data.get("shadows"), (int, float)):
+            data = {**data, "shadows": {"value": data["shadows"]}}
         return data
 
     @field_validator("overrides")
@@ -191,6 +214,10 @@ class Config(_Strict):
     sweep: SweepConfig = SweepConfig()
     credit: str = "NASA, ESA, CSA, STScI (MAST)"
     author: str = "Denis"
+    # Картинка для сравнения (пресс-релиз): в sweep и в отчёте по стилям — в соседней клетке.
+    reference_image: str | None = None
+    # Имя стиля (файл в configs/<объект>/); задаётся загрузчиком, не пишется руками.
+    style: str | None = None
 
     @field_validator("filters")
     @classmethod
@@ -223,10 +250,10 @@ class Config(_Strict):
     # --- загрузка и сохранение ---
 
     @classmethod
-    def load(cls, path: str | Path) -> Config:
-        path = Path(path)
-        with path.open(encoding="utf-8") as fh:
-            raw = yaml.safe_load(fh) or {}
+    def load(cls, path: str | Path, style: str | None = None) -> Config:
+        raw = load_raw(Path(path))
+        if style:
+            raw["style"] = style
         return cls.model_validate(raw)
 
     def to_yaml(self) -> str:
@@ -234,10 +261,12 @@ class Config(_Strict):
         return yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
 
     def digest(self, *sections: str) -> str:
-        """Хеш выбранных секций конфига — ключ кеша для промежуточных данных."""
+        """Хеш обработки (или выбранных секций) — в метаданные файла и ключи кеша."""
         data = self.model_dump(mode="json")
         if sections:
             data = {k: data[k] for k in sections}
+        else:
+            data = {k: v for k, v in data.items() if k not in NON_PROCESSING}
         blob = json.dumps(data, sort_keys=True, ensure_ascii=False).encode()
         return hashlib.sha256(blob).hexdigest()[:16]
 
@@ -256,6 +285,39 @@ class Config(_Strict):
             raise ValueError(f"нет такого параметра: {dotted}")
         node[keys[-1]] = value
         return Config.model_validate(data)
+
+
+# Поля, которые не влияют на пиксели: в хеш обработки не входят, иначе одна и та же картинка
+# из плоского конфига и из стиля measured дала бы разные файлы (хеш пишется в метаданные).
+NON_PROCESSING = ("style", "reference_image", "sweep", "preview")
+
+
+def deep_merge(base: dict, over: dict) -> dict:
+    """Словари сливаются в глубину, всё остальное (числа, строки, списки) заменяется целиком."""
+    out = dict(base)
+    for k, v in over.items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def load_raw(path: Path, _chain: tuple[Path, ...] = ()) -> dict:
+    """YAML с наследованием: `extends: base` — файл base.yaml рядом; цепочки разрешены, циклы — нет."""
+    path = path.resolve()
+    if path in _chain:
+        names = " → ".join(p.stem for p in (*_chain, path))
+        raise ValueError(f"конфиги наследуют друг друга по кругу: {names}")
+    with path.open(encoding="utf-8") as fh:
+        raw = yaml.safe_load(fh) or {}
+    parent = raw.pop("extends", None)
+    if not parent:
+        return raw
+    parent_path = path.parent / (parent if str(parent).endswith((".yaml", ".yml")) else f"{parent}.yaml")
+    if not parent_path.is_file():
+        raise ValueError(f"{path.name}: extends: {parent} — нет файла {parent_path}")
+    return deep_merge(load_raw(parent_path, (*_chain, path)), raw)
 
 
 def slugify(name: str) -> str:

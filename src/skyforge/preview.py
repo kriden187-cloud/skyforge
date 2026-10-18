@@ -14,6 +14,22 @@ import numpy as np  # noqa: E402
 from PIL import Image  # noqa: E402
 
 
+# Нормализация превью этапов inspect и align. Не зависит от стиля обработки, поэтому
+# превью общих этапов одинаковы для всех стилей и берутся из кеша.
+PREVIEW_BLACK, PREVIEW_WHITE, PREVIEW_A = 0.5, 99.8, 0.1
+PREVIEW_VERSION = 2  # поднять, если меняется вид превью: кешированные превью перерисуются
+
+
+def cache_previews(names: list[str], src: Path, dst: Path) -> None:
+    """Скопировать готовые превью между папкой кеша и папкой вывода."""
+    import shutil
+
+    dst.mkdir(parents=True, exist_ok=True)
+    for n in names:
+        if (src / n).exists() and src.resolve() != dst.resolve():
+            shutil.copy2(src / n, dst / n)
+
+
 def nan_block_mean(a: np.ndarray, factor: int) -> np.ndarray:
     """Среднее по блокам factor×factor без учёта NaN. Работает и для HxW, и для HxWx3."""
     if factor <= 1:
@@ -32,6 +48,12 @@ def shrink(a: np.ndarray, max_size: int) -> np.ndarray:
     return nan_block_mean(a, factor)
 
 
+def to_display(a: np.ndarray) -> np.ndarray:
+    """Массив сетки → картинка. В FITS нулевая строка — низ кадра, в PNG — верх; без переворота
+    небо выходит зеркальным (неправильная чётность), как было до фазы 3c."""
+    return np.ascontiguousarray(np.flipud(a))
+
+
 def to_uint8(a01: np.ndarray) -> np.ndarray:
     a = np.nan_to_num(np.asarray(a01, dtype=np.float32), nan=0.0)
     return (np.clip(a, 0, 1) * 255 + 0.5).astype(np.uint8)
@@ -41,7 +63,7 @@ def save_png(a01: np.ndarray, path: Path, max_size: int | None = None) -> Path:
     if max_size:
         a01 = shrink(a01, max_size)
     path.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(to_uint8(a01)).save(path)
+    Image.fromarray(to_display(to_uint8(a01))).save(path)
     return path
 
 
@@ -75,7 +97,7 @@ def contact_sheet(
     for ax, img, label in zip(axes.flat, images, labels):
         img = np.nan_to_num(img, nan=0.0)
         ax.imshow(np.clip(img, 0, 1), cmap="gray" if img.ndim == 2 else None, vmin=0, vmax=1,
-                  interpolation=interpolation)
+                  interpolation=interpolation, origin="lower")  # низ кадра — внизу, как на небе
         ax.set_title(label, color="#ddd", fontsize=11)
     if title:
         fig.suptitle(title, color="#fff", fontsize=13)

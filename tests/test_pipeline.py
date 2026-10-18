@@ -15,7 +15,7 @@ from skyforge.align import align, load_aligned
 from skyforge.fetch import local_products
 from skyforge.pipeline import run_all
 
-from conftest import star_field
+from conftest import marker_radec, star_field
 
 
 def sha(p) -> str:
@@ -41,6 +41,9 @@ def test_align_puts_stars_where_wcs_says(sky, cfg, tmp_path, north_up, bin_):
     for ra, dec, flux in star_field():
         if flux == brightest:
             continue  # у неё выбито «насыщенное» ядро, центроид дыры не показатель
+        mra, mdec = marker_radec()
+        if np.hypot((ra - mra) * np.cos(np.radians(dec)), dec - mdec) * 3600 < 1.0:
+            continue  # крылья метки ориентации тянут центроид
         x, y = wcs.world_to_pixel_values(ra, dec)
         xi, yi = int(round(float(x))), int(round(float(y)))
         r = 4
@@ -154,3 +157,18 @@ def test_cli_reports_config_errors(sky, monkeypatch):
     monkeypatch.setenv("SKYFORGE_HOME", str(sky.root))
     res = CliRunner().invoke(app, ["align", "bad"])
     assert res.exit_code == 2 and "stretch.blak" in res.output
+
+
+@pytest.mark.parametrize("north_up", [True, False])
+def test_png_orientation_matches_sky(sky, cfg, tmp_path, north_up):
+    """Яркая метка на юго-востоке неба должна лечь в PNG внизу слева (север вверху, восток слева).
+    Туманность почти симметрична, поэтому зеркальную картинку не ловили ни тесты, ни приёмка."""
+    from PIL import Image
+    from scipy import ndimage
+
+    c = cfg.model_copy(update={"finish": cfg.finish.model_copy(update={"north_up": north_up})})
+    out = run_all(c, sky, offline=True, out_dir=tmp_path / "o")
+    png = np.asarray(Image.open(out / "testobj.png"), dtype=np.float32).mean(axis=-1)
+    h, w = png.shape
+    y, x = np.unravel_index(np.argmax(ndimage.gaussian_filter(png, 6)), png.shape)
+    assert y > 0.6 * h and x < 0.4 * w, f"метка в ({x}, {y}) на картинке {w}×{h}, а должна быть внизу слева"

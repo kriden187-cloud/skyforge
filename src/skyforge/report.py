@@ -33,6 +33,8 @@ section{background:var(--panel);border:1px solid var(--line);border-radius:10px;
 .imgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
 .imgs a{display:block}.imgs img{width:100%;border-radius:6px;border:1px solid var(--line);background:#000}
 .hero img{width:100%;border-radius:8px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.note{margin:4px 0 10px;font-size:14px}
 table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0;display:block;overflow-x:auto}
 th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;white-space:nowrap}th{color:var(--muted);font-weight:500}
 .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px}
@@ -41,11 +43,14 @@ a{color:var(--accent)}code{color:#c9d4ff}
 </style></head><body><main>
 <h1>{{ title }}</h1>
 <div class="muted">{{ subtitle }}</div>
-{% if hero %}<section class="hero"><a href="{{ hero_full }}"><img src="{{ hero }}" alt="итог"></a>
+{% if hero %}<section class="hero"><div class="pair">
+{% if reference %}<div><a href="{{ reference }}"><img src="{{ reference }}" alt="референс"></a><div class="muted">референс</div></div>{% endif %}
+<div><a href="{{ hero_full }}"><img src="{{ hero }}" alt="итог"></a>{% if reference %}<div class="muted">наш итог</div>{% endif %}</div></div>
 <div class="muted">Полный размер: {% for f in finals %}<a href="{{ f }}">{{ f }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</div></section>{% endif %}
 
 {% for s in sections %}<section id="{{ s.key }}"><h2>{{ s.title }}</h2>
 <div class="check">Проверка: {{ s.check }}</div>
+{% if s.note %}<div class="note">{{ s.note }}</div>{% endif %}
 {% if s.seconds is not none %}<div class="muted">{{ s.seconds }} с{% if s.cached %} · из кеша{% endif %}</div>{% endif %}
 {% if s.table %}<table><tr>{% for h in s.table.head %}<th>{{ h }}</th>{% endfor %}</tr>
 {% for row in s.table.rows %}<tr>{% for c in row %}<td>{{ c|safe }}</td>{% endfor %}</tr>{% endfor %}</table>{% endif %}
@@ -90,6 +95,14 @@ def _table(key: str, info: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+def _note(key: str, info: dict[str, Any]) -> str | None:
+    """Размер масок числом: видно, когда маска вдруг накрывает полкадра без причины."""
+    if key != "clean" or "nebula_percent" not in info:
+        return None
+    return (f"Маска туманности: {info['nebula_percent']}% кадра · маска звёзд: {info.get('star_mask_percent', '—')}% кадра "
+            f"(звёзды ищутся по {info.get('star_detect_filter', '—')}).")
+
+
 def build_report(out_dir: Path) -> Path:
     run = json.loads((out_dir / "run.json").read_text(encoding="utf-8")) if (out_dir / "run.json").exists() else {}
     stages = run.get("stages", {})
@@ -102,7 +115,8 @@ def build_report(out_dir: Path) -> Path:
         if key == "inspect":
             images = [info.get("sheet", "inspect_sheet.png")]
         sections.append({"key": key, "title": title, "check": check, "seconds": info.get("seconds"),
-                         "cached": info.get("cached"), "images": images, "table": _table(key, info)})
+                         "cached": info.get("cached"), "images": images, "table": _table(key, info),
+                         "note": _note(key, info)})
 
     finals = stages.get("finish", {}).get("files", {})
     final_names = [finals[k] for k in ("png", "tif") if k in finals and (out_dir / finals[k]).exists()]
@@ -115,10 +129,67 @@ def build_report(out_dir: Path) -> Path:
     html = env.from_string(TEMPLATE).render(
         title=f"{run.get('target', out_dir.parent.name)} · skyforge",
         subtitle=f"{run.get('mission', '').upper()} {run.get('instrument', '').upper()} · bin {run.get('bin', '?')} · "
-                 f"{run.get('started', '')} · {out_dir.name}",
+                 + (f"стиль {run['style']} · " if run.get("style") else "")
+                 + (f"всего {run['total_seconds']} с · " if run.get("total_seconds") is not None else "")
+                 + f"{run.get('started', '')} · {out_dir.name}",
         hero=hero, hero_full=final_names[0] if final_names else hero, finals=final_names,
+        reference=next((p.name for p in sorted(out_dir.glob("reference.*"))), None),
         sections=sections, hashes=hashes, config=config,
     )
     path = out_dir / "report.html"
+    path.write_text(html, encoding="utf-8")
+    return path
+
+
+COMPARISON = """<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title }}</title>
+<style>
+:root{--bg:#0e1014;--panel:#171a21;--line:#2a2f3a;--text:#e6e8ee;--muted:#9aa3b2;--accent:#7fb2ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,Segoe UI,sans-serif}
+main{max-width:1600px;margin:0 auto;padding:24px 16px 64px}h1{font-size:26px;margin:0 0 4px}.muted{color:var(--muted)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.card img{width:100%;border-radius:6px;background:#000;display:block}
+.card h2{font-size:17px;margin:10px 0 2px}
+ul{margin:6px 0 0;padding-left:18px;font-size:13px}code{color:#c9d4ff}a{color:var(--accent)}
+table{border-collapse:collapse;font-size:13px;margin-top:6px}td{padding:2px 8px 2px 0;color:var(--muted)}
+</style></head><body><main>
+<h1>{{ title }}</h1><div class="muted">{{ subtitle }}</div>
+<div class="row">
+{% if reference %}<div class="card"><a href="{{ reference }}"><img src="{{ reference }}" alt="референс"></a>
+<h2>Референс</h2><div class="muted">для сравнения палитры и тона</div></div>{% endif %}
+{% for s in styles %}<div class="card"><a href="{{ s.name }}/report.html"><img src="{{ s.name }}/{{ s.preview }}" alt="{{ s.name }}"></a>
+<h2><a href="{{ s.name }}/report.html">{{ s.name }}</a></h2>
+<table><tr><td>время</td><td>{{ s.total }} с</td></tr><tr><td>из кеша</td><td>{{ s.cached or "—" }}</td></tr>
+<tr><td>файлы</td><td>{% for f in s.files %}<a href="{{ s.name }}/{{ f }}">{{ f }}</a> {% endfor %}</td></tr></table>
+<div class="muted" style="margin-top:8px">Отличия от base:</div>
+{% if s.diff %}<ul>{% for d in s.diff %}<li><code>{{ d }}</code></li>{% endfor %}</ul>{% else %}<div class="muted">нет — это base</div>{% endif %}
+</div>{% endfor %}
+</div></main></body></html>
+"""
+
+
+def build_comparison(top: Path, styles: list[str], diffs: dict[str, list[str]], reference: str | None) -> Path:
+    cards = []
+    target = ""
+    for name in styles:
+        run = json.loads((top / name / "run.json").read_text(encoding="utf-8"))
+        target = run.get("target", target)
+        st = run.get("stages", {})
+        files = st.get("finish", {}).get("files", {})
+        cards.append({
+            "name": name,
+            "preview": "finish_preview.png",
+            "total": run.get("total_seconds", "?"),
+            "cached": ", ".join(k for k, v in st.items() if v.get("cached")),
+            "files": [files[k] for k in ("png", "tif") if k in files],
+            "diff": diffs.get(name, []),
+        })
+    env = Environment(autoescape=select_autoescape(default=True))
+    html = env.from_string(COMPARISON).render(
+        title=f"{target} · стили", subtitle=f"{len(styles)} стиля из одних данных · {top.name}",
+        reference=reference, styles=cards)
+    path = top / "report.html"
     path.write_text(html, encoding="utf-8")
     return path

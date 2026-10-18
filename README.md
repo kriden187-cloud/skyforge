@@ -16,6 +16,27 @@ uv run skyforge run ngc3132                 # всё целиком, bin 4 из 
 uv run skyforge run ngc3132 --bin 1         # финал в полном разрешении
 ```
 
+## Стили
+
+Один объект — одни данные, несколько обработок. В `configs/<объект>/` лежит `base.yaml` (объект, фильтры, очистка, маски) и стили, которые меняют только нужное:
+
+```yaml
+# configs/ngc3132/showcase.yaml
+extends: measured          # или base; словари сливаются в глубину
+stretch:
+  per_filter: { F470N: { white: 99.95, a: 0.05 } }
+color:
+  shadows: { value: 4, scope: nebula }   # подъём теней только в маске туманности
+```
+
+```
+uv run skyforge run ngc3132 --style measured        # один стиль → out/ngc3132/<дата>_measured/
+uv run skyforge run ngc3132 --all --bin 1           # все стили → out/ngc3132/<дата>_styles/report.html
+uv run skyforge sweep ngc3132 --style showcase --x color.weights.F212N=0.15,0.08   # с референсом в первой клетке
+```
+
+Тяжёлые этапы (`inspect`, `align`, `clean`) общие и кешируются в `data/work/`: второй стиль подряд считается за секунды. Растяжка, цвет и финиш у каждого стиля свои.
+
 ## По шагам
 
 | Команда | Что делает | Что смотреть |
@@ -34,7 +55,7 @@ uv run skyforge run ngc3132 --bin 1         # финал в полном раз�
 | `skyforge report` | пересобрать HTML для последнего запуска | `report.html` |
 | `skyforge cache list` / `prune` | место на диске, чистка `data/work/` | — |
 
-Отдельные команды пишут в `out/<объект>/current/`, `run` — в новую папку с датой. Вместо `ngc3132` можно указать путь к любому YAML.
+Отдельные команды пишут в `out/<объект>/current/` (у стилей — `current/<стиль>/`), `run` — в новую папку с датой. Для папки стилей нужен `--style`; вместо имени можно указать путь к любому YAML.
 
 Без сети: положи FITS в `data/inbox/<объект>/` (например `data/inbox/ngc3132/`), фильтр определится по заголовку, и `skyforge run ngc3132 --offline` возьмёт их.
 

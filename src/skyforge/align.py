@@ -26,7 +26,8 @@ from skyforge.filters import wavelength_um
 from skyforge.fitsio import load_context, load_sci
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
-from skyforge.preview import checkerboard, contact_sheet, quick_norm, save_png, shrink
+from skyforge.preview import (PREVIEW_A, PREVIEW_BLACK, PREVIEW_VERSION, PREVIEW_WHITE, cache_previews, checkerboard,
+                              contact_sheet, quick_norm, save_png, shrink)
 
 ALIGN_VERSION = 2  # поднять, если меняется алгоритм: старый кеш станет недействительным
 
@@ -223,8 +224,22 @@ def align(cfg: Config, paths: Paths, out_dir: Path, *, force: bool = False) -> d
     if not cached:
         meta = _compute(cfg, paths, prods, reference, d, key)
 
-    arrays, _, meta = load_aligned(cfg.model_copy(update={"filters": []}), paths)
-    info = _previews(cfg, arrays, reference, meta, out_dir)
+    # Превью от стиля не зависят: при актуальном кеше копируются, а не считаются заново.
+    pv_key = {**cfg.preview.model_dump(), "version": PREVIEW_VERSION}
+    pv_path = d / "previews" / "info.json"
+    pv = json.loads(pv_path.read_text(encoding="utf-8")) if pv_path.exists() else None
+    if cached and pv and pv.get("preview") == pv_key:
+        cache_previews(pv["info"]["previews"], d / "previews", out_dir)
+        info = dict(pv["info"])
+        meta = read_aligned_meta(cfg, paths)
+        for f, s in info["shifts_px"].items():
+            console.print(f"  остаточный сдвиг {f} относительно {reference}: dy={s['dy']:+.2f} dx={s['dx']:+.2f} px")
+    else:
+        arrays, _, meta = load_aligned(cfg.model_copy(update={"filters": []}), paths)
+        info = _previews(cfg, arrays, reference, meta, out_dir)
+        cache_previews(info["previews"], out_dir, d / "previews")
+        pv_path.write_text(json.dumps({"preview": pv_key, "info": info}, ensure_ascii=False, indent=2),
+                           encoding="utf-8")
     info.update({"cached": cached, "reference": reference, "shape": meta["shape"],
                  "crop": meta["crop"], "pixel_scale_arcsec": meta["pixel_scale_arcsec"]})
     return info
@@ -283,8 +298,7 @@ def _previews(cfg: Config, arrays: dict[str, np.ndarray], reference: str, meta: 
     pv = cfg.preview
     norm = {}
     for f, a in arrays.items():
-        s = cfg.stretch.for_filter(f)
-        norm[f] = quick_norm(np.asarray(a), s.black, s.white, s.a)
+        norm[f] = quick_norm(np.asarray(a), PREVIEW_BLACK, PREVIEW_WHITE, PREVIEW_A)
 
     # Для шахматки берём фильтр, сильнее всего отличающийся по длине волны: там ошибка заметнее всего.
     lam = {f: wavelength_um(f, cfg.mission, cfg.instrument) for f in arrays}

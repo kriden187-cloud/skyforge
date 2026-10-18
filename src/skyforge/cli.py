@@ -12,10 +12,10 @@ from dotenv import load_dotenv
 from pydantic import ValidationError
 
 from skyforge import cache as cache_mod
-from skyforge.config import Config, SweepAxis
+from skyforge.config import NON_PROCESSING, Config, SweepAxis
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths, find_root
-from skyforge.pipeline import fetch_stage, prepare_out, run_all, run_stage
+from skyforge.pipeline import fetch_stage, prepare_out, run_all, run_stage, run_styles
 
 app = typer.Typer(help="Конвейер обработки снимков JWST и Hubble: от MAST до цветной картинки.",
                   no_args_is_help=True, add_completion=False, pretty_exceptions_show_locals=False)
@@ -28,6 +28,7 @@ BinOpt = Annotated[Optional[int], typer.Option("--bin", min=1, help="Перео�
 MissionOpt = Annotated[Optional[str], typer.Option("--mission", "-m", help="jwst или hst")]
 InstrOpt = Annotated[Optional[str], typer.Option("--instrument", "-i", help="nircam, miri, wfc3_uvis, acs…")]
 FiltersOpt = Annotated[Optional[str], typer.Option("--filters", "-f", help="Через запятую: F090W,F187N")]
+StyleOpt = Annotated[Optional[str], typer.Option("--style", "-s", help="Стиль из configs/<объект>/ (measured, showcase…)")]
 
 
 def _paths() -> Paths:
@@ -44,11 +45,32 @@ def _config_path(name: str, paths: Paths) -> Path | None:
     return None
 
 
-def _load(name: str, paths: Paths, bin_: int | None = None, **over: object) -> Config:
-    path = _config_path(name, paths)
-    if path is None:
-        raise SkyforgeError(f"конфиг '{name}' не найден (ищу путь и configs/{name}.yaml)")
-    cfg = Config.load(path)
+def _style_dir(name: str, paths: Paths) -> Path | None:
+    for cand in (Path(name), paths.root / "configs" / name):
+        if cand.is_dir() and (cand / "base.yaml").is_file():
+            return cand
+    return None
+
+
+def list_styles(d: Path) -> list[str]:
+    return sorted(p.stem for p in d.glob("*.yaml") if p.stem != "base")
+
+
+def _load(name: str, paths: Paths, bin_: int | None = None, style: str | None = None, **over: object) -> Config:
+    d = _style_dir(name, paths)
+    if d is not None:
+        if not style:
+            raise SkyforgeError(f"{name} — папка стилей: укажи --style ({', '.join(list_styles(d))}) или --all")
+        path = d / f"{style}.yaml"
+        if not path.is_file():
+            raise SkyforgeError(f"стиля {style} нет в {d}: есть {', '.join(['base', *list_styles(d)])}")
+    else:
+        if style:
+            raise SkyforgeError(f"'{name}' — плоский конфиг, стилей у него нет")
+        path = _config_path(name, paths)
+        if path is None:
+            raise SkyforgeError(f"конфиг '{name}' не найден (ищу путь, configs/{name}.yaml и configs/{name}/)")
+    cfg = Config.load(path, style)
     data = cfg.model_dump(mode="json")
     if bin_ is not None:
         data["bin"] = bin_
@@ -81,7 +103,7 @@ def _handle(fn: Callable) -> Callable:
 
 
 def _stage(cfg: Config, paths: Paths, name: str, fn: Callable[[Path], dict]) -> Path:
-    out = paths.current(cfg.slug)
+    out = paths.current(cfg.slug, cfg.style)
     prepare_out(cfg, out)
     run_stage(name, lambda: fn(out), out)
     from skyforge.report import build_report
@@ -121,69 +143,105 @@ def inspect(target: TargetArg, mission: MissionOpt = None, instrument: InstrOpt 
 
 @app.command()
 @_handle
-def align(config: ConfigArg, bin_: BinOpt = None,
+def align(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None,
           force: Annotated[bool, typer.Option(help="Пересчитать, даже если кеш актуален")] = False) -> None:
     """Перевести все фильтры на сетку опорного и обрезать до общего поля."""
     from skyforge.align import align as do
 
     paths = _paths()
-    cfg = _load(config, paths, bin_)
+    cfg = _load(config, paths, bin_, style)
     _stage(cfg, paths, "align", lambda out: do(cfg, paths, out, force=force))
 
 
 @app.command()
 @_handle
-def clean(config: ConfigArg, bin_: BinOpt = None) -> None:
+def clean(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> None:
     """Заполнить насыщенные ядра звёзд и вычесть модель фона (стыки мозаики, градиенты)."""
     from skyforge.clean import clean as do
 
     paths = _paths()
-    cfg = _load(config, paths, bin_)
+    cfg = _load(config, paths, bin_, style)
     _stage(cfg, paths, "clean", lambda out: do(cfg, paths, out))
 
 
 @app.command()
 @_handle
-def stretch(config: ConfigArg, bin_: BinOpt = None) -> None:
+def stretch(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> None:
     """Вычесть фон, растянуть яркость (asinh/log/sqrt), нормировать в 0–1."""
     from skyforge.stretch import stretch as do
 
     paths = _paths()
-    cfg = _load(config, paths, bin_)
+    cfg = _load(config, paths, bin_, style)
     _stage(cfg, paths, "stretch", lambda out: do(cfg, paths, out))
 
 
 @app.command()
 @_handle
-def compose(config: ConfigArg, bin_: BinOpt = None) -> None:
+def compose(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> None:
     """Раскрасить фильтры по длине волны и смешать в RGB."""
     from skyforge.compose import compose as do
 
     paths = _paths()
-    cfg = _load(config, paths, bin_)
+    cfg = _load(config, paths, bin_, style)
     _stage(cfg, paths, "compose", lambda out: do(cfg, paths, out))
 
 
 @app.command()
 @_handle
-def finish(config: ConfigArg, bin_: BinOpt = None) -> None:
+def finish(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> None:
     """Денойз, резкость, экспорт 16-битного TIFF и PNG."""
     from skyforge.finish import finish as do
 
     paths = _paths()
-    cfg = _load(config, paths, bin_)
+    cfg = _load(config, paths, bin_, style)
     _stage(cfg, paths, "finish", lambda out: do(cfg, paths, out))
 
 
 @app.command()
 @_handle
-def run(config: ConfigArg, bin_: BinOpt = None,
+def run(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None,
+        all_styles: Annotated[bool, typer.Option("--all", help="Все стили из configs/<объект>/ подряд")] = False,
         offline: Annotated[bool, typer.Option(help="Не ходить в сеть, только кеш и inbox")] = False,
         force_align: Annotated[bool, typer.Option(help="Пересчитать совмещение заново")] = False) -> None:
     """Весь конвейер: fetch → inspect → align → clean → stretch → compose → finish → отчёт в out/<объект>/<дата-время>/."""
     paths = _paths()
-    cfg = _load(config, paths, bin_)
-    run_all(cfg, paths, offline=offline, force_align=force_align)
+    if not all_styles:
+        run_all(_load(config, paths, bin_, style), paths, offline=offline, force_align=force_align)
+        return
+    d = _style_dir(config, paths)
+    if d is None:
+        raise SkyforgeError(f"--all работает с папкой стилей configs/{config}/ (base.yaml + стили)")
+    styles = list_styles(d)
+    if not styles:
+        raise SkyforgeError(f"в {d} нет стилей, кроме base.yaml")
+    cfgs = [_load(config, paths, bin_, s) for s in styles]
+    # Сравниваются собранные конфиги (с умолчаниями): видно «stretch.a: 0.02 → 0.1», а не «— → 0.1».
+    skip = set(NON_PROCESSING)
+    base = {k: v for k, v in Config.load(d / "base.yaml").model_dump(mode="json").items() if k not in skip}
+    diffs = {c.style: style_diff(base, {k: v for k, v in Config.load(d / f"{c.style}.yaml").model_dump(mode="json").items()
+                                        if k not in skip}) for c in cfgs}
+    run_styles(cfgs, paths, diffs, offline=offline, force_align=force_align)
+
+
+def _flatten(d: dict, prefix: str = "") -> dict[str, object]:
+    out: dict[str, object] = {}
+    for k, v in d.items():
+        key = f"{prefix}{k}"
+        if isinstance(v, dict):
+            out.update(_flatten(v, key + "."))  # пустой словарь — то же, что отсутствие ключа
+        else:
+            out[key] = v
+    return out
+
+
+def style_diff(base: dict, style: dict) -> list[str]:
+    """Что стиль меняет относительно base, по одной строке на параметр."""
+    b, s = _flatten(base), _flatten(style)
+    lines = []
+    for k in sorted(set(b) | set(s)):
+        if b.get(k, "—") != s.get(k, "—"):
+            lines.append(f"{k}: {b.get(k, '—')} → {s.get(k, '—')}")
+    return lines
 
 
 def _axis(spec: str | None) -> SweepAxis | None:
@@ -200,7 +258,7 @@ def _axis(spec: str | None) -> SweepAxis | None:
 
 @app.command()
 @_handle
-def sweep(config: ConfigArg, bin_: BinOpt = None,
+def sweep(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None,
           x: Annotated[Optional[str], typer.Option(help="Столбцы: stretch.a=0.005,0.02,0.08")] = None,
           y: Annotated[Optional[str], typer.Option(help="Строки: stretch.white=99.5,99.8,99.95")] = None,
           crop: Annotated[Optional[str], typer.Option(help="Кроп 100% вместо всего кадра: X,Y,СТОРОНА в пикселях сетки")] = None) -> None:
@@ -208,7 +266,7 @@ def sweep(config: ConfigArg, bin_: BinOpt = None,
     from skyforge.sweep import sweep as do
 
     paths = _paths()
-    cfg = _load(config, paths, bin_)
+    cfg = _load(config, paths, bin_, style)
     xa, ya = _axis(x), _axis(y)
     cr = None
     if crop:

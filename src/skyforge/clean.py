@@ -21,7 +21,7 @@ from skyforge.compose import compose_layers
 from skyforge.config import Config
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
-from skyforge.preview import contact_sheet, quick_norm, shrink
+from skyforge.preview import cache_previews, contact_sheet, quick_norm, shrink
 from skyforge.stars import StarMask, core_area_px, fill_rings, find_core_holes, star_mask, star_weight
 from skyforge.stretch import stretch_array
 
@@ -30,8 +30,22 @@ from skyforge.stretch import stretch_array
 REVEAL_BLACK, REVEAL_WHITE, REVEAL_A = 1.0, 90.0, 0.02
 
 
+CLEAN_VERSION = 3  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
+
+
 def enabled(cfg: Config) -> bool:
-    return cfg.stars.fill_cores or cfg.background.subtract or cfg.color.star_saturation < 1
+    return (cfg.stars.fill_cores or cfg.background.subtract or cfg.color.star_saturation < 1
+            or cfg.color.shadows.scope == "nebula")
+
+
+def load_nebula_sd(cfg: Config, paths: Paths, required: bool = False) -> np.ndarray | None:
+    """Знаковое расстояние до края маски туманности, px сетки: > 0 внутри, < 0 снаружи."""
+    p = clean_dir(cfg, paths) / "nebula_sd.npy"
+    if not p.exists():
+        if required:
+            raise SkyforgeError("для color.shadows.scope: nebula нужна маска туманности: запусти skyforge clean")
+        return None
+    return np.load(p)
 
 
 def load_star_weight(cfg: Config, paths: Paths) -> StarMask | None:
@@ -55,6 +69,7 @@ def input_key(cfg: Config, paths: Paths) -> dict[str, Any]:
     """Ключ данных, которые идут в растяжку: совмещённые кадры плюс параметры clean."""
     key: dict[str, Any] = {"align": read_aligned_meta(cfg, paths)["key"]}
     if enabled(cfg):
+        key["version"] = CLEAN_VERSION
         key["stars"] = cfg.stars.model_dump(mode="json")
         key["background"] = cfg.background.model_dump(mode="json")
     return key
@@ -72,13 +87,34 @@ def load_input(cfg: Config, paths: Paths) -> tuple[dict[str, np.ndarray], dict[s
     return {f: np.load(d / f"{f}.npy") for f in arrays}, key
 
 
+CLEAN_PRODUCTS = ("star_weight.npy", "nebula_sd.npy")
+
+
 def clean(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     if not enabled(cfg):
         console.print("clean: stars.fill_cores и background.subtract выключены — растяжка возьмёт совмещённые кадры")
         return {"enabled": False}
+    d = clean_dir(cfg, paths)
+    key = input_key(cfg, paths)
+    meta_path = d / "meta.json"
+    if meta_path.exists():
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        files = [f"{f}.npy" for f in meta.get("filters", {})] + list(CLEAN_PRODUCTS)
+        if meta.get("key") == key and all((d / n).exists() for n in files):
+            cache_previews(meta.get("previews", []), d / "previews", out_dir)
+            console.print(f"clean: кеш актуален ({paths.rel(d)}), пересчёт не нужен")
+            info = {k: v for k, v in meta.items() if k != "key"}
+            return {**info, "cached": True}
+    meta_path.unlink(missing_ok=True)  # упавший пересчёт не должен оставить «актуальный» кеш со старым ключом
+    info = _compute(cfg, paths, d, out_dir)
+    cache_previews(info["previews"], out_dir, d / "previews")
+    meta_path.write_text(json.dumps({"key": key, **info}, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {**info, "cached": False}
+
+
+def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any]:
     arrays, _, meta = load_aligned(cfg, paths)
     scale = meta["pixel_scale_arcsec"]
-    d = clean_dir(cfg, paths)
     d.mkdir(parents=True, exist_ok=True)
     for old in d.glob("*.npy"):
         old.unlink()
@@ -138,8 +174,10 @@ def clean(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     np.save(d / "star_weight.npy", weight)
     info["star_mask_percent"] = round(float((weight > 0.5).mean() * 100), 2)
     console.print(f"  маска звёзд (по {detect}): {info['star_mask_percent']}% кадра")
-    (d / "meta.json").write_text(json.dumps({"key": input_key(cfg, paths), **info}, ensure_ascii=False, indent=2),
-                                 encoding="utf-8")
+    sd = nebula_signed_distance(after, cfg, scale)
+    np.save(d / "nebula_sd.npy", sd)
+    info["nebula_percent"] = round(float((sd > 0).mean() * 100), 1)
+    console.print(f"  маска туманности: {info['nebula_percent']}% кадра")
     previews = []
     if cfg.background.subtract:
         _background_sheet(cfg, before, after, models, masks, out_dir / "background_model.png")
@@ -151,6 +189,34 @@ def clean(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
         previews.append("star_cores.png")
     info["previews"] = previews
     return info
+
+
+def nebula_signed_distance(layers: dict[str, np.ndarray], cfg: Config, scale: float) -> np.ndarray:
+    """Маска туманности: крупные области чувствительной маски фона (сглаживание, порог, расширение
+    из background.*) по всем фильтрам; звёзды с ореолом в неё не попадают по площади.
+    Возвращается знаковое расстояние до её края в пикселях: из него мягкий край любой ширины."""
+    from skyforge.background import source_mask
+
+    bc = cfg.background
+    max_star = cfg.stars.max_star_area_arcsec2 / scale**2
+    grow = (cfg.stars.halo_arcsec + bc.mask_dilate_arcsec) / scale
+    star_with_halo = np.pi * (np.sqrt(max_star / np.pi) + grow) ** 2
+    nebula = np.zeros(next(iter(layers.values())).shape, dtype=bool)
+    for a in layers.values():
+        m = source_mask(a, bc, scale)
+        labels, n = ndimage.label(m, structure=np.ones((3, 3)))
+        if n == 0:
+            continue
+        area = ndimage.sum_labels(m, labels, index=np.arange(1, n + 1))
+        big = np.zeros(n + 1, dtype=bool)
+        big[1:] = area > star_with_halo
+        nebula |= big[labels]
+    # Маска фона расширяется квадратом — скругляем углы, чтобы край подъёма теней не шёл ступеньками.
+    rounding = max(1.0, bc.mask_dilate_arcsec / scale / 2)
+    nebula = ndimage.gaussian_filter(nebula.astype(np.float32), rounding) > 0.5
+    inside = ndimage.distance_transform_edt(nebula)
+    outside = ndimage.distance_transform_edt(~nebula)
+    return (inside - outside).astype(np.float32)
 
 
 def _background_sheet(cfg: Config, before: dict, after: dict, models: dict, masks: dict, path: Path) -> None:
@@ -201,7 +267,9 @@ def _core_sheet(cfg: Config, before: dict, after: dict, holes: np.ndarray, path:
     y0, x0 = int(np.clip(cy - z // 2, 0, max(h - z, 0))), int(np.clip(cx - z // 2, 0, max(w - z, 0)))
     sl = (slice(y0, y0 + z), slice(x0, x0 + z))
     # Предпросмотр без нейтрализации фона: её статистика по крошечному кропу была бы случайной.
-    c = cfg.model_copy(update={"color": cfg.color.model_copy(update={"neutral_background": False})})
+    # Без подъёма теней: маски туманности ещё может не быть, а ядру звезды он не нужен.
+    c = cfg.model_copy(update={"color": cfg.color.model_copy(update={
+        "neutral_background": False, "shadows": cfg.color.shadows.model_copy(update={"value": 0.0})})})
     renders = []
     for src in (before, after):
         layers = {f: stretch_array(a[sl], cfg.stretch.for_filter(f), stats_from=a)[0] for f, a in src.items()}

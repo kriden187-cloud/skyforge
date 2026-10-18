@@ -22,7 +22,7 @@ from skyforge.compose import composite_path, compose_key
 from skyforge.config import Config, FinishConfig
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
-from skyforge.preview import contact_sheet, save_png, to_uint8
+from skyforge.preview import contact_sheet, save_png, to_display, to_uint8
 
 # denoise: 1.0 соответствует весу TV-регуляризации 0.1 на шкале яркости 0–1 — это уже сильное сглаживание.
 DENOISE_WEIGHT_AT_MAX = 0.1
@@ -59,7 +59,7 @@ def export(rgb: np.ndarray, base: Path, meta: dict[str, Any]) -> dict[str, str]:
     base.parent.mkdir(parents=True, exist_ok=True)
     tif = base.with_suffix(".tif")
     png = base.with_suffix(".png")
-    u16 = (np.clip(rgb, 0, 1) * 65535 + 0.5).astype(np.uint16)
+    u16 = to_display((np.clip(rgb, 0, 1) * 65535 + 0.5).astype(np.uint16))
     desc = json.dumps(meta, ensure_ascii=False, sort_keys=True)
     # Строки TIFF — только ASCII, поэтому кириллица там в виде \\uXXXX; в PNG — как есть.
     tifffile.imwrite(tif, u16, photometric="rgb", compression="zlib",
@@ -70,13 +70,14 @@ def export(rgb: np.ndarray, base: Path, meta: dict[str, Any]) -> dict[str, str]:
     info.add_itxt("Author", meta["credit"])
     info.add_itxt("Software", meta["software"])
     info.add_itxt("Description", desc)
-    Image.fromarray(to_uint8(rgb)).save(png, pnginfo=info)
+    Image.fromarray(to_display(to_uint8(rgb))).save(png, pnginfo=info)
     return {"tif": tif.name, "png": png.name}
 
 
 def output_base(cfg: Config, out_dir: Path) -> Path:
     suffix = f"_bin{cfg.bin}" if cfg.bin > 1 else ""
-    return out_dir / f"{cfg.slug}{suffix}"
+    style = f"_{cfg.style}" if cfg.style else ""
+    return out_dir / f"{cfg.slug}{style}{suffix}"
 
 
 def finish(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:

@@ -162,25 +162,49 @@ def saturate(rgb: np.ndarray, s: float) -> np.ndarray:
     return np.clip(luma + s * (rgb - luma), 0, 1)
 
 
-def compose_layers(cfg: Config, layers: dict[str, np.ndarray],
-                   star_mask: Any = None) -> tuple[np.ndarray, dict[str, Any]]:
+def apply_shadows(rgb: np.ndarray, sc: Any, nebula_sd: np.ndarray | None) -> np.ndarray:
+    """Подъём теней по всему кадру или только в маске туманности с мягким краем feather_px."""
+    if sc.value <= 0:
+        return rgb
+    lifted = shadows(rgb, sc.value)
+    if sc.scope == "all":
+        return lifted
+    if nebula_sd is None:
+        raise SkyforgeError("color.shadows.scope: nebula — нет маски туманности: запусти skyforge clean")
+    w = np.clip(0.5 + nebula_sd / sc.feather_px, 0, 1).astype(np.float32)[..., None]
+    return rgb + w * (lifted - rgb)
+
+
+def base_color(cfg: Config, layers: dict[str, np.ndarray]) -> tuple[np.ndarray, dict[str, Any]]:
+    """Цвета фильтров, смешивание, нейтральный фон — до подъёма теней."""
     colors = assign_colors(list(layers), cfg.mission, cfg.instrument, cfg.color)
     rgb = blend(layers, colors, cfg.color)
     bg = None
     if cfg.color.neutral_background:
         rgb, bg = neutralize(rgb, cfg.color.background_percentile)
-    rgb = shadows(rgb, cfg.color.shadows)
-    rgb = saturate(rgb, cfg.color.saturation)
-    det_layer = layers.get(star_mask.detect) if star_mask is not None else None
-    rgb = desaturate_stars(rgb, star_mask, cfg.color.star_saturation, det_layer,
-                           cfg.stars.nebula_level).astype(np.float32)
     info = {"colors": {f: "#%02x%02x%02x" % tuple(round(v * 255) for v in colors[f]) for f in colors},
             "background_removed": bg}
     return rgb, info
 
 
+def tail_color(cfg: Config, rgb: np.ndarray, layers: dict[str, np.ndarray], star_mask: Any = None,
+               nebula_sd: np.ndarray | None = None) -> np.ndarray:
+    """Тени, насыщенность, обесцвечивание звёзд."""
+    rgb = apply_shadows(rgb, cfg.color.shadows, nebula_sd)
+    rgb = saturate(rgb, cfg.color.saturation)
+    det_layer = layers.get(star_mask.detect) if star_mask is not None else None
+    return desaturate_stars(rgb, star_mask, cfg.color.star_saturation, det_layer,
+                            cfg.stars.nebula_level).astype(np.float32)
+
+
+def compose_layers(cfg: Config, layers: dict[str, np.ndarray], star_mask: Any = None,
+                   nebula_sd: np.ndarray | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+    rgb, info = base_color(cfg, layers)
+    return tail_color(cfg, rgb, layers, star_mask, nebula_sd), info
+
+
 def composite_path(cfg: Config, paths: Paths) -> Path:
-    return paths.work(cfg.slug, cfg.bin) / "composite.npy"
+    return paths.style_work(cfg.slug, cfg.bin, cfg.style) / "composite.npy"
 
 
 def compose_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
@@ -203,10 +227,14 @@ def load_stretched(cfg: Config, paths: Paths) -> tuple[dict[str, np.ndarray], di
 
 
 def compose(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
-    from skyforge.clean import load_star_weight
+    from skyforge.clean import load_nebula_sd, load_star_weight
 
     layers, in_key = load_stretched(cfg, paths)
-    rgb, info = compose_layers(cfg, layers, load_star_weight(cfg, paths))
+    stars = load_star_weight(cfg, paths)
+    sd = load_nebula_sd(cfg, paths, required=cfg.color.shadows.scope == "nebula" and cfg.color.shadows.value > 0)
+    base, info = base_color(cfg, layers)
+    rgb = tail_color(cfg, base, layers, stars, sd)
+    composite_path(cfg, paths).parent.mkdir(parents=True, exist_ok=True)
     np.save(composite_path(cfg, paths), rgb)
     composite_path(cfg, paths).with_suffix(".json").write_text(
         json.dumps({"key": compose_key(cfg, in_key), **info}, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -223,7 +251,34 @@ def compose(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
                   title="Слои с назначенными цветами")
     _legend(info["colors"], cfg, out_dir / "compose_legend.png")
     info["previews"] = ["compose.png", "compose_layers.png", "compose_legend.png"]
+    if cfg.color.shadows.value > 0 and sd is not None:
+        _shadows_scope_sheet(cfg, base, layers, stars, sd, out_dir / "shadows_scope.png")
+        info["previews"].append("shadows_scope.png")
     return info
+
+
+def _shadows_scope_sheet(cfg: Config, base: np.ndarray, layers: dict, stars: Any, sd: np.ndarray, path: Path) -> None:
+    """Кроп 100% на краю туманности (самая левая точка края): тени по всему кадру и только в маске."""
+    edge = np.argwhere(np.abs(sd) <= 1)  # на краю знаковое расстояние ±1, ноля нет
+    if edge.size == 0:
+        return
+    cy, cx = edge[np.argmin(edge[:, 1])]
+    z = cfg.preview.zoom
+    h, w = sd.shape
+    y0, x0 = int(np.clip(cy - z // 2, 0, max(h - z, 0))), int(np.clip(cx - z // 2, 0, max(w - z, 0)))
+    sl = (slice(y0, y0 + z), slice(x0, x0 + z))
+    crop_layers = {f: np.asarray(a)[sl] for f, a in layers.items()}
+    crop_stars = stars.crop(sl) if stars is not None else None
+    images, labels = [], []
+    for scope in ("all", "nebula"):
+        c = cfg.model_copy(update={"color": cfg.color.model_copy(
+            update={"shadows": cfg.color.shadows.model_copy(update={"scope": scope})})})
+        images.append(tail_color(c, base[sl], crop_layers, crop_stars, sd[sl]))
+        labels.append(f"shadows {cfg.color.shadows.value:g}, scope: {scope}")
+    images.append(np.clip(0.5 + sd[sl] / cfg.color.shadows.feather_px, 0, 1))
+    labels.append(f"маска туманности, край {cfg.color.shadows.feather_px:g} px")
+    contact_sheet(images, labels, path, cols=3, tile_inches=4.5,
+                  title="Край туманности, 100%: при scope nebula фон снаружи остаётся чёрным, ступеньки на краю нет")
 
 
 def _legend(colors: dict[str, str], cfg: Config, path: Path) -> None:

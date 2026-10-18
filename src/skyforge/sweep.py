@@ -12,7 +12,7 @@ from typing import Any
 
 import numpy as np
 
-from skyforge.clean import load_input, load_star_weight
+from skyforge.clean import load_input, load_nebula_sd, load_star_weight
 from skyforge.compose import compose_layers
 from skyforge.config import Config, SweepAxis
 from skyforge.log import console
@@ -36,18 +36,26 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
     tile = max(200, cfg.preview.max_size // max(len(x.values), 1))
     needs_stars = any(c.color.star_saturation < 1 for c in _variants(cfg, x, y))
     weight = load_star_weight(cfg.with_param("color.star_saturation", 0.0), paths) if needs_stars else None
+    needs_nebula = any(c.color.shadows.scope == "nebula" and c.color.shadows.value > 0 for c in _variants(cfg, x, y))
+    sd = load_nebula_sd(cfg, paths, required=True) if needs_nebula else None
     if crop:
         cx, cy, side = crop
         sl = (slice(max(cy - side // 2, 0), cy + side // 2), slice(max(cx - side // 2, 0), cx + side // 2))
         small = {f: np.asarray(a)[sl] for f, a in arrays.items()}
         weight = weight.crop(sl) if weight is not None else None
+        sd = sd[sl] if sd is not None else None
     else:
         small = {f: shrink(np.asarray(a), tile) for f, a in arrays.items()}
         factor = math.ceil(max(next(iter(arrays.values())).shape) / tile)
         weight = weight.shrink(factor) if weight is not None else None
+        sd = shrink(sd, tile) if sd is not None else None  # расстояние остаётся в пикселях полной сетки
+    ref = _reference_tile(cfg, paths, tile) if not crop else None
 
     images, labels = [], []
     for yv in (y.values if y else [None]):
+        if ref is not None:
+            images.append(ref)
+            labels.append("референс")
         for xv in x.values:
             c = cfg.with_param(x.param, xv)
             label = f"{x.param}={_fmt(xv)}"
@@ -57,16 +65,31 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
             layers = {}
             for f, a in arrays.items():
                 layers[f], _ = stretch_array(small[f], c.stretch.for_filter(f), stats_from=a)
-            rgb, _ = compose_layers(c, layers, weight)
+            rgb, _ = compose_layers(c, layers, weight, sd)
             images.append(rgb)
             labels.append(label)
             console.print(f"  {label}")
     title = f"{cfg.target}: столбцы — {x.param}" + (f", строки — {y.param}" if y else "")
     if crop:
         title += f" · кроп 100% вокруг ({crop[0]}, {crop[1]})"
-    contact_sheet(images, labels, out_dir / "sweep.png", cols=len(x.values), title=title,
+    contact_sheet(images, labels, out_dir / "sweep.png", cols=len(x.values) + (ref is not None), title=title,
                   interpolation="nearest" if crop else "lanczos")
     return {"x": x.model_dump(), "y": y.model_dump() if y else None, "previews": ["sweep.png"]}
+
+
+def _reference_tile(cfg: Config, paths: Paths, tile: int) -> np.ndarray | None:
+    if not cfg.reference_image:
+        return None
+    p = paths.abs(cfg.reference_image)
+    if not p.exists():
+        console.print(f"[yellow]  референс {cfg.reference_image} не найден — лист без него[/]")
+        return None
+    from PIL import Image
+
+    img = Image.open(p).convert("RGB")
+    img.thumbnail((tile * 2, tile * 2))
+    # JPEG уже в порядке «верх сверху»; лист рисуется как сетка FITS (низ снизу) — переворачиваем заранее.
+    return np.flipud(np.asarray(img, dtype=np.float32) / 255)
 
 
 def _variants(cfg: Config, x: SweepAxis, y: SweepAxis | None) -> list[Config]:

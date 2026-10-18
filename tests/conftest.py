@@ -25,6 +25,10 @@ RNG_SEED = 7
 N_STARS = 14
 MIN_SEPARATION = 0.6  # угловых секунд
 NOISE = 0.5
+# Несимметричная метка для теста ориентации: крупное яркое пятно в юго-восточном углу неба.
+# Восток — +RA, юг — −Dec; на стандартной картинке (север вверху, восток слева) это низ слева.
+MARKER_OFFSET_ARCSEC = (1.9, -1.9)  # (на восток, на север)
+MARKER_FLUX, MARKER_SIGMA_ARCSEC = 3000.0, 0.25
 TILE_STEP = 1.0  # 2σ шума: ступенька, которую видно глазом
 
 
@@ -64,8 +68,17 @@ def render(wcs: WCS, shape: tuple[int, int], scale_arcsec: float, nebula_gain: f
     for sra, sdec, flux in star_field():
         x, y = wcs.world_to_pixel_values(sra, sdec)
         img += flux * np.exp(-0.5 * ((xx - x) ** 2 + (yy - y) ** 2) / sigma**2)
+    mra, mdec = marker_radec()
+    mx, my = wcs.world_to_pixel_values(mra, mdec)
+    ms = MARKER_SIGMA_ARCSEC / scale_arcsec
+    img += MARKER_FLUX * np.exp(-0.5 * ((xx - mx) ** 2 + (yy - my) ** 2) / ms**2)
     img += np.random.default_rng(seed).normal(0, NOISE, shape)
     return img
+
+
+def marker_radec() -> tuple[float, float]:
+    return (CENTER[0] + MARKER_OFFSET_ARCSEC[0] / 3600 / np.cos(np.radians(CENTER[1])),
+            CENTER[1] + MARKER_OFFSET_ARCSEC[1] / 3600)
 
 
 def brightest_star_pixel(wcs: WCS) -> tuple[float, float]:

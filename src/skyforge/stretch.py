@@ -62,7 +62,7 @@ def stretch_array(arr: np.ndarray, s: StretchConfig,
 
 
 def stretched_dir(cfg: Config, paths: Paths) -> Path:
-    return paths.work(cfg.slug, cfg.bin) / "stretched"
+    return paths.style_work(cfg.slug, cfg.bin, cfg.style) / "stretched"
 
 
 def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:

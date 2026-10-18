@@ -48,13 +48,19 @@ class Paths:
     def work(self, slug: str, bin_: int) -> Path:
         return self.work_root / slug / f"bin{bin_}"
 
-    def current(self, slug: str) -> Path:
-        """Папка для отдельных команд: превью последнего запуска каждого этапа."""
-        return self.out_root / slug / "current"
+    def style_work(self, slug: str, bin_: int, style: str | None) -> Path:
+        """Своё у каждого стиля: растяжка и композиция. Общее (align, clean) — в work()."""
+        base = self.work(slug, bin_)
+        return base / f"style-{style}" if style else base
 
-    def new_run(self, slug: str) -> Path:
+    def current(self, slug: str, style: str | None = None) -> Path:
+        """Папка для отдельных команд: превью последнего запуска каждого этапа."""
+        cur = self.out_root / slug / "current"
+        return cur / style if style else cur
+
+    def new_run(self, slug: str, suffix: str | None = None) -> Path:
         stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        return self.out_root / slug / stamp
+        return self.out_root / slug / (f"{stamp}_{suffix}" if suffix else stamp)
 
     def rel(self, p: Path) -> str:
         try:

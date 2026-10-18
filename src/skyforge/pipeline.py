@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
+import time
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
@@ -52,13 +54,15 @@ def prepare_out(cfg: Config, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "config.yaml").write_text(cfg.to_yaml(), encoding="utf-8")
     StageLog(out_dir).set_meta(target=cfg.target, mission=cfg.mission, instrument=cfg.instrument, bin=cfg.bin,
-                               started=datetime.now().isoformat(timespec="seconds"))
+                               style=cfg.style, started=datetime.now().isoformat(timespec="seconds"))
 
 
 def run_all(cfg: Config, paths: Paths, *, offline: bool = False, force_align: bool = False,
             out_dir: Path | None = None) -> Path:
-    out_dir = out_dir or paths.new_run(cfg.slug)
+    out_dir = out_dir or paths.new_run(cfg.slug, cfg.style)
     prepare_out(cfg, out_dir)
+    copy_reference(cfg, paths, out_dir)
+    t0 = time.perf_counter()
     run_stage("fetch", lambda: fetch_stage(cfg, paths, offline=offline), out_dir)
     run_stage("inspect", lambda: inspect(cfg, paths, out_dir), out_dir)
     run_stage("align", lambda: align(cfg, paths, out_dir, force=force_align), out_dir)
@@ -66,7 +70,38 @@ def run_all(cfg: Config, paths: Paths, *, offline: bool = False, force_align: bo
     run_stage("stretch", lambda: stretch(cfg, paths, out_dir), out_dir)
     run_stage("compose", lambda: compose(cfg, paths, out_dir), out_dir)
     run_stage("finish", lambda: finish(cfg, paths, out_dir), out_dir)
+    StageLog(out_dir).set_meta(total_seconds=round(time.perf_counter() - t0, 1))
     report = build_report(out_dir)
     console.rule()
     console.print(f"[bold green]Готово.[/] Отчёт: {report}")
     return out_dir
+
+
+def copy_reference(cfg: Config, paths: Paths, out_dir: Path) -> str | None:
+    """Референс (если он есть у объекта) — обязательная клетка отчёта рядом с итогом."""
+    if not cfg.reference_image:
+        return None
+    src = paths.abs(cfg.reference_image)
+    if not src.exists():
+        console.print(f"[yellow]Референс {cfg.reference_image} не найден — отчёт будет без него[/]")
+        return None
+    name = "reference" + src.suffix.lower()
+    shutil.copy2(src, out_dir / name)
+    return name
+
+
+def run_styles(cfgs: list[Config], paths: Paths, diffs: dict[str, list[str]], *, offline: bool = False,
+               force_align: bool = False) -> Path:
+    """Все стили одного объекта подряд в одну папку: общие этапы считаются один раз и берутся из кеша."""
+    from skyforge.report import build_comparison
+
+    top = paths.new_run(cfgs[0].slug, "styles")
+    top.mkdir(parents=True, exist_ok=True)
+    for cfg in cfgs:
+        console.rule(f"[bold magenta]стиль {cfg.style}")
+        run_all(cfg, paths, offline=offline, force_align=force_align, out_dir=top / cfg.style)
+    ref_name = copy_reference(cfgs[0], paths, top)
+    report = build_comparison(top, [c.style for c in cfgs], diffs, ref_name)
+    console.rule()
+    console.print(f"[bold green]Готово.[/] Сравнение стилей: {report}")
+    return top
