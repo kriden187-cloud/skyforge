@@ -19,6 +19,7 @@ from skyforge.align import load_aligned, load_tiles, read_aligned_meta
 from skyforge.background import (background_model, block_model, boundary_jumps, nexp_levels, nexp_regions,
                                  tile_pedestal, tile_planes)
 from skyforge.compose import compose_layers
+from skyforge.cosmics import fill_mean, find_cosmics, find_gaps, remove_cosmics
 from skyforge.config import Config
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
@@ -36,7 +37,7 @@ CLEAN_VERSION = 13  # поднять, если меняется алгоритм
 
 def enabled(cfg: Config) -> bool:
     return (cfg.stars.fill_cores or cfg.background.subtract or cfg.color.star_saturation < 1
-            or cfg.color.shadows.scope == "nebula")
+            or cfg.color.shadows.scope == "nebula" or cfg.clean.cosmics.clean or cfg.clean.gaps.fill)
 
 
 def load_nebula_sd(cfg: Config, paths: Paths, required: bool = False) -> np.ndarray | None:
@@ -133,6 +134,11 @@ def input_key(cfg: Config, paths: Paths) -> dict[str, Any]:
         key["version"] = CLEAN_VERSION
         key["stars"] = cfg.stars.model_dump(mode="json")
         key["background"] = cfg.background.model_dump(mode="json")
+        # 3b: в ключе только если включены — кеш clean у JWST не сбрасывается
+        if cfg.clean.cosmics.clean:
+            key["cosmics"] = cfg.clean.cosmics.model_dump(mode="json")
+        if cfg.clean.gaps.fill:
+            key["gaps"] = cfg.clean.gaps.model_dump(mode="json")
     return key
 
 
@@ -186,6 +192,9 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
         old.unlink()
 
     before = {f: np.asarray(a, dtype=np.float32) for f, a in arrays.items()}
+    cosmic_masks: dict[str, np.ndarray] = {}
+    if cfg.clean.cosmics.clean:
+        cosmic_masks = find_cosmics(before, cfg.clean.cosmics, scale)
     after: dict[str, np.ndarray] = {}
     holes_all = np.zeros(next(iter(before.values())).shape, dtype=bool)
     holes_by_f: dict[str, np.ndarray] = {}
@@ -197,6 +206,9 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     for f, a in before.items():
         out = a
         fi: dict[str, Any] = {}
+        if f in cosmic_masks:
+            out = remove_cosmics(out, cosmic_masks[f])
+            fi["cosmic_pixels"] = int(cosmic_masks[f].sum())
         if cfg.stars.fill_cores:
             holes = find_core_holes(out, core_area_px(cfg.stars.max_core_arcsec, scale))
             out = fill_rings(out, holes)
@@ -204,6 +216,10 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
             holes_by_f[f] = holes
             fi["core_pixels"] = int(holes.sum())
             fi["cores"] = int(ndimage.label(holes, structure=np.ones((3, 3)))[1])
+        if cfg.clean.gaps.fill:  # после ядер: иначе мелкие дыры ядер заполнились бы средним, а не кольцами
+            gaps = find_gaps(out, int(round(cfg.clean.gaps.max_width_arcsec / scale / 2)))
+            out = fill_mean(out, gaps)
+            fi["gap_pixels"] = int(gaps.sum())
         if cfg.background.subtract:
             bc = cfg.background
             model = np.zeros_like(out)
@@ -241,6 +257,10 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
         star_masks[f] = star_mask(after[f], cfg.stars, scale, field)
         info["filters"][f] = fi
         parts = []
+        if "cosmic_pixels" in fi:
+            parts.append(f"следы лучей {fi['cosmic_pixels']} px")
+        if "gap_pixels" in fi:
+            parts.append(f"зазоры {fi['gap_pixels']} px")
         if "cores" in fi:
             parts.append(f"ядер {fi['cores']} ({fi['core_pixels']} px)")
         if "tiles" in fi:
@@ -303,6 +323,9 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
         _background_sheet(cfg, before, after, models, masks, out_dir / "background_model.png")
         previews.append("background_model.png")
     _star_mask_preview(cfg, after, weight, out_dir / "star_mask.png")
+    if cosmic_masks:
+        _cosmics_sheet(cfg, before, after, cosmic_masks, out_dir / "cosmics.png")
+        previews.append("cosmics.png")
     previews.append("star_mask.png")
     _nebula_mask_preview(cfg, after, old, nebula, out_dir / "nebula_mask.png")
     previews.append("nebula_mask.png")
@@ -507,6 +530,25 @@ def _background_sheet(cfg: Config, before: dict, after: dict, models: dict, mask
     n_crops = len([c for c in cfg.report.crops if c.name.startswith("sky")][:2])
     contact_sheet(images, labels, path, cols=4 + 2 * n_crops, tile_inches=3.0,
                   title="Фон: стыки плиток и градиенты должны уйти в «модель», туманность — остаться")
+
+
+def _cosmics_sheet(cfg: Config, before: dict, after: dict, masks: dict, path: Path) -> None:
+    """Кроп 100% там, где следов больше всего: до и после по каждому фильтру."""
+    total = sum(m.astype(np.float32) for m in masks.values())
+    z = cfg.preview.zoom
+    dens = ndimage.uniform_filter(total, z)
+    cy, cx = np.unravel_index(np.argmax(dens), dens.shape)
+    h, w = total.shape
+    y0, x0 = int(np.clip(cy - z // 2, 0, max(h - z, 0))), int(np.clip(cx - z // 2, 0, max(w - z, 0)))
+    sl = (slice(y0, y0 + z), slice(x0, x0 + z))
+    images, labels = [], []
+    for f in masks:
+        s = cfg.stretch.for_filter(f)
+        lo_hi = (s.black, s.white, s.a)
+        images += [quick_norm(before[f][sl], *lo_hi), quick_norm(after[f][sl], *lo_hi)]
+        labels += [f"{f}: до", f"после ({int(masks[f].sum())} px следов во всём кадре)"]
+    contact_sheet(images, labels, path, cols=2, tile_inches=4, interpolation="nearest",
+                  title="Следы космических лучей: звёзды и туманность должны остаться")
 
 
 def _detect_filter(cfg: Config, filters: list[str]) -> str:

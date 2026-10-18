@@ -39,6 +39,11 @@ class AlignConfig(_Strict):
     min_exposures_sw: int = Field(0, ge=0)
     # Доля непустых пикселей на краю обрезки: 1.0 — ни одного NaN на границе.
     crop_min_coverage: float = Field(0.99, gt=0, le=1)
+    # 3b (Hubble): trim — обрезка как выше; target — наибольший прямоугольник без пустот, внутри которого лежит сам
+    # объект (L-образное поле WFPC2, мозаики с вырезами); координаты — coords или заголовок файла.
+    crop_mode: Literal["trim", "target"] = "trim"
+    # Повернуть сетку так, чтобы рамка вокруг реальных данных была наименьшей. Важнее finish.north_up.
+    auto_rotate: bool = False
 
 
 class DestripeConfig(_Strict):
@@ -63,8 +68,27 @@ class DestripeConfig(_Strict):
     preview_filter: str | None = None  # для destripe_check.png; по умолчанию — самый полосатый фильтр
 
 
+class CosmicsConfig(_Strict):
+    # 3b: следы космических лучей, которые не убрало сложение (у Hubble — одиночные экспозиции).
+    # Луч — резкий выброс, которого нет в остальных фильтрах на том же месте неба.
+    clean: bool = False
+    sigma: float = Field(5.0, gt=0, description="выброс над мелкой структурой, в σ шума")
+    sharpness: float = Field(2.0, gt=0, description="во сколько раз выброс резче окружающей структуры")
+    others_sigma: float = Field(3.0, gt=0, description="порог «источник есть» в остальных фильтрах, в σ")
+    protect_arcsec: float = Field(0.15, ge=0, description="допуск совмещения при сверке с остальными фильтрами")
+    grow_px: int = Field(1, ge=0, description="расширить след на столько пикселей")
+
+
+class GapsConfig(_Strict):
+    # 3b: тонкие пустые полосы внутри поля — зазоры между чипами WFPC2 в одиночной экспозиции.
+    fill: bool = False
+    max_width_arcsec: float = Field(0.5, gt=0, description="шире — не зазор, а край поля")
+
+
 class CleanConfig(_Strict):
     destripe: DestripeConfig = DestripeConfig()
+    cosmics: CosmicsConfig = CosmicsConfig()
+    gaps: GapsConfig = GapsConfig()
 
 
 class ReportCrop(_Strict):

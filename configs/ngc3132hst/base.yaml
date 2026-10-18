@@ -1,0 +1,16 @@
+# Туманность Южное Кольцо (NGC 3132) глазами Hubble: WFPC2, программа 6221 (1995-12-07), узкие фильтры.
+# Для сравнения с configs/ngc3132/ (JWST NIRCam): оптика против инфракрасного. Общее для стилей: объект, данные,
+# геометрия, очистка; стили лежат рядом (extends: base).
+target: "NGC 3132"
+slug: ngc3132hst
+mission: hst
+instrument: wfpc2
+proposal_id: "6221"           # один визит: все фильтры с одного наведения
+filters: [F502N, F656N, F658N]   # [O III], Hα, [N II]
+calib_level: 3                # HAP-SVM _drz: мозаика всех четырёх чипов, астрометрия по Gaia
+reference: F656N
+bin: 2                        # подбор параметров; 1 для финала
+clean:
+  destripe:
+    enabled: false            # полосы 1/f — у детекторов NIRCam; у WFPC2 их нет
+# reference_image: data/reference/ngc3132_hubble1998.jpg   # шаг 1: STScI-1998-39

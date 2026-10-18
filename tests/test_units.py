@@ -82,6 +82,18 @@ def test_choose_observations_prefers_public_and_longer():
     assert best["F405N"].release == "2022-07-13"
 
 
+def test_choose_observations_prefers_hap_svm_for_hubble():
+    rows = [
+        {"obs_id": "u2rc0204t", "obsid": "1", "filters": "F502N", "t_exptime": 400.0, "dataRights": "PUBLIC", "provenance_name": "CALWFPC2"},
+        {"obs_id": "hst_6221_02_wfpc2_pc_f502n_u2rc02", "obsid": "2", "filters": "F502N", "t_exptime": 400.0, "dataRights": "PUBLIC", "provenance_name": "HAP-SVM"},
+        {"obs_id": "hst_skycell-p1", "obsid": "3", "filters": "F502N", "t_exptime": 5000.0, "dataRights": "PUBLIC", "provenance_name": "HAP-MVM"},
+        {"obs_id": "hst_x_total", "obsid": "4", "filters": "detection", "t_exptime": 9000.0, "dataRights": "PUBLIC", "provenance_name": "HAP-SVM"},
+    ]
+    best = choose_observations(rows)
+    assert list(best) == ["F502N"]
+    assert best["F502N"].obs_id == "hst_6221_02_wfpc2_pc_f502n_u2rc02"
+
+
 def test_choose_product_skips_level2_i2d():
     obs = "jw02733-o001_t001_nircam_clear-f356w"
     prods = [
