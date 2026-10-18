@@ -86,22 +86,73 @@ def neutralize(rgb: np.ndarray, pct: float) -> tuple[np.ndarray, list[float]]:
     return np.clip(out, 0, 1), bg
 
 
-def lift(rgb: np.ndarray, b: float | None) -> np.ndarray:
-    """Подъём теней после смешивания: asinh по яркости, оттенок не меняется.
+def shadows(rgb: np.ndarray, k: float) -> np.ndarray:
+    """Подъём теней после смешивания: asinh(k·яркость)/asinh(k), оттенок не меняется.
 
     average делит каждый канал на число вкладов, и деталь, яркая лишь в паре фильтров
     из шести (внешняя оболочка), темнеет втрое. Общая растяжка подняла бы её вместе с
     фоном и стыками мозаики; здесь поднимаются средние тона уже собранной картинки.
-    b — смягчение кривой, меньше — сильнее; None — выкл.
+    k — сила: больше — сильнее, 0 — выкл.
     """
-    if b is None:
+    if k <= 0:
         return rgb
     lum = rgb @ LUMA
-    y = np.arcsinh(lum / b) / np.arcsinh(1 / b)
-    k = np.where(lum > 0, y / np.maximum(lum, np.finfo(np.float32).tiny), 0)
-    out = rgb * k[..., None]
+    y = np.arcsinh(k * lum) / np.arcsinh(k)
+    gain = np.where(lum > 0, y / np.maximum(lum, np.finfo(np.float32).tiny), 0)
+    out = rgb * gain[..., None]
     # Если какой-то канал ушёл за 1, уменьшаем весь пиксель, чтобы не сдвинуть оттенок.
     return np.clip(out / np.maximum(out.max(axis=-1, keepdims=True), 1), 0, 1)
+
+
+def local_background(lum: np.ndarray, window_px: int) -> np.ndarray:
+    """Медиана яркости в окне шире звезды: свет туманности и неба под звездой без самой звезды."""
+    from scipy import ndimage
+
+    from skyforge.preview import nan_block_mean
+
+    # Медиана считается на уменьшенной копии: окно в десятки пикселей на полном кадре — минуты.
+    factor = max(1, window_px // 16)
+    small = nan_block_mean(lum, factor)
+    size = max(3, window_px // factor) | 1
+    med = ndimage.median_filter(small, size=size, mode="nearest")
+    zoom = (lum.shape[0] / med.shape[0], lum.shape[1] / med.shape[1])
+    out = ndimage.zoom(med, zoom, order=1, mode="nearest")
+    return out[: lum.shape[0], : lum.shape[1]]
+
+
+def _star_fraction(x: np.ndarray, window_px: int) -> tuple[np.ndarray, np.ndarray]:
+    tiny = np.finfo(np.float32).tiny
+    local = local_background(x, window_px)
+    return np.clip((x - local) / np.maximum(x, tiny), 0, 1), local
+
+
+def desaturate_stars(rgb: np.ndarray, mask: Any, s: float, det_layer: np.ndarray | None = None,
+                     nebula_level: float = 0.05) -> np.ndarray:
+    """Цвет звёзд к серому той же яркости.
+
+    Обесцвечивается только доля света, которую добавила звезда сверх местного фона.
+    На пустом небе доля считается по итоговой яркости — сереют и звезда, и её ореол из
+    длинных волн. На туманности по итоговой яркости волокна неотличимы от звёзд, поэтому
+    там доля берётся из фильтра поиска звёзд (det_layer, обычно F090W): звезда в нём яркая,
+    а внешняя оболочка почти не видна. Между режимами — плавный переход по яркости
+    местного фона (nebula_level).
+    mask — stars.StarMask (вес 0–1, окно местного фона, фильтр поиска).
+    """
+    if mask is None or s >= 1:
+        return rgb
+    lum = rgb @ LUMA
+    frac, local = _star_fraction(lum, mask.window_px)
+    if det_layer is not None:
+        # Свет звезды в фильтре поиска относительно всего света пикселя: на волокне, которого
+        # в этом фильтре почти нет, доля около нуля, а не «весь свет фильтра — звезда».
+        d = np.nan_to_num(np.asarray(det_layer, dtype=np.float32))
+        star_light = np.clip(d - local_background(d, mask.window_px), 0, None)
+        frac_det = np.clip(star_light / np.maximum(lum, np.finfo(np.float32).tiny), 0, 1)
+        on_nebula = np.clip(local / nebula_level, 0, 1)
+        frac = (1 - on_nebula) * frac + on_nebula * frac_det
+    w = (mask.weight * frac)[..., None]
+    grey = lum[..., None] + s * (rgb - lum[..., None])
+    return np.clip(rgb + w * (grey - rgb), 0, 1)
 
 
 def saturate(rgb: np.ndarray, s: float) -> np.ndarray:
@@ -111,14 +162,18 @@ def saturate(rgb: np.ndarray, s: float) -> np.ndarray:
     return np.clip(luma + s * (rgb - luma), 0, 1)
 
 
-def compose_layers(cfg: Config, layers: dict[str, np.ndarray]) -> tuple[np.ndarray, dict[str, Any]]:
+def compose_layers(cfg: Config, layers: dict[str, np.ndarray],
+                   star_mask: Any = None) -> tuple[np.ndarray, dict[str, Any]]:
     colors = assign_colors(list(layers), cfg.mission, cfg.instrument, cfg.color)
     rgb = blend(layers, colors, cfg.color)
     bg = None
     if cfg.color.neutral_background:
         rgb, bg = neutralize(rgb, cfg.color.background_percentile)
-    rgb = lift(rgb, cfg.color.lift)
-    rgb = saturate(rgb, cfg.color.saturation).astype(np.float32)
+    rgb = shadows(rgb, cfg.color.shadows)
+    rgb = saturate(rgb, cfg.color.saturation)
+    det_layer = layers.get(star_mask.detect) if star_mask is not None else None
+    rgb = desaturate_stars(rgb, star_mask, cfg.color.star_saturation, det_layer,
+                           cfg.stars.nebula_level).astype(np.float32)
     info = {"colors": {f: "#%02x%02x%02x" % tuple(round(v * 255) for v in colors[f]) for f in colors},
             "background_removed": bg}
     return rgb, info
@@ -148,8 +203,10 @@ def load_stretched(cfg: Config, paths: Paths) -> tuple[dict[str, np.ndarray], di
 
 
 def compose(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
+    from skyforge.clean import load_star_weight
+
     layers, in_key = load_stretched(cfg, paths)
-    rgb, info = compose_layers(cfg, layers)
+    rgb, info = compose_layers(cfg, layers, load_star_weight(cfg, paths))
     np.save(composite_path(cfg, paths), rgb)
     composite_path(cfg, paths).with_suffix(".json").write_text(
         json.dumps({"key": compose_key(cfg, in_key), **info}, ensure_ascii=False, indent=2), encoding="utf-8")

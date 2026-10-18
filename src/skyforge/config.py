@@ -33,6 +33,17 @@ class StarsConfig(_Strict):
     # Насыщенные ядра в i2d — дыры NaN с WHT=0 внутри поля (слоя DQ в продуктах уровня 3 нет).
     fill_cores: bool = False
     max_core_arcsec: float = Field(2.0, gt=0, description="дыры шире этого — не ядра, а пропуски мозаики")
+    # Маска звёзд для color.star_saturation: компактные яркие источники, туманность исключена.
+    mask_sigma: float = Field(3.0, gt=0, description="порог пикселей звезды над фоном, в σ")
+    peak_sigma: float = Field(20.0, gt=0, description="пик слабее — не звезда (шум, слабые галактики)")
+    max_star_area_arcsec2: float = Field(20.0, gt=0, description="больше — уже туманность")
+    halo_arcsec: float = Field(1.5, ge=0, description="ореол вокруг звезды, входящий в маску")
+    local_window_arcsec: float = Field(6.0, gt=0, description="окно местного фона под звездой (шире звезды с ореолом)")
+    nebula_level: float = Field(0.05, gt=0, le=1,
+                                description="яркость местного фона (0–1 итоговой картинки), с которой под звездой туманность")
+    # Звёзды ищутся в одном фильтре: по умолчанию самом коротковолновом — там у звезды самый резкий
+    # пик, а узлы туманности и фоновые галактики слабые. Туманность исключается по всем фильтрам.
+    detect_filter: str | None = None
 
 
 class BackgroundConfig(_Strict):
@@ -95,12 +106,25 @@ class ColorConfig(_Strict):
     # ярче, но при 4+ фильтрах сводит туманность в белый и жёлтый.
     blend: Literal["average", "screen"] = "average"
     saturation: float = Field(1.0, ge=0)
-    # Подъём теней после смешивания (asinh по яркости): меньше — сильнее, null — выкл.
-    lift: float | None = Field(None, gt=0)
+    # Подъём теней после смешивания: asinh(k·яркость)/asinh(k), оттенок не меняется.
+    # БОЛЬШЕ — СИЛЬНЕЕ, 0 — выкл. (Прежний lift: shadows = 1/lift, lift 0.25 → shadows 4.)
+    shadows: float = Field(0.0, ge=0)
+    # Насыщенность звёзд поля внутри маски звёзд (stars.*): 1 — как есть, 0 — серые с той же яркостью.
+    star_saturation: float = Field(1.0, ge=0, le=1)
     overrides: dict[str, str] = {}
     weights: dict[str, float] = {}
     neutral_background: bool = True
     background_percentile: float = Field(10.0, gt=0, lt=100)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _renamed(cls, data: object) -> object:
+        if isinstance(data, dict) and "lift" in data:
+            lift = data["lift"]
+            hint = f"shadows: {1 / lift:g}" if lift else "shadows: 0"
+            raise ValueError(f"color.lift переименован в color.shadows с обратной шкалой (больше — сильнее): "
+                             f"вместо lift: {lift} напиши {hint}")
+        return data
 
     @field_validator("overrides")
     @classmethod

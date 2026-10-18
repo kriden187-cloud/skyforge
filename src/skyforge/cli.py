@@ -202,14 +202,22 @@ def _axis(spec: str | None) -> SweepAxis | None:
 @_handle
 def sweep(config: ConfigArg, bin_: BinOpt = None,
           x: Annotated[Optional[str], typer.Option(help="Столбцы: stretch.a=0.005,0.02,0.08")] = None,
-          y: Annotated[Optional[str], typer.Option(help="Строки: stretch.white=99.5,99.8,99.95")] = None) -> None:
+          y: Annotated[Optional[str], typer.Option(help="Строки: stretch.white=99.5,99.8,99.95")] = None,
+          crop: Annotated[Optional[str], typer.Option(help="Кроп 100% вместо всего кадра: X,Y,СТОРОНА в пикселях сетки")] = None) -> None:
     """Сетка вариантов растяжки/цвета на одном листе (нужен выполненный align)."""
     from skyforge.sweep import sweep as do
 
     paths = _paths()
     cfg = _load(config, paths, bin_)
     xa, ya = _axis(x), _axis(y)
-    _stage(cfg, paths, "sweep", lambda out: do(cfg, paths, out, xa, ya))
+    cr = None
+    if crop:
+        try:
+            cx, cy, side = (int(v) for v in crop.split(","))
+        except ValueError as e:
+            raise SkyforgeError(f"--crop '{crop}': нужно три целых числа X,Y,СТОРОНА") from e
+        cr = (cx, cy, side)
+    _stage(cfg, paths, "sweep", lambda out: do(cfg, paths, out, xa, ya, cr))
 
 
 @app.command()

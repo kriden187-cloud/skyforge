@@ -22,16 +22,29 @@ from skyforge.config import Config
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
 from skyforge.preview import contact_sheet, quick_norm, shrink
-from skyforge.stars import core_area_px, fill_rings, find_core_holes
+from skyforge.stars import StarMask, core_area_px, fill_rings, find_core_holes, star_mask, star_weight
 from skyforge.stretch import stretch_array
 
 # Превью фона тянется жёстче рабочей растяжки: стыки плиток — это проценты от шума,
-# при обычной растяжке их не видно, а на итоге с lift они вылезают.
+# при обычной растяжке их не видно, а на итоге с подъёмом теней (shadows) они вылезают.
 REVEAL_BLACK, REVEAL_WHITE, REVEAL_A = 1.0, 90.0, 0.02
 
 
 def enabled(cfg: Config) -> bool:
-    return cfg.stars.fill_cores or cfg.background.subtract
+    return cfg.stars.fill_cores or cfg.background.subtract or cfg.color.star_saturation < 1
+
+
+def load_star_weight(cfg: Config, paths: Paths) -> StarMask | None:
+    """Маска звёзд с этапа clean (нужна для color.star_saturation)."""
+    if cfg.color.star_saturation >= 1:
+        return None
+    d = clean_dir(cfg, paths)
+    p, meta = d / "star_weight.npy", d / "meta.json"
+    if not p.exists() or not meta.exists():
+        raise SkyforgeError("для color.star_saturation нужна маска звёзд: запусти skyforge clean")
+    window = json.loads(meta.read_text(encoding="utf-8"))["star_window_px"]
+    meta_data = json.loads(meta.read_text(encoding="utf-8"))
+    return StarMask(np.load(p), window, meta_data["star_detect_filter"])
 
 
 def clean_dir(cfg: Config, paths: Paths) -> Path:
@@ -75,6 +88,7 @@ def clean(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     holes_all = np.zeros(next(iter(before.values())).shape, dtype=bool)
     info: dict[str, Any] = {"enabled": True, "filters": {}}
     models, masks = {}, {}
+    star_masks = {}
     for f, a in before.items():
         out = a
         fi: dict[str, Any] = {}
@@ -105,6 +119,7 @@ def clean(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
             models[f], masks[f] = model, mask
         after[f] = out.astype(np.float32)
         np.save(d / f"{f}.npy", after[f])
+        star_masks[f] = star_mask(after[f], cfg.stars, scale)
         info["filters"][f] = fi
         parts = []
         if "cores" in fi:
@@ -115,12 +130,22 @@ def clean(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
             parts.append(f"гладкий фон: блок {fi['box_px']} px, маска {fi['masked_percent']}%")
         console.print(f"  {f}: " + ", ".join(parts))
 
+    detect = _detect_filter(cfg, list(after))
+    smask = star_weight(star_masks, detect, cfg.stars, scale)
+    weight = smask.weight
+    info["star_detect_filter"] = detect
+    info["star_window_px"] = smask.window_px
+    np.save(d / "star_weight.npy", weight)
+    info["star_mask_percent"] = round(float((weight > 0.5).mean() * 100), 2)
+    console.print(f"  маска звёзд (по {detect}): {info['star_mask_percent']}% кадра")
     (d / "meta.json").write_text(json.dumps({"key": input_key(cfg, paths), **info}, ensure_ascii=False, indent=2),
                                  encoding="utf-8")
     previews = []
     if cfg.background.subtract:
         _background_sheet(cfg, before, after, models, masks, out_dir / "background_model.png")
         previews.append("background_model.png")
+    _star_mask_preview(cfg, after, weight, out_dir / "star_mask.png")
+    previews.append("star_mask.png")
     if cfg.stars.fill_cores and holes_all.any():
         _core_sheet(cfg, before, after, holes_all, out_dir / "star_cores.png")
         previews.append("star_cores.png")
@@ -143,6 +168,27 @@ def _background_sheet(cfg: Config, before: dict, after: dict, models: dict, mask
         labels += [f"{f}: до", "маска источников", "модель фона", "после вычитания"]
     contact_sheet(images, labels, path, cols=4, tile_inches=3.0,
                   title="Фон: стыки плиток и градиенты должны уйти в «модель», туманность — остаться")
+
+
+def _detect_filter(cfg: Config, filters: list[str]) -> str:
+    from skyforge.filters import sort_by_wavelength
+
+    if cfg.stars.detect_filter:
+        if cfg.stars.detect_filter.upper() not in filters:
+            raise SkyforgeError(f"stars.detect_filter {cfg.stars.detect_filter} нет среди фильтров {filters}")
+        return cfg.stars.detect_filter.upper()
+    return sort_by_wavelength(filters, cfg.mission, cfg.instrument)[0]
+
+
+def _star_mask_preview(cfg: Config, after: dict, weight: np.ndarray, path: Path) -> None:
+    """Самый коротковолновый фильтр серым, маска звёзд поверх красным: туманность должна остаться серой."""
+    first = _detect_filter(cfg, list(after))
+    size = cfg.preview.max_size
+    grey = quick_norm(shrink(after[first], size), REVEAL_BLACK, REVEAL_WHITE, REVEAL_A)
+    w = np.clip(shrink(weight, size), 0, 1)
+    rgb = np.stack([np.clip(grey + 0.6 * w, 0, 1), grey * (1 - 0.5 * w), grey * (1 - 0.5 * w)], axis=-1)
+    contact_sheet([rgb], [f"маска звёзд поверх {first}: красное обесцвечивается, туманность — нет"], path, cols=1,
+                  tile_inches=9)
 
 
 def _core_sheet(cfg: Config, before: dict, after: dict, holes: np.ndarray, path: Path) -> None:

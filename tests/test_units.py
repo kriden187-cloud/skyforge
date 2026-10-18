@@ -194,16 +194,60 @@ def test_finish_keeps_brightness():
     assert np.median(out) == pytest.approx(np.median(rgb), abs=0.03)
 
 
-def test_lift_brightens_midtones_and_keeps_hue():
-    from skyforge.compose import lift
+def test_shadows_brightens_midtones_and_keeps_hue():
+    from skyforge.compose import shadows
 
     rgb = np.array([[[0.0, 0.0, 0.0], [0.2, 0.1, 0.05], [0.9, 0.8, 0.7]]], dtype=np.float32)
-    out = lift(rgb, 0.25)
+    out = shadows(rgb, 4)
     assert np.allclose(out[0, 0], 0)
     assert out[0, 1].sum() > rgb[0, 1].sum()  # средние тона светлее
     assert np.allclose(out[0, 1] / out[0, 1, 0], rgb[0, 1] / rgb[0, 1, 0], atol=1e-5)  # оттенок тот же
     assert out.max() <= 1
-    assert lift(rgb, None) is rgb
+    assert shadows(rgb, 0) is rgb
+    # больше — сильнее
+    assert shadows(rgb, 7)[0, 1].sum() > shadows(rgb, 4)[0, 1].sum() > shadows(rgb, 2)[0, 1].sum()
+
+
+def test_old_lift_key_gives_hint():
+    with pytest.raises(ValidationError, match="shadows: 4"):
+        Config.model_validate({"target": "X", "color": {"lift": 0.25}})
+
+
+def test_star_desaturation_touches_stars_not_nebula():
+    from skyforge.compose import desaturate_stars
+    from skyforge.config import StarsConfig
+    from skyforge.stars import StarMask, star_mask, star_weight
+
+    rng = np.random.default_rng(5)
+    yy, xx = np.indices((300, 300))
+    a = rng.normal(0, 1, (300, 300)).astype(np.float32)
+    a += 40 * np.exp(-((yy - 150) ** 2 + (xx - 200) ** 2) / (2 * 40**2))  # плотная туманность
+    a += 300 * np.exp(-((yy - 60) ** 2 + (xx - 60) ** 2) / (2 * 1.5**2))  # звезда поля
+    s = StarsConfig(halo_arcsec=0.4, max_star_area_arcsec2=2.0, local_window_arcsec=2.0)
+    m = star_weight({"F090W": star_mask(a, s, 0.05)}, "F090W", s, 0.05)
+    assert m.weight[60, 60] > 0.9 and m.weight[60, 66] > 0.3   # ядро и ореол в маске
+    assert m.weight[150, 200] == 0 and m.weight[150, 170] == 0  # плотная туманность исключена
+
+    # Цветная картинка: зелёная звезда на пустом небе и такая же — на оранжевом волокне.
+    rgb = np.zeros((300, 300, 3), dtype=np.float32)
+    fil = (np.abs(xx - 230) < 30)[..., None] * np.array([0.5, 0.3, 0.05], dtype=np.float32)  # волокно
+    rgb += fil
+    for cy, cx in ((60, 60), (60, 230)):
+        star = np.exp(-((yy - cy) ** 2 + (xx - cx) ** 2) / (2 * 2.0**2))[..., None]
+        rgb += star * np.array([0.3, 0.7, 0.3], dtype=np.float32)
+    rgb = np.clip(rgb, 0, 1)
+    w = np.zeros((300, 300), dtype=np.float32)
+    w[np.hypot(yy - 60, xx - 60) < 10] = 1
+    w[np.hypot(yy - 60, xx - 230) < 10] = 1
+    det = np.zeros((300, 300), dtype=np.float32)  # фильтр поиска: звёзды есть, волокна почти нет
+    for cy, cx in ((60, 60), (60, 230)):
+        det += np.exp(-((yy - cy) ** 2 + (xx - cx) ** 2) / (2 * 2.0**2))
+    out = desaturate_stars(rgb, StarMask(w, 40, "F090W"), 0.0, det, nebula_level=0.05)
+    assert np.ptp(out[60, 60]) < 0.02                                # звезда на небе серая
+    assert np.ptp(out[60, 230]) < 0.5 * np.ptp(rgb[60, 230])         # ядро на волокне обесцвечено
+    assert np.allclose(out[69, 230], rgb[69, 230], atol=0.03)         # само волокно у края ореола — того же цвета
+    assert np.allclose(out[60, 222], rgb[60, 222], atol=0.03)         # и внутри маски, рядом с ядром
+    assert np.allclose(out[150, 230], rgb[150, 230])                  # волокно вне маски не тронуто
 
 
 # --- фаза 3: ядра звёзд и фон ---
