@@ -1,0 +1,389 @@
+"""MAST: поиск, выбор продуктов, скачивание в кеш. Плюс папка data/inbox/ для ручных файлов.
+
+Порядок поиска файла для фильтра: inbox → уже скачанное (манифест) → MAST.
+Сырые файлы после скачивания помечаются «только чтение» и больше не меняются.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import stat
+import time
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any
+
+import requests
+from rich.progress import BarColumn, DownloadColumn, Progress, TextColumn, TimeRemainingColumn, TransferSpeedColumn
+from rich.table import Table
+
+from skyforge.config import Config, slugify
+from skyforge.filters import effective_filter, sort_by_wavelength, wavelength_um
+from skyforge.fitsio import read_info
+from skyforge.log import SkyforgeError, console
+from skyforge.paths import Paths
+
+MAST_DOWNLOAD_URL = "https://mast.stsci.edu/api/v0.1/Download/file"
+DOWNLOAD_RETRIES = 5
+CHUNK = 1 << 20
+
+INSTRUMENTS = {
+    "jwst": {"nircam": "NIRCAM/IMAGE", "miri": "MIRI/IMAGE", "niriss": "NIRISS/IMAGE"},
+    "hst": {
+        "wfc3_uvis": "WFC3/UVIS", "wfc3/uvis": "WFC3/UVIS", "uvis": "WFC3/UVIS",
+        "wfc3_ir": "WFC3/IR", "wfc3/ir": "WFC3/IR", "ir": "WFC3/IR",
+        "acs": "ACS/WFC", "acs_wfc": "ACS/WFC", "acs/wfc": "ACS/WFC",
+    },
+}
+# Подгруппа продукта уровня 3 в порядке предпочтения.
+SUBGROUPS = {"jwst": ["I2D"], "hst": ["DRC", "DRZ"]}
+
+
+@dataclass
+class Product:
+    filter: str
+    path: str  # относительно корня проекта
+    source: str  # "mast" | "inbox"
+    obs_id: str | None = None
+    filename: str = ""
+    size: int | None = None
+    exptime: float | None = None
+    release: str | None = None
+    proposal_id: str | None = None
+    data_uri: str | None = None
+
+
+@dataclass
+class Available:
+    filter: str
+    obs_id: str
+    obsid: str
+    exptime: float | None
+    public: bool
+    release: str | None
+    proposal_id: str | None
+
+
+@dataclass
+class FetchResult:
+    products: dict[str, Product]
+    missing: list[str] = field(default_factory=list)
+    available: dict[str, Available] = field(default_factory=dict)
+
+
+def mast_instrument(cfg: Config) -> str:
+    table = INSTRUMENTS.get(cfg.mission, {})
+    key = cfg.instrument.lower()
+    if key in table:
+        return table[key]
+    if key.upper() in table.values():  # уже в формате MAST: "NIRCAM/IMAGE"
+        return key.upper()
+    raise SkyforgeError(f"инструмент '{cfg.instrument}' для {cfg.mission} не знаю; варианты: {', '.join(table)}")
+
+
+# --- выбор наблюдений и продуктов (чистые функции, покрыты тестами) ---
+
+
+def _mjd_to_date(mjd: Any) -> str | None:
+    if mjd is None:
+        return None
+    from astropy.time import Time
+
+    return Time(float(mjd), format="mjd").to_value("iso", subfmt="date")
+
+
+def choose_observations(rows: list[dict[str, Any]]) -> dict[str, Available]:
+    """Одно наблюдение на фильтр: публичное важнее закрытого, затем самая длинная экспозиция."""
+    best: dict[str, tuple[tuple, Available]] = {}
+    for r in rows:
+        f = effective_filter(r.get("filters") or "")
+        if not f:
+            continue
+        public = str(r.get("dataRights") or "").upper() == "PUBLIC"
+        exptime = float(r["t_exptime"]) if r.get("t_exptime") is not None else None
+        item = Available(
+            filter=f,
+            obs_id=str(r["obs_id"]),
+            obsid=str(r["obsid"]),
+            exptime=exptime,
+            public=public,
+            release=_mjd_to_date(r.get("t_obs_release")),
+            proposal_id=str(r["proposal_id"]) if r.get("proposal_id") is not None else None,
+        )
+        key = (public, exptime or 0.0, item.obs_id)
+        if f not in best or key > best[f][0]:
+            best[f] = (key, item)
+    return {f: v[1] for f, v in best.items()}
+
+
+def choose_product(prods: list[dict[str, Any]], obs_id: str, mission: str, calib_level: int) -> dict[str, Any] | None:
+    """Комбинированный продукт самого наблюдения: уровень 3, а не отдельные кадры уровня 2 с тем же суффиксом."""
+    order = SUBGROUPS[mission]
+    cands = [
+        p for p in prods
+        if str(p.get("productType")).upper() == "SCIENCE"
+        and int(p.get("calib_level") or -1) == calib_level
+        and str(p.get("productSubGroupDescription")).upper() in order
+        and str(p.get("productFilename", "")).lower().startswith(obs_id.lower())
+    ]
+    if not cands:
+        return None
+    cands.sort(key=lambda p: (order.index(str(p["productSubGroupDescription"]).upper()), -int(p.get("size") or 0)))
+    return cands[0]
+
+
+def _table_rows(table: Any) -> list[dict[str, Any]]:
+    rows = []
+    for rec in table:
+        row = {}
+        for col in table.colnames:
+            v = rec[col]
+            if hasattr(v, "mask") and bool(getattr(v, "mask", False)):
+                v = None
+            elif hasattr(v, "item"):
+                v = v.item()
+            if isinstance(v, bytes):
+                v = v.decode()
+            row[col] = v
+        rows.append(row)
+    return rows
+
+
+# --- MAST ---
+
+
+def query_mast(cfg: Config) -> list[dict[str, Any]]:
+    from astroquery.mast import Observations
+
+    kw: dict[str, Any] = dict(
+        obs_collection=cfg.mission.upper(),
+        instrument_name=mast_instrument(cfg),
+        calib_level=cfg.calib_level,
+        dataproduct_type="image",
+        intentType="science",
+        radius=cfg.radius,
+    )
+    if cfg.proposal_id:
+        kw["proposal_id"] = cfg.proposal_id
+    if cfg.coords:
+        kw["coordinates"] = cfg.coords
+    else:
+        kw["objectname"] = cfg.target
+    return _table_rows(Observations.query_criteria(**kw))
+
+
+def product_lists(obsids: list[str]) -> list[dict[str, Any]]:
+    from astroquery.mast import Observations
+
+    if not obsids:
+        return []
+    return _table_rows(Observations.get_product_list(obsids))
+
+
+def download(uri: str, dest: Path, expected_size: int | None) -> None:
+    """Скачивание с докачкой оборванного файла (.part + Range) и проверкой размера."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    part = dest.with_name(dest.name + ".part")
+    last_error: Exception | None = None
+    with Progress(TextColumn("{task.description}"), BarColumn(), DownloadColumn(), TransferSpeedColumn(),
+                  TimeRemainingColumn(), console=console, transient=True) as progress:
+        task = progress.add_task(dest.name, total=expected_size)
+        for attempt in range(1, DOWNLOAD_RETRIES + 1):
+            have = part.stat().st_size if part.exists() else 0
+            if expected_size and have > expected_size:
+                part.unlink()
+                have = 0
+            if not (expected_size and have == expected_size):
+                headers = {"Range": f"bytes={have}-"} if have else {}
+                try:
+                    with requests.get(MAST_DOWNLOAD_URL, params={"uri": uri}, headers=headers,
+                                      stream=True, timeout=(30, 120)) as r:
+                        if r.status_code == 416:  # всё уже скачано
+                            pass
+                        else:
+                            r.raise_for_status()
+                            if have and r.status_code != 206:
+                                have = 0  # сервер не умеет докачку — начинаем заново
+                            progress.update(task, completed=have)
+                            with part.open("ab" if have else "wb") as fh:
+                                for chunk in r.iter_content(CHUNK):
+                                    fh.write(chunk)
+                                    progress.advance(task, len(chunk))
+                except requests.RequestException as e:
+                    last_error = e
+                    console.print(f"  [yellow]обрыв ({e.__class__.__name__}), попытка {attempt}/{DOWNLOAD_RETRIES}[/]")
+                    time.sleep(min(30, 2 ** attempt))
+                    continue
+            size = part.stat().st_size if part.exists() else 0
+            if expected_size is None or size == expected_size:
+                part.replace(dest)
+                os.chmod(dest, stat.S_IREAD)
+                return
+            last_error = IOError(f"размер {size} вместо {expected_size}")
+            console.print(f"  [yellow]файл неполный ({size}/{expected_size} байт), докачиваю[/]")
+    raise SkyforgeError(
+        f"не удалось скачать {dest.name}: {last_error}. Можно скачать вручную с mast.stsci.edu "
+        f"и положить в data/inbox/<объект>/"
+    )
+
+
+# --- inbox и манифест ---
+
+
+def scan_inbox(cfg: Config, paths: Paths) -> dict[str, Product]:
+    """FITS из data/inbox/<slug>/ и из корня inbox/, если в заголовке тот же объект."""
+    files: list[tuple[Path, bool]] = []
+    target_dir = paths.inbox / cfg.slug
+    if target_dir.is_dir():
+        files += [(p, True) for p in sorted(target_dir.rglob("*.fits"))]
+    if paths.inbox.is_dir():
+        files += [(p, False) for p in sorted(paths.inbox.glob("*.fits"))]
+    inst_key = mast_instrument(cfg).split("/")[0].lower()
+    found: dict[str, Product] = {}
+    for p, in_target_dir in files:
+        try:
+            info = read_info(p)
+        except Exception as e:  # битый или чужой файл не должен ронять конвейер
+            console.print(f"  [yellow]inbox: пропускаю {p.name}: {e}[/]")
+            continue
+        if not in_target_dir and slugify(info.target or "-") != cfg.slug:
+            continue
+        if cfg.mission.upper() not in info.telescope or inst_key not in info.instrument.lower():
+            continue
+        if not info.filter:
+            console.print(f"  [yellow]inbox: в {p.name} не нашёл имя фильтра в заголовке[/]")
+            continue
+        prod = Product(filter=info.filter, path=paths.rel(p), source="inbox", filename=p.name,
+                       size=p.stat().st_size, exptime=info.exptime)
+        if info.filter in found and (found[info.filter].size or 0) >= (prod.size or 0):
+            continue
+        found[info.filter] = prod
+    return found
+
+
+def load_manifest(cfg: Config, paths: Paths) -> dict[str, Any]:
+    p = paths.manifest(cfg.slug, cfg.mission, cfg.instrument)
+    if p.exists():
+        return json.loads(p.read_text(encoding="utf-8"))
+    return {"target": cfg.target, "mission": cfg.mission, "instrument": cfg.instrument, "products": {}}
+
+
+def save_manifest(cfg: Config, paths: Paths, manifest: dict[str, Any]) -> None:
+    p = paths.manifest(cfg.slug, cfg.mission, cfg.instrument)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def local_products(cfg: Config, paths: Paths) -> dict[str, Product]:
+    """Что уже есть на диске без сети: inbox важнее скачанного."""
+    want = set(cfg.filters)
+    found: dict[str, Product] = {}
+    for f, d in load_manifest(cfg, paths).get("products", {}).items():
+        prod = Product(**d)
+        if prod.source == "mast" and paths.abs(prod.path).exists() and (not want or f in want):
+            found[f] = prod
+    for f, prod in scan_inbox(cfg, paths).items():
+        if not want or f in want:
+            found[f] = prod
+    order = sort_by_wavelength(list(found), cfg.mission, cfg.instrument)
+    return {f: found[f] for f in order}
+
+
+def require_products(cfg: Config, paths: Paths) -> dict[str, Product]:
+    prods = local_products(cfg, paths)
+    if not prods:
+        raise SkyforgeError(f"для {cfg.target} нет файлов: сначала skyforge fetch (или положи FITS в data/inbox/{cfg.slug}/)")
+    missing = [f for f in cfg.filters if f not in prods]
+    if missing:
+        if not cfg.allow_missing:
+            raise SkyforgeError(f"нет фильтров {missing}, а allow_missing: false")
+        console.print(f"[yellow]Нет данных для {', '.join(missing)} — продолжаю без них (allow_missing)[/]")
+    return prods
+
+
+# --- главная функция ---
+
+
+def _print_available(cfg: Config, avail: dict[str, Available], have: dict[str, Product]) -> None:
+    t = Table(title=f"{cfg.target}: {cfg.mission.upper()} {mast_instrument(cfg)}, уровень {cfg.calib_level}")
+    for col in ("фильтр", "λ, мкм", "наблюдение", "экспозиция, с", "доступ", "на диске"):
+        t.add_column(col)
+    for f in sort_by_wavelength(list(avail), cfg.mission, cfg.instrument):
+        a = avail[f]
+        access = "открыт" if a.public else f"[red]эксклюзив до {a.release}[/]"
+        disk = have[f].source if f in have else ""
+        want = "" if not cfg.filters or f in cfg.filters else " [dim](не в конфиге)[/]"
+        t.add_row(f + want, f"{wavelength_um(f, cfg.mission, cfg.instrument):.3f}", a.obs_id,
+                  f"{a.exptime:.0f}" if a.exptime else "—", access, disk)
+    console.print(t)
+
+
+def fetch(cfg: Config, paths: Paths, *, offline: bool = False, list_only: bool = False,
+          max_gb: float | None = None) -> FetchResult:
+    want = list(cfg.filters)
+    found = local_products(cfg, paths)
+    manifest = load_manifest(cfg, paths)
+    for f, prod in found.items():
+        console.print(f"  {f}: уже есть ({prod.source}) {prod.path}")
+
+    need_network = list_only or not want or any(f not in found for f in want)
+    avail: dict[str, Available] = {}
+    if need_network and offline:
+        console.print("[yellow]Режим offline: в MAST не хожу[/]")
+    elif need_network:
+        console.print(f"Ищу в MAST: {cfg.target} ({cfg.mission.upper()} {mast_instrument(cfg)})…")
+        try:
+            avail = choose_observations(query_mast(cfg))
+        except SkyforgeError:
+            raise
+        except Exception as e:
+            raise SkyforgeError(
+                f"MAST не ответил: {e}\nПроверь HTTPS_PROXY в .env, или скачай FITS вручную в data/inbox/{cfg.slug}/"
+            ) from e
+        if not avail:
+            console.print("[yellow]В MAST ничего не нашлось: проверь имя объекта, radius, инструмент[/]")
+        _print_available(cfg, avail, found)
+        manifest["available"] = {f: asdict(a) for f, a in avail.items()}
+
+        todo = [f for f in (want or list(avail)) if f not in found and f in avail]
+        locked = [f for f in todo if not avail[f].public]
+        for f in locked:
+            console.print(f"[red]{f}: данные под эксклюзивом до {avail[f].release}, пропускаю[/]")
+        todo = [f for f in todo if avail[f].public]
+
+        if todo and not list_only:
+            prods = product_lists([avail[f].obsid for f in todo])
+            picks: dict[str, dict[str, Any]] = {}
+            for f in todo:
+                p = choose_product(prods, avail[f].obs_id, cfg.mission, cfg.calib_level)
+                if p is None:
+                    console.print(f"[yellow]{f}: в наблюдении {avail[f].obs_id} нет продукта уровня {cfg.calib_level}[/]")
+                else:
+                    picks[f] = p
+            total_gb = sum(int(p.get("size") or 0) for p in picks.values()) / 1e9
+            console.print(f"Скачать: {len(picks)} файл(ов), {total_gb:.2f} ГБ")
+            if max_gb is not None and total_gb > max_gb:
+                raise SkyforgeError(f"{total_gb:.1f} ГБ больше лимита --max-gb {max_gb}; укажи --filters или подними лимит")
+            for f, p in picks.items():
+                a = avail[f]
+                dest = paths.raw / cfg.mission / a.obs_id / p["productFilename"]
+                if not dest.exists():
+                    console.print(f"  {f}: {p['productFilename']} ({int(p['size']) / 1e6:.0f} МБ)")
+                    download(p["dataURI"], dest, int(p["size"]) if p.get("size") else None)
+                prod = Product(filter=f, path=paths.rel(dest), source="mast", obs_id=a.obs_id,
+                               filename=p["productFilename"], size=dest.stat().st_size, exptime=a.exptime,
+                               release=a.release, proposal_id=a.proposal_id, data_uri=p["dataURI"])
+                found[f] = prod
+                manifest["products"][f] = asdict(prod)
+                save_manifest(cfg, paths, manifest)  # после каждого файла: обрыв не теряет прогресс
+
+    save_manifest(cfg, paths, manifest)
+    missing = [f for f in want if f not in found]
+    if missing and not list_only:
+        hint = f"положи FITS вручную в data/inbox/{cfg.slug}/"
+        if not cfg.allow_missing:
+            raise SkyforgeError(f"нет фильтров {missing}; {hint}")
+        console.print(f"[yellow]Нет данных: {', '.join(missing)} ({hint})[/]")
+    order = sort_by_wavelength(list(found), cfg.mission, cfg.instrument)
+    return FetchResult(products={f: found[f] for f in order}, missing=missing, available=avail)

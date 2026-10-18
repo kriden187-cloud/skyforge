@@ -1,0 +1,24 @@
+# Столпы творения (M16), JWST NIRCam, программа 2739.
+target: "Pillars of Creation"
+slug: pillars
+coords: "274.7000 -13.8350"   # имя "Pillars of Creation" не резолвится, ищем по координатам
+radius: "2 arcmin"
+proposal_id: "2739"
+mission: jwst
+instrument: nircam
+filters: [F090W, F187N, F200W, F335M, F444W, F470N]
+calib_level: 3
+reference: F444W
+bin: 4
+stretch:
+  method: asinh
+  black: 0.5
+  white: 99.8
+  a: 0.02
+color:
+  mode: wavelength
+  saturation: 1.1
+finish:
+  denoise: 0.2
+  sharpen: 0.4
+  north_up: false         # мозаика вытянута; поворот на север отрезал бы края
