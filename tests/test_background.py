@@ -295,3 +295,58 @@ def test_baseline_compare_reports_texture_and_crops(tmp_path):
     assert (tmp_path / "baseline_diff.png").exists() and (tmp_path / "crops_compare.png").exists()
     cfg2 = cfg.model_validate({**cfg.model_dump(mode="json"), "report": {"baseline": "nope"}})
     assert "нет принятой" in compare(cfg2, paths, tmp_path, tmp_path / "now.png")["skipped"]
+
+
+# --- фаза 3e: плоскость вместо константы ---
+
+def _tiled_sky(rng, with_nebula=True):
+    """Плитки со своим уровнем и наклоном: две широкие, три узкие полосы дизеринга, туманность сверху."""
+    h, w = 300, 420
+    yy, xx = np.indices((h, w))
+    tiles = np.zeros((h, w), dtype=np.int32)
+    tiles[:, 200:] = 1
+    tiles[:, 180:200] = 2                      # узкие полосы — наклон не измерить
+    tiles[:, 380:400] = 3
+    tiles[150:170, :180] = 4
+    lev = rng.uniform(-1.5, 1.5, 5)
+    sx, sy = rng.uniform(-0.006, 0.006, 5), rng.uniform(-0.006, 0.006, 5)  # до ~2σ на ширину плитки
+    bg = (lev[tiles] + sx[tiles] * xx + sy[tiles] * yy).astype(np.float32)
+    img = rng.normal(0, 1, (h, w)).astype(np.float32) + 10 + bg
+    if with_nebula:
+        img += (40 * np.exp(-((yy - 80) ** 2 + (xx - 300) ** 2) / (2 * 30**2))).astype(np.float32)
+    return img, tiles, bg
+
+
+def test_tile_planes_remove_level_and_slope_steps():
+    from skyforge.background import boundary_jumps, tile_pedestal, tile_planes
+    from skyforge.config import BackgroundConfig
+
+    rng = np.random.default_rng(13)
+    img, tiles, bg = _tiled_sky(rng)
+    yy, xx = np.indices(img.shape)
+    sky = np.hypot(yy - 80, xx - 300) > 110
+    c = BackgroundConfig(subtract=True, tile_mask_dilate_arcsec=0.5, tile_min_area_arcsec2=0.5,
+                         mask_smooth_arcsec=0.3, tile_min_extent_arcsec=2.0)
+    before, _ = boundary_jumps(img, tiles, sky, 8)
+    corr, info = tile_planes(img, tiles, c, scale_arcsec=0.05)
+    after, nb = boundary_jumps(img - corr, tiles, sky, 8)
+    const, _ = tile_pedestal(img, tiles, c, scale_arcsec=0.05)
+    after_const, _ = boundary_jumps(img - const, tiles, sky, 8)
+    assert nb >= 4
+    assert after < 0.2, f"скачки на границах {before:.2f}σ → {after:.2f}σ"
+    assert after < after_const                 # плоскость лучше константы при наклоне
+    assert info["measured"] >= 2 and info["matched"] >= 2   # узкие полосы — от соседей
+    # туманность не съедена: её пик над исправленным фоном тот же
+    clean = img - corr
+    assert abs((clean[80, 300] - np.median(clean[sky])) - (40 + 0)) < 3
+
+
+def test_fit_plane_ignores_outliers():
+    from skyforge.background import fit_plane
+
+    rng = np.random.default_rng(1)
+    x, y = rng.uniform(0, 100, 4000), rng.uniform(0, 100, 4000)
+    v = 2 + 0.03 * x - 0.02 * y + rng.normal(0, 0.1, 4000)
+    v[:200] += 50                               # звёзды/лучи
+    a, b, c = fit_plane(x, y, v)
+    assert abs(a - 2) < 0.05 and abs(b - 0.03) < 0.002 and abs(c + 0.02) < 0.002

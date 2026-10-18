@@ -227,3 +227,162 @@ def _step_at_zero(vals: np.ndarray, seps: np.ndarray) -> float:
         return float(np.median(vals))
     _, intercept = np.polyfit(xs, ys, 1)
     return float(intercept)
+
+
+# --- фаза 3e: плоскость вместо константы ---
+
+PLANE_MAX_POINTS = 20_000  # точек на подгонку плоскости одной области (детерминированное прореживание)
+PLANE_ITERS, PLANE_CLIP = 6, 3.0
+
+
+def fit_plane(x: np.ndarray, y: np.ndarray, v: np.ndarray) -> np.ndarray:
+    """Робастная плоскость v ≈ a + b·x + c·y: МНК с отбрасыванием точек дальше PLANE_CLIP·σ (по MAD)."""
+    sel = np.ones(v.size, dtype=bool)
+    coef = np.array([float(np.median(v)), 0.0, 0.0])
+    for _ in range(PLANE_ITERS):
+        A = np.column_stack([np.ones(int(sel.sum())), x[sel], y[sel]])
+        coef, *_ = np.linalg.lstsq(A, v[sel], rcond=None)
+        r = v - (coef[0] + coef[1] * x + coef[2] * y)
+        mid = float(np.median(r[sel]))  # МНК с выбросами смещён: отсекаем от медианы остатков, не от нуля
+        mad = 1.4826 * float(np.median(np.abs(r[sel] - mid)))
+        new = np.abs(r - mid) <= PLANE_CLIP * max(mad, 1e-12)
+        if new.sum() < 3 or np.array_equal(new, sel):
+            break
+        sel = new
+    return coef
+
+
+def adjacency(regions: np.ndarray) -> dict[tuple[int, int], int]:
+    """Длина общей границы (число соседних пар пикселей) для каждой пары областей."""
+    out: dict[tuple[int, int], int] = {}
+    n = int(regions.max()) + 1
+    for ia, ib in ((regions[:-1, :], regions[1:, :]), (regions[:, :-1], regions[:, 1:])):
+        m = (ia != ib) & (ia >= 0) & (ib >= 0)
+        lo, hi = np.minimum(ia[m], ib[m]), np.maximum(ia[m], ib[m])
+        keys, counts = np.unique(lo.astype(np.int64) * n + hi, return_counts=True)
+        for k, cnt in zip(keys, counts):
+            i, j = divmod(int(k), n)
+            out[(i, j)] = out.get((i, j), 0) + int(cnt)
+    return out
+
+
+def _bright_mask(a: np.ndarray, free: np.ndarray, c: BackgroundConfig) -> np.ndarray:
+    """Лучи, звёзды, волокна — относительно медианы 9×9; ровная приподнятая плитка не отмечается."""
+    filled = np.where(np.isfinite(a), a, np.float32(np.nanmedian(a[free]))).astype(np.float32)
+    hp = filled - ndimage.median_filter(filled, size=9)
+    _, _, std = sigma_clipped_stats(hp[free][:: max(1, int(free.sum()) // 2_000_000)], sigma=CLIP_SIGMA)
+    return ndimage.binary_dilation(hp > c.tile_pixel_sigma * std, iterations=2) | ~np.isfinite(a)
+
+
+def tile_planes(a: np.ndarray, tiles: np.ndarray, c: BackgroundConfig,
+                scale_arcsec: float) -> tuple[np.ndarray, dict[str, int]]:
+    """Поправка фона по областям CON — плоскость a + b·x + c·y на каждую (NaN вне поля).
+
+    1. Область с достаточным свободным небом, протяжённым по обеим осям, — своя робастная плоскость.
+    2. Остальные — фронтом от решённых, от больших областей к малым: наклон — среднее соседей
+       (с весом по длине общей границы), уровень — по ступеньке на границе с уже исправленными соседями.
+    3. Где ступеньку не измерить (внутри туманности: яркие пиксели исключены) — продолжается
+       плоскость соседей: средние a, b, c с весом по длине границы.
+    4. Область без решённых соседей — плоскость ближайшей решённой.
+    Поправка = плоскость − общий уровень неба: средний фон кадра не меняется.
+    """
+    finite = np.isfinite(a) & (tiles >= 0)
+    free = finite & ~source_mask(a, c, scale_arcsec, for_tiles=True)
+    if not free.any():
+        return np.zeros_like(a), {"tiles": 0, "measured": 0, "matched": 0, "continued": 0}
+    regions = np.where(finite, tiles, -1).astype(np.int32)
+    n = int(regions.max()) + 1
+    area = np.bincount(regions[finite].ravel(), minlength=n)
+    lab = np.where(free, regions, -1)
+    counts = np.bincount(lab[lab >= 0].ravel(), minlength=n)
+    min_px = max(1, int(round(c.tile_min_area_arcsec2 / scale_arcsec**2)))
+    min_ext = c.tile_min_extent_arcsec / scale_arcsec
+    level = float(np.median(a[free]))
+    planes = np.full((n, 3), np.nan)
+
+    ys_all, xs_all = np.nonzero(lab >= 0)
+    labs = lab[ys_all, xs_all]
+    order = np.argsort(labs, kind="stable")
+    ys_all, xs_all, labs = ys_all[order], xs_all[order], labs[order]
+    starts = np.searchsorted(labs, np.arange(n + 1))
+    for r in np.argsort(-counts, kind="stable"):
+        cnt = counts[r]
+        if cnt < min_px or cnt < c.tile_min_free_fraction * area[r]:
+            continue
+        ys, xs = ys_all[starts[r]:starts[r + 1]], xs_all[starts[r]:starts[r + 1]]
+        if np.ptp(xs) < min_ext or np.ptp(ys) < min_ext:
+            continue  # узкая: наклон не измерить — от соседей
+        step = max(1, ys.size // PLANE_MAX_POINTS)
+        ys, xs = ys[::step], xs[::step]
+        planes[r] = fit_plane(xs.astype(np.float64), ys.astype(np.float64), a[ys, xs].astype(np.float64))
+    if not np.isfinite(planes[:, 0]).any():
+        r = int(np.argmax(counts))
+        planes[r] = [float(np.median(a[lab == r])), 0.0, 0.0]
+    measured = int(np.isfinite(planes[:, 0]).sum())
+
+    nbrs: dict[int, list[tuple[int, int]]] = {}
+    for (i, j), m in adjacency(regions).items():
+        nbrs.setdefault(i, []).append((j, m))
+        nbrs.setdefault(j, []).append((i, m))
+    bright = _bright_mask(a, free, c)
+    yy, xx = np.indices(a.shape)
+    idx = np.clip(regions, 0, None)
+    n_matched = n_continued = 0
+    while True:
+        solved = np.isfinite(planes[:, 0])
+        frontier = [r for r in range(n) if area[r] and not solved[r] and any(solved[j] for j, _ in nbrs.get(r, []))]
+        if not frontier:
+            break
+        frontier.sort(key=lambda r: -area[r])
+        slopes = {}
+        for r in frontier:
+            ws = [(planes[j], m) for j, m in nbrs[r] if solved[j]]
+            slopes[r] = sum(p * m for p, m in ws) / sum(m for _, m in ws)
+        p0, pb, pc = np.full(n, np.nan), np.zeros(n), np.zeros(n)
+        p0[solved], pb[solved], pc[solved] = planes[solved, 0], planes[solved, 1], planes[solved, 2]
+        for r, s in slopes.items():
+            p0[r], pb[r], pc[r] = 0.0, s[1], s[2]
+        w = a - (p0[idx] + pb[idx] * xx + pc[idx] * yy)
+        w[(regions < 0) | ~np.isfinite(p0[idx])] = np.nan
+        steps = boundary_steps(w, regions, bright | ~np.isfinite(w), c.tile_band_px)
+        for r in frontier:
+            est = []
+            for (i, j), (st, m) in steps.items():
+                if i == r and solved[j]:
+                    est.append((st, m))
+                elif j == r and solved[i]:
+                    est.append((-st, m))
+            if est:
+                a0 = sum(v * m for v, m in est) / sum(m for _, m in est)
+                planes[r] = [a0, slopes[r][1], slopes[r][2]]
+                n_matched += 1
+            else:
+                planes[r] = slopes[r]  # внутри туманности: продолжить плоскость соседей
+                n_continued += 1
+
+    corr = planes[idx, 0] + planes[idx, 1] * xx + planes[idx, 2] * yy - level
+    corr = np.where(finite, corr, np.nan).astype(np.float32)
+    unknown = finite & ~np.isfinite(corr)
+    if unknown.any() and np.isfinite(corr).any():
+        has = np.isfinite(corr)
+        near = ndimage.distance_transform_edt(~has, return_distances=False, return_indices=True)
+        src = np.clip(regions[tuple(near)], 0, None)
+        alt = planes[src, 0] + planes[src, 1] * xx + planes[src, 2] * yy - level
+        corr = np.where(unknown, alt, corr).astype(np.float32)
+    corr[~finite] = np.nan
+    return corr, {"tiles": int((area > 0).sum()), "measured": measured, "matched": n_matched, "continued": n_continued}
+
+
+def boundary_jumps(a: np.ndarray, regions: np.ndarray, sky: np.ndarray, band_px: int) -> tuple[float, int]:
+    """Средний |скачок| фона поперёк границ областей CON на пустом небе, в единицах σ шума фона."""
+    ok = sky & np.isfinite(a) & (regions >= 0)
+    if ok.sum() < 1000:
+        return 0.0, 0
+    steps = boundary_steps(a, np.where(np.isfinite(a), regions, -1), ~ok, band_px)
+    if not steps:
+        return 0.0, 0
+    v = a[ok]
+    _, _, std = sigma_clipped_stats(v[:: max(1, v.size // 2_000_000)], sigma=CLIP_SIGMA)
+    tot = sum(abs(s) * m for s, m in steps.values())
+    cnt = sum(m for _, m in steps.values())
+    return (round(tot / cnt / std, 4) if std else 0.0), len(steps)

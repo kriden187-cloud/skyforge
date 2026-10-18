@@ -27,4 +27,4 @@ report:
     - { name: sky, x: 250, y: 2050, size: 400 }    # пустое небо слева под туманностью: полосы и зелёный прямоугольник
     - { name: core, x: 1151, y: 1162, size: 160 }  # центральная звезда
     - { name: edge, x: 500, y: 1018, size: 400 }   # граница оболочки
-  baseline: phase-3c      # принятый результат для сравнения: data/baselines/ngc3132/phase-3c/
+  baseline: phase-3d      # принятый результат для сравнения: data/baselines/ngc3132/phase-3d/

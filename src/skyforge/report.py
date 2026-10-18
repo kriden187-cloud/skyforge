@@ -122,6 +122,9 @@ def _note(key: str, info: dict[str, Any]) -> str | None:
     note = (f"Маска туманности: {info['nebula_percent']}% кадра · маска звёзд: {info.get('star_mask_percent', '—')}% кадра "
             f"(звёзды ищутся по {info.get('star_detect_filter', '—')}).")
     if info.get("blocks"):
+        parts = [f"{f}: {b['jumps_before']:.3g}σ → {b['jumps_after']:.3g}σ" for f, b in info["blocks"].items() if "jumps_before" in b]
+        if parts:
+            note += " Средний |скачок| фона на границах областей CON (пустое небо): " + " · ".join(parts) + "."
         parts = [f"{f}: {b['before']:.3g} → {b['after']:.3g} (шум {b['noise']:.3g})" for f, b in info["blocks"].items()]
         note += " Разброс медиан блоков по пустому небу: " + " · ".join(parts)
     return note

@@ -16,7 +16,7 @@ import numpy as np
 from scipy import ndimage
 
 from skyforge.align import load_aligned, load_tiles, read_aligned_meta
-from skyforge.background import background_model, tile_pedestal
+from skyforge.background import background_model, boundary_jumps, tile_pedestal, tile_planes
 from skyforge.compose import compose_layers
 from skyforge.config import Config
 from skyforge.log import SkyforgeError, console
@@ -30,7 +30,7 @@ from skyforge.stretch import stretch_array
 REVEAL_BLACK, REVEAL_WHITE, REVEAL_A = 1.0, 90.0, 0.02
 
 
-CLEAN_VERSION = 7  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
+CLEAN_VERSION = 8  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
 
 
 def enabled(cfg: Config) -> bool:
@@ -137,6 +137,7 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     info: dict[str, Any] = {"enabled": True, "filters": {}}
     models, masks = {}, {}
     star_masks = {}
+    tile_maps: dict[str, np.ndarray] = {}
     for f, a in before.items():
         out = a
         fi: dict[str, Any] = {}
@@ -153,10 +154,13 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
             if bc.tiles and tiles is None:
                 console.print(f"  [yellow]{f}: в файле нет слоя CON/CTX — плитки не выравниваю[/]")
             if tiles is not None:
-                ped, ti = tile_pedestal(out, tiles, bc, scale)
+                fit = tile_planes if bc.tile_model == "plane" else tile_pedestal
+                ped, ti = fit(out, tiles, bc, scale)
                 out = out - np.nan_to_num(ped)
                 model += np.nan_to_num(ped)
-                fi.update(tiles=ti["tiles"], tiles_measured=ti["measured"], tiles_matched=ti["matched"])
+                fi.update(tiles=ti["tiles"], tiles_measured=ti["measured"], tiles_matched=ti["matched"],
+                          tiles_continued=ti.get("continued", 0))
+                tile_maps[f] = np.nan_to_num(ped)
             mask = np.zeros(out.shape, dtype=bool)
             if bc.smooth:
                 smooth, mask, box = background_model(out, bc, scale)
@@ -197,8 +201,17 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
             b0, n0 = block_spread(before[f], sky, cfg.background.block_px)
             b1, n1 = block_spread(after[f], sky, cfg.background.block_px)
             info["blocks"][f] = {"before": b0, "after": b1, "noise": n1, "ratio": round(b1 / n1, 3) if n1 else None}
-            console.print(f"  {f}: разброс медиан блоков {cfg.background.block_px}² по небу {b0:.3g} → {b1:.3g} "
-                          f"(шум фона {n1:.3g}, отношение {info['blocks'][f]['ratio']})")
+            tiles = load_tiles(cfg, paths, f)
+            if tiles is not None:
+                j0, nb = boundary_jumps(before[f], tiles, sky, cfg.background.tile_band_px)
+                j1, _ = boundary_jumps(after[f], tiles, sky, cfg.background.tile_band_px)
+                info["blocks"][f].update(jumps_before=j0, jumps_after=j1, boundaries=nb)
+            bf = info["blocks"][f]
+            console.print(f"  {f}: скачки на границах CON по небу {bf.get('jumps_before', '—')}σ → {bf.get('jumps_after', '—')}σ; "
+                          f"разброс медиан блоков {b0:.3g} → {b1:.3g} (шум {n1:.3g})")
+        if tile_maps:
+            _tile_planes_sheet(cfg, before, after, tile_maps, out_dir / "tile_planes.png")
+            info["extra_previews"] = ["tile_planes.png"]
     previews = []
     if cfg.background.subtract:
         _background_sheet(cfg, before, after, models, masks, out_dir / "background_model.png")
@@ -208,8 +221,28 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     if cfg.stars.fill_cores and holes_all.any():
         _core_sheet(cfg, before, after, holes_all, out_dir / "star_cores.png")
         previews.append("star_cores.png")
-    info["previews"] = previews
+    info["previews"] = previews + info.pop("extra_previews", [])
     return info
+
+
+def _tile_planes_sheet(cfg: Config, before: dict, after: dict, maps: dict, path: Path) -> None:
+    """По каждому фильтру: что вычли (карта поправки плиток) и пустое небо (кроп sky) до и после."""
+    from skyforge.preview import display_crop
+
+    crop = next((c for c in cfg.report.crops if c.name == "sky"), None)
+    size = cfg.preview.max_size // 4
+    images, labels = [], []
+    for f, m in maps.items():
+        lim = float(np.nanpercentile(np.abs(m), 99)) or 1.0
+        images.append(np.clip(0.5 + shrink(m, size) / (2 * lim), 0, 1))
+        labels.append(f"{f}: поправка плиток (±{lim:.3g})")
+        if crop is not None:
+            sl = display_crop(m.shape, crop.x, crop.y, crop.size, cfg.bin)
+            for name, src in (("до", before[f]), ("после", after[f])):
+                images.append(quick_norm(src[sl], REVEAL_BLACK, REVEAL_WHITE, REVEAL_A))
+                labels.append(f"{f}: небо {name}")
+    contact_sheet(images, labels, path, cols=3, tile_inches=3.2, interpolation="nearest",
+                  title=f"Поправка плиток ({cfg.background.tile_model}): на «после» прямых границ между участками неба быть не должно")
 
 
 def block_spread(a: np.ndarray, sky: np.ndarray, block: int) -> tuple[float, float]:
