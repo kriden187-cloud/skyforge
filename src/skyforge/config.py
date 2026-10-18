@@ -64,6 +64,8 @@ class ColorConfig(_Strict):
     # ярче, но при 4+ фильтрах сводит туманность в белый и жёлтый.
     blend: Literal["average", "screen"] = "average"
     saturation: float = Field(1.0, ge=0)
+    # Подъём теней после смешивания (asinh по яркости): меньше — сильнее, null — выкл.
+    lift: float | None = Field(None, gt=0)
     overrides: dict[str, str] = {}
     weights: dict[str, float] = {}
     neutral_background: bool = True

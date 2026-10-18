@@ -192,3 +192,15 @@ def test_finish_keeps_brightness():
     assert out.dtype == np.float32
     assert np.percentile(out, 99) == pytest.approx(np.percentile(rgb, 99), rel=0.1)
     assert np.median(out) == pytest.approx(np.median(rgb), abs=0.03)
+
+
+def test_lift_brightens_midtones_and_keeps_hue():
+    from skyforge.compose import lift
+
+    rgb = np.array([[[0.0, 0.0, 0.0], [0.2, 0.1, 0.05], [0.9, 0.8, 0.7]]], dtype=np.float32)
+    out = lift(rgb, 0.25)
+    assert np.allclose(out[0, 0], 0)
+    assert out[0, 1].sum() > rgb[0, 1].sum()  # средние тона светлее
+    assert np.allclose(out[0, 1] / out[0, 1, 0], rgb[0, 1] / rgb[0, 1, 0], atol=1e-5)  # оттенок тот же
+    assert out.max() <= 1
+    assert lift(rgb, None) is rgb

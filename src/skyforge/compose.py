@@ -87,6 +87,24 @@ def neutralize(rgb: np.ndarray, pct: float) -> tuple[np.ndarray, list[float]]:
     return np.clip(out, 0, 1), bg
 
 
+def lift(rgb: np.ndarray, b: float | None) -> np.ndarray:
+    """Подъём теней после смешивания: asinh по яркости, оттенок не меняется.
+
+    average делит каждый канал на число вкладов, и деталь, яркая лишь в паре фильтров
+    из шести (внешняя оболочка), темнеет втрое. Общая растяжка подняла бы её вместе с
+    фоном и стыками мозаики; здесь поднимаются средние тона уже собранной картинки.
+    b — смягчение кривой, меньше — сильнее; None — выкл.
+    """
+    if b is None:
+        return rgb
+    lum = rgb @ LUMA
+    y = np.arcsinh(lum / b) / np.arcsinh(1 / b)
+    k = np.where(lum > 0, y / np.maximum(lum, np.finfo(np.float32).tiny), 0)
+    out = rgb * k[..., None]
+    # Если какой-то канал ушёл за 1, уменьшаем весь пиксель, чтобы не сдвинуть оттенок.
+    return np.clip(out / np.maximum(out.max(axis=-1, keepdims=True), 1), 0, 1)
+
+
 def saturate(rgb: np.ndarray, s: float) -> np.ndarray:
     if s == 1.0:
         return rgb
@@ -100,6 +118,7 @@ def compose_layers(cfg: Config, layers: dict[str, np.ndarray]) -> tuple[np.ndarr
     bg = None
     if cfg.color.neutral_background:
         rgb, bg = neutralize(rgb, cfg.color.background_percentile)
+    rgb = lift(rgb, cfg.color.lift)
     rgb = saturate(rgb, cfg.color.saturation).astype(np.float32)
     info = {"colors": {f: "#%02x%02x%02x" % tuple(round(v * 255) for v in colors[f]) for f in colors},
             "background_removed": bg}
