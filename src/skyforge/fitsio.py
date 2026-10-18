@@ -77,6 +77,32 @@ def read_info(path: Path) -> FitsInfo:
     )
 
 
+def load_context(path: Path) -> np.ndarray | None:
+    """Карта областей с одинаковым набором экспозиций (слой CON у JWST, CTX у Hubble).
+
+    Каждому уникальному набору битов — свой номер 0…N-1. На стыках таких областей
+    в мозаике ступеньки фона, поэтому по ним выравниваются пьедесталы. None, если слоя нет.
+    """
+    with fits.open(path, memmap=True, mode="readonly") as hdul:
+        names = [h.name for h in hdul]
+        ext = next((n for n in ("CON", "CTX") if n in names), None)
+        if ext is None or hdul[ext].data is None:
+            return None
+        con = np.asarray(hdul[ext].data)
+        shape = hdul[_sci_index(hdul)].data.shape
+    if con.ndim == 2:
+        con = con[None]
+    if con.shape[1:] != shape:
+        return None
+    flat = np.ascontiguousarray(con.reshape(con.shape[0], -1).T)
+    if flat.shape[1] == 1:
+        _, labels = np.unique(flat[:, 0], return_inverse=True)
+    else:
+        rows = flat.view(np.dtype((np.void, flat.dtype.itemsize * flat.shape[1])))
+        _, labels = np.unique(rows, return_inverse=True)
+    return labels.reshape(shape).astype(np.int32)
+
+
 def load_sci(path: Path) -> tuple[np.ndarray, WCS]:
     """Научный кадр как float32 в нативном порядке байтов; пиксели без экспозиции → NaN."""
     with fits.open(path, memmap=True, mode="readonly") as hdul:

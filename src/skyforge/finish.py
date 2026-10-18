@@ -17,7 +17,7 @@ from scipy.ndimage import gaussian_filter
 from skimage.restoration import denoise_tv_chambolle
 
 from skyforge import __version__
-from skyforge.align import load_aligned
+from skyforge.clean import input_key
 from skyforge.compose import composite_path, compose_key
 from skyforge.config import Config, FinishConfig
 from skyforge.log import SkyforgeError, console
@@ -84,9 +84,8 @@ def finish(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     meta_path = cp.with_suffix(".json")
     if not cp.exists() or not meta_path.exists():
         raise SkyforgeError("нет цветной композиции: сначала skyforge compose")
-    _, _, align_meta = load_aligned(cfg, paths)
     cmeta = json.loads(meta_path.read_text(encoding="utf-8"))
-    if cmeta["key"] != compose_key(cfg, align_meta):
+    if cmeta["key"] != compose_key(cfg, input_key(cfg, paths)):
         raise SkyforgeError("композиция сделана с другими параметрами: перезапусти skyforge stretch и compose")
 
     rgb = np.load(cp)

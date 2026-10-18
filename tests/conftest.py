@@ -4,6 +4,8 @@ F090W  — пиксель 0.031", без поворота;
 F200W  — пиксель 0.031", поворот 12°, сдвиг опорной точки;
 F470N  — пиксель 0.063", поворот −20° (в заголовке FILTER=F444W, PUPIL=F470N, как у NIRCam).
 Данные пишутся big-endian, у каждого файла WHT=0 в углу и NaN-полоса по краю.
+Слой CON делит кадр на две «плитки», у правой пьедестал выше на TILE_STEP;
+у самой яркой звезды в F090W ядро выбито в NaN, как насыщение в настоящих i2d.
 """
 
 from __future__ import annotations
@@ -22,6 +24,8 @@ CENTER = (150.0, -40.0)
 RNG_SEED = 7
 N_STARS = 14
 MIN_SEPARATION = 0.6  # угловых секунд
+NOISE = 0.5
+TILE_STEP = 1.0  # 2σ шума: ступенька, которую видно глазом
 
 
 def star_field() -> list[tuple[float, float, float]]:
@@ -60,8 +64,13 @@ def render(wcs: WCS, shape: tuple[int, int], scale_arcsec: float, nebula_gain: f
     for sra, sdec, flux in star_field():
         x, y = wcs.world_to_pixel_values(sra, sdec)
         img += flux * np.exp(-0.5 * ((xx - x) ** 2 + (yy - y) ** 2) / sigma**2)
-    img += np.random.default_rng(seed).normal(0, 0.5, shape)
+    img += np.random.default_rng(seed).normal(0, NOISE, shape)
     return img
+
+
+def brightest_star_pixel(wcs: WCS) -> tuple[float, float]:
+    ra, dec, _ = max(star_field(), key=lambda s: s[2])
+    return wcs.world_to_pixel_values(ra, dec)
 
 
 FILTERS = {
@@ -76,16 +85,24 @@ def write_fits(path: Path, name: str, seed: int) -> None:
     filt, pupil, scale, shape, rot, shift, neb = FILTERS[name]
     wcs = make_wcs(scale, shape, rot, shift)
     data = render(wcs, shape, scale, neb, seed)
+    con = np.where(np.arange(shape[1])[None, :] < shape[1] // 2, 3, 7).repeat(shape[0], axis=0).astype(np.int32)
+    data[con == 7] += TILE_STEP
     data[:3, :] = np.nan
     wht = np.ones(shape, dtype=np.float32)
     wht[-6:, -6:] = 0
+    if name == "F090W":
+        x, y = brightest_star_pixel(wcs)
+        yy, xx = np.indices(shape)
+        core = np.hypot(xx - x, yy - y) < 2.5
+        data[core] = np.nan
+        wht[core] = 0
     primary = fits.PrimaryHDU()
     primary.header.update(TELESCOP="JWST", INSTRUME="NIRCAM", FILTER=filt, PUPIL=pupil, TARGPROP="TESTOBJ",
                           EFFEXPTM=1000.0, **{"DATE-BEG": "2022-06-03T00:00:00"})
     sci = fits.ImageHDU(data.astype(">f4"), header=wcs.to_header(), name="SCI")
     sci.header["BUNIT"] = "MJy/sr"
     path.parent.mkdir(parents=True, exist_ok=True)
-    fits.HDUList([primary, sci, fits.ImageHDU(wht, name="WHT")]).writeto(path)
+    fits.HDUList([primary, sci, fits.ImageHDU(con[None], name="CON"), fits.ImageHDU(wht, name="WHT")]).writeto(path)
 
 
 @pytest.fixture
@@ -112,5 +129,8 @@ def cfg() -> Config:
         "stretch": {"method": "asinh", "black": 1.0, "white": 99.9, "a": 0.05},
         "color": {"saturation": 1.1},
         "finish": {"denoise": 0.3, "sharpen": 0.5, "north_up": True},
+        "stars": {"fill_cores": True},
+        "background": {"subtract": True, "box_arcsec": 1.0, "mask_dilate_arcsec": 0.3, "mask_smooth_arcsec": 0.1,
+                       "tile_mask_dilate_arcsec": 0.4, "tile_min_area_arcsec2": 0.2, "min_free": 0.2},
         "preview": {"max_size": 400, "checker_cell": 32, "zoom": 64},
     })

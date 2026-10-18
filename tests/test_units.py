@@ -204,3 +204,45 @@ def test_lift_brightens_midtones_and_keeps_hue():
     assert np.allclose(out[0, 1] / out[0, 1, 0], rgb[0, 1] / rgb[0, 1, 0], atol=1e-5)  # оттенок тот же
     assert out.max() <= 1
     assert lift(rgb, None) is rgb
+
+
+# --- фаза 3: ядра звёзд и фон ---
+
+def test_core_holes_filled_but_edges_and_big_gaps_kept():
+    from skyforge.stars import fill_rings, find_core_holes
+
+    yy, xx = np.indices((60, 60))
+    a = (100 * np.exp(-((yy - 30) ** 2 + (xx - 30) ** 2) / 20)).astype(np.float32)
+    rim_max = a[np.hypot(yy - 30, xx - 30) >= 3].max()
+    a[np.hypot(yy - 30, xx - 30) < 3] = np.nan  # насыщенное ядро
+    a[:, :2] = np.nan                            # пустой край мозаики
+    a[50:52, 5:45] = np.nan                      # длинный пропуск, не ядро
+    holes = find_core_holes(a, max_area_px=40)
+    assert holes[30, 30] and not holes[10, 0] and not holes[50, 20]
+    out = fill_rings(a, holes)
+    assert np.isfinite(out[np.hypot(yy - 30, xx - 30) < 3]).all()
+    assert out[30, 30] >= rim_max - 1e-4
+    assert np.isnan(out[:, :2]).all() and np.isnan(out[50, 20])
+
+
+def test_tile_pedestal_removes_step_and_keeps_nebula():
+    from skyforge.background import tile_pedestal
+    from skyforge.config import BackgroundConfig
+
+    rng = np.random.default_rng(3)
+    yy, xx = np.indices((200, 200))
+    nebula = 30 * np.exp(-((yy - 100) ** 2 + (xx - 100) ** 2) / (2 * 15**2))
+    tiles = np.where(xx < 120, 0, 1).astype(np.int32)  # граница плиток проходит сквозь туманность
+    a = (5 + nebula + rng.normal(0, 1, (200, 200)) + np.where(tiles == 1, 1.5, 0)).astype(np.float32)
+    c = BackgroundConfig(subtract=True, tile_mask_dilate_arcsec=0.5, tile_min_area_arcsec2=0.1, mask_smooth_arcsec=0.1)
+    ped, info = tile_pedestal(a, tiles, c, scale_arcsec=0.05)
+    out = a - ped
+    assert info == {"tiles": 2, "measured": 2}
+    step = np.median(out[:, 150:][tiles[:, 150:] == 1]) - np.median(out[:, :50])
+    assert abs(step) < 0.15  # было 1.5
+    assert out[100, 100] - np.median(out[:, :50]) == pytest.approx(30, abs=1.5)  # туманность не съедена
+
+
+def test_with_param_creates_filter_weight():
+    c = Config.model_validate({"target": "X", "filters": ["F212N"]})
+    assert c.with_param("color.weights.F212N", 0.5).color.weights == {"F212N": 0.5}

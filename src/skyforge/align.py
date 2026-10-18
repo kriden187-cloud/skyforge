@@ -23,12 +23,12 @@ from skimage.registration import phase_cross_correlation
 from skyforge.config import Config
 from skyforge.fetch import Product, require_products
 from skyforge.filters import wavelength_um
-from skyforge.fitsio import load_sci
+from skyforge.fitsio import load_context, load_sci
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
 from skyforge.preview import checkerboard, contact_sheet, quick_norm, save_png, shrink
 
-ALIGN_VERSION = 1  # поднять, если меняется алгоритм: старый кеш станет недействительным
+ALIGN_VERSION = 2  # поднять, если меняется алгоритм: старый кеш станет недействительным
 
 
 # --- геометрия ---
@@ -131,6 +131,22 @@ def reproject_nan_safe(data: np.ndarray, wcs: WCS, grid_wcs: WCS, shape: tuple[i
     return out.astype(np.float32)
 
 
+def _reproject_labels(labels: np.ndarray, wcs_binned: WCS, factor: int, grid_wcs: WCS,
+                      shape: tuple[int, int]) -> np.ndarray:
+    """Карта областей CON на общую сетку: ближайший сосед, номера остаются целыми; вне поля −1."""
+    if factor > 1:
+        h, w = labels.shape
+        labels = labels[factor // 2:h // factor * factor:factor, factor // 2:w // factor * factor:factor]
+    out, _ = reproject_interp((labels.astype(np.float64), wcs_binned), grid_wcs, shape_out=shape,
+                              order="nearest-neighbor")
+    return np.where(np.isfinite(out), np.rint(out), -1).astype(np.int32)
+
+
+def load_tiles(cfg: Config, paths: Paths, f: str) -> np.ndarray | None:
+    p = aligned_dir(cfg, paths) / f"{f}.tiles.npy"
+    return np.load(p) if p.exists() else None
+
+
 def residual_shift(ref: np.ndarray, other: np.ndarray, max_side: int = 2048) -> tuple[float, float]:
     """Остаточный сдвиг между фильтрами (dy, dx) в пикселях сетки по взаимной корреляции центра кадра."""
     h, w = ref.shape
@@ -160,12 +176,16 @@ def _cache_key(cfg: Config, prods: dict[str, Product], reference: str) -> dict[s
     }
 
 
-def load_aligned(cfg: Config, paths: Paths) -> tuple[dict[str, np.ndarray], WCS, dict[str, Any]]:
-    d = aligned_dir(cfg, paths)
-    meta_path = d / "meta.json"
+def read_aligned_meta(cfg: Config, paths: Paths) -> dict[str, Any]:
+    meta_path = aligned_dir(cfg, paths) / "meta.json"
     if not meta_path.exists():
         raise SkyforgeError(f"нет совмещённых кадров для bin {cfg.bin}: сначала skyforge align")
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    return json.loads(meta_path.read_text(encoding="utf-8"))
+
+
+def load_aligned(cfg: Config, paths: Paths) -> tuple[dict[str, np.ndarray], WCS, dict[str, Any]]:
+    d = aligned_dir(cfg, paths)
+    meta = read_aligned_meta(cfg, paths)
     from astropy.io import fits
 
     wcs = WCS(fits.Header.fromstring(meta["wcs"], sep="\n"))
@@ -231,13 +251,17 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         out = reproject_nan_safe(data, wcs, grid_wcs, grid_shape, cfg.align.order)
         valid &= np.isfinite(out)
         np.save(d / f"{f}.npy", out)
+        labels = load_context(paths.abs(prod.path))
+        if labels is not None:
+            np.save(d / f"{f}.tiles.npy", _reproject_labels(labels, wcs, cfg.bin, grid_wcs, grid_shape))
         del data, out
 
     r0, r1, c0, c1 = inscribed_rect(valid, cfg.align.crop_min_coverage)
     console.print(f"  обрезка до общего поля: {c1 - c0}×{r1 - r0} px из {grid_shape[1]}×{grid_shape[0]}")
     for f in prods:
-        arr = np.load(d / f"{f}.npy")[r0:r1, c0:c1].copy()
-        np.save(d / f"{f}.npy", arr)
+        for name in (f"{f}.npy", f"{f}.tiles.npy"):
+            if (d / name).exists():
+                np.save(d / name, np.load(d / name)[r0:r1, c0:c1].copy())
     crop_wcs = grid_wcs.slice((slice(r0, r1), slice(c0, c1)))
 
     meta = {

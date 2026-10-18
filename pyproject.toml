@@ -10,6 +10,7 @@ dependencies = [
     "jinja2>=3.1.6",
     "matplotlib>=3.11.2",
     "numpy>=2.5.4",
+    "photutils>=3.1.1",
     "pillow>=13.0.0",
     "pydantic>=2.14.1",
     "python-dotenv>=1.2.4",

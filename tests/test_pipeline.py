@@ -37,7 +37,10 @@ def test_align_puts_stars_where_wcs_says(sky, cfg, tmp_path, north_up, bin_):
     assert all(np.isfinite(a).mean() > 0.97 for a in arrays.values())
 
     checked = 0
+    brightest = max(s[2] for s in star_field())
     for ra, dec, flux in star_field():
+        if flux == brightest:
+            continue  # у неё выбито «насыщенное» ядро, центроид дыры не показатель
         x, y = wcs.world_to_pixel_values(ra, dec)
         xi, yi = int(round(float(x))), int(round(float(y)))
         r = 4
@@ -77,17 +80,42 @@ def test_full_run_is_reproducible_and_raw_untouched(sky, cfg, tmp_path):
         assert sha(a / name) == sha(b / name), f"{name} отличается между прогонами"
     assert {p: sha(p) for p in sky.inbox.rglob("*.fits")} == raw_before
 
-    for img in ("inspect_sheet.png", "align_check.png", "align_zoom.png", "stretch_hist.png",
+    for img in ("inspect_sheet.png", "align_check.png", "align_zoom.png", "background_model.png", "star_cores.png",
+                "stretch_hist.png",
                 "compose.png", "finish_zoom.png", "report.html", "config.yaml"):
         assert (a / img).exists(), img
     run = json.loads((a / "run.json").read_text(encoding="utf-8"))
-    assert set(run["stages"]) == {"fetch", "inspect", "align", "stretch", "compose", "finish"}
+    assert set(run["stages"]) == {"fetch", "inspect", "align", "clean", "stretch", "compose", "finish"}
+    cl = run["stages"]["clean"]["filters"]
+    assert cl["F090W"]["cores"] >= 1 and cl["F090W"]["tiles_measured"] == 2
 
     import tifffile
 
     t = tifffile.imread(a / "testobj.tif")
     assert t.dtype == np.uint16 and t.ndim == 3 and t.shape[2] == 3
     assert t.max() > 50000  # звёзды доходят до белого
+
+
+def test_tile_step_removed_in_pipeline(sky, cfg, tmp_path):
+    """Ступенька пьедестала между плитками CON уходит на этапе clean."""
+    from conftest import NOISE, TILE_STEP
+    from skyforge.clean import clean, load_input
+
+    align(cfg, sky, tmp_path / "o")
+    raw, _, _ = load_aligned(cfg, sky)
+    clean(cfg, sky, tmp_path / "o")
+    flat, _ = load_input(cfg, sky)
+    from skyforge.align import load_tiles
+
+    def step(arrs, f):
+        a, t = np.asarray(arrs[f]), load_tiles(cfg, sky, f)
+        sky_px = np.isfinite(a) & (a < np.nanmedian(a) + 2 * NOISE)
+        ids = sorted(set(np.unique(t[t >= 0])))
+        return np.median(a[sky_px & (t == ids[-1])]) - np.median(a[sky_px & (t == ids[0])])
+
+    for f in ("F090W", "F200W"):
+        assert step(raw, f) == pytest.approx(TILE_STEP, abs=0.3)
+        assert abs(step(flat, f)) < 0.2 * TILE_STEP
 
 
 def test_changing_one_number_changes_result(sky, cfg, tmp_path):
@@ -103,9 +131,10 @@ def test_cli_stages_and_sweep(sky, cfg, monkeypatch):
     (sky.root / "configs" / "testobj.yaml").write_text(cfg.to_yaml(), encoding="utf-8")
     monkeypatch.setenv("SKYFORGE_HOME", str(sky.root))
     runner = CliRunner()
-    for cmd in (["fetch", "testobj", "--offline"], ["inspect", "testobj"], ["align", "testobj"],
+    for cmd in (["fetch", "testobj", "--offline"], ["inspect", "testobj"], ["align", "testobj"], ["clean", "testobj"],
                 ["stretch", "testobj"], ["compose", "testobj"], ["finish", "testobj"],
-                ["sweep", "testobj", "--x", "stretch.a=0.01,0.1", "--y", "color.saturation=0.8,1.4"]):
+                ["sweep", "testobj", "--x", "stretch.a=0.01,0.1", "--y", "color.saturation=0.8,1.4"],
+                ["sweep", "testobj", "--x", "color.weights.F200W=1,0.5,0.2"]):
         res = runner.invoke(app, cmd)
         assert res.exit_code == 0, f"{cmd}: {res.output}"
     cur = sky.current("testobj")

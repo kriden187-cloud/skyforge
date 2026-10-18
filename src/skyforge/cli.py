@@ -133,6 +133,17 @@ def align(config: ConfigArg, bin_: BinOpt = None,
 
 @app.command()
 @_handle
+def clean(config: ConfigArg, bin_: BinOpt = None) -> None:
+    """Заполнить насыщенные ядра звёзд и вычесть модель фона (стыки мозаики, градиенты)."""
+    from skyforge.clean import clean as do
+
+    paths = _paths()
+    cfg = _load(config, paths, bin_)
+    _stage(cfg, paths, "clean", lambda out: do(cfg, paths, out))
+
+
+@app.command()
+@_handle
 def stretch(config: ConfigArg, bin_: BinOpt = None) -> None:
     """Вычесть фон, растянуть яркость (asinh/log/sqrt), нормировать в 0–1."""
     from skyforge.stretch import stretch as do
@@ -169,7 +180,7 @@ def finish(config: ConfigArg, bin_: BinOpt = None) -> None:
 def run(config: ConfigArg, bin_: BinOpt = None,
         offline: Annotated[bool, typer.Option(help="Не ходить в сеть, только кеш и inbox")] = False,
         force_align: Annotated[bool, typer.Option(help="Пересчитать совмещение заново")] = False) -> None:
-    """Весь конвейер: fetch → inspect → align → stretch → compose → finish → отчёт в out/<объект>/<дата-время>/."""
+    """Весь конвейер: fetch → inspect → align → clean → stretch → compose → finish → отчёт в out/<объект>/<дата-время>/."""
     paths = _paths()
     cfg = _load(config, paths, bin_)
     run_all(cfg, paths, offline=offline, force_align=force_align)

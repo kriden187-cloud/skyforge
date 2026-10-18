@@ -1274,6 +1274,25 @@ wheels = [
 ]
 
 [[package]]
+name = "photutils"
+version = "3.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "astropy" },
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/19/a3/df453dd5ce6e1601fa0cb4f5de0b4cee85530b02e5f43bd04c009837887b/photutils-3.1.1.tar.gz", hash = "sha256:32ea59ea38ed910374f7d75a5498b90ef1c5e839c2804f44f25fa024587f0506", size = 1798634, upload-time = "2026-10-16T23:51:29.355Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/11/22/053d9fd4e38beb5483e9f6e97145d11cd1ec33b0ac74895d8afd2b45891f/photutils-3.1.1-cp312-abi3-macosx_10_13_x86_64.whl", hash = "sha256:298d7a06022e5cbb97c3ec3a5bf6413dc24994afb21df6e46926af13390992a3", size = 2927844, upload-time = "2026-10-16T23:51:14.645Z" },
+    { url = "https://files.pythonhosted.org/packages/29/e2/6b8516df3b1c0e31b3369939ca6196eff0b5364eae6005425fda23e7dedf/photutils-3.1.1-cp312-abi3-macosx_11_0_arm64.whl", hash = "sha256:444efeab43cc673487689634381726cf0896bb2007144bf821771c1d5595cb6c", size = 2847973, upload-time = "2026-10-16T23:51:17.038Z" },
+    { url = "https://files.pythonhosted.org/packages/46/f8/6fac1552c075a84c35d8730e142fe63de7823d66d028dafdec09a6daf2a3/photutils-3.1.1-cp312-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ea158c54e2d514e0ff0d075d4615817e63ca891a6afc1290be5f253f682444b9", size = 9949677, upload-time = "2026-10-16T23:51:19.711Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/81/e5b1f72a993df7adb538df86ed993337fe052f7652b7d21f6859a52eb375/photutils-3.1.1-cp312-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:f772814d8680fe240a9dd66e6c7d02e5c83256308d461d2cd9386b57eeb49115", size = 10074674, upload-time = "2026-10-16T23:51:22.626Z" },
+    { url = "https://files.pythonhosted.org/packages/83/60/81f01bd7789eaba46a9c506f73b8c7bdb4a26190222c3cdee7f331983289/photutils-3.1.1-cp312-abi3-win_amd64.whl", hash = "sha256:79018ab170bfee272c3061524495b85893921299d00de53c3c06216dd96ed62e", size = 2744267, upload-time = "2026-10-16T23:51:25.453Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/ea/b09aa3f45d56c4451c85e22b6ac255c0292dbb2a54166120408eea4bac48/photutils-3.1.1-cp312-abi3-win_arm64.whl", hash = "sha256:8f5ac5bdc62875f0674de861b9bd08911d5e4d1c489f1019f2594277a44fd7bf", size = 2584757, upload-time = "2026-10-16T23:51:27.447Z" },
+]
+
+[[package]]
 name = "pillow"
 version = "13.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1874,6 +1893,7 @@ dependencies = [
     { name = "jinja2" },
     { name = "matplotlib" },
     { name = "numpy" },
+    { name = "photutils" },
     { name = "pillow" },
     { name = "pydantic" },
     { name = "python-dotenv" },
@@ -1899,6 +1919,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "matplotlib", specifier = ">=3.11.2" },
     { name = "numpy", specifier = ">=2.5.4" },
+    { name = "photutils", specifier = ">=3.1.1" },
     { name = "pillow", specifier = ">=13.0.0" },
     { name = "pydantic", specifier = ">=2.14.1" },
     { name = "python-dotenv", specifier = ">=1.2.4" },

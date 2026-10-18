@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from skyforge.align import align
+from skyforge.clean import clean
 from skyforge.compose import compose
 from skyforge.config import Config
 from skyforge.fetch import fetch
@@ -22,6 +23,7 @@ from skyforge.stretch import stretch
 LOOK = {
     "inspect": ("inspect_sheet.png", "на каждом превью узнаётся объект"),
     "align": ("align_check.png, align_zoom.png", "звёзды на границах клеток не смещены, нет цветных ореолов"),
+    "clean": ("background_model.png, star_cores.png", "стыки плиток ушли в модель фона, ядро звезды белое"),
     "stretch": ("stretch_hist.png, stretch_sheet.png", "пик фона у нуля, детали туманности не выжжены"),
     "compose": ("compose.png", "фон нейтральный, структура как в пресс-релизе"),
     "finish": ("finish_zoom.png", "нет «пластилина» от денойза и ореолов от резкости"),
@@ -60,6 +62,7 @@ def run_all(cfg: Config, paths: Paths, *, offline: bool = False, force_align: bo
     run_stage("fetch", lambda: fetch_stage(cfg, paths, offline=offline), out_dir)
     run_stage("inspect", lambda: inspect(cfg, paths, out_dir), out_dir)
     run_stage("align", lambda: align(cfg, paths, out_dir, force=force_align), out_dir)
+    run_stage("clean", lambda: clean(cfg, paths, out_dir), out_dir)
     run_stage("stretch", lambda: stretch(cfg, paths, out_dir), out_dir)
     run_stage("compose", lambda: compose(cfg, paths, out_dir), out_dir)
     run_stage("finish", lambda: finish(cfg, paths, out_dir), out_dir)

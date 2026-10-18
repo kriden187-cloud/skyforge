@@ -62,6 +62,7 @@ def contact_sheet(
     cols: int | None = None,
     title: str | None = None,
     tile_inches: float = 4.0,
+    interpolation: str = "lanczos",
 ) -> Path:
     """Лист картинок с подписями (серые или цветные, значения 0–1)."""
     n = len(images)
@@ -74,7 +75,7 @@ def contact_sheet(
     for ax, img, label in zip(axes.flat, images, labels):
         img = np.nan_to_num(img, nan=0.0)
         ax.imshow(np.clip(img, 0, 1), cmap="gray" if img.ndim == 2 else None, vmin=0, vmax=1,
-                  interpolation="lanczos")
+                  interpolation=interpolation)
         ax.set_title(label, color="#ddd", fontsize=11)
     if title:
         fig.suptitle(title, color="#fff", fontsize=13)

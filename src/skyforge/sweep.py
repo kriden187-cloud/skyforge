@@ -11,7 +11,7 @@ from typing import Any
 
 import numpy as np
 
-from skyforge.align import load_aligned
+from skyforge.clean import load_input
 from skyforge.compose import compose_layers
 from skyforge.config import Config, SweepAxis
 from skyforge.log import console
@@ -26,23 +26,29 @@ def _fmt(v: float) -> str:
 
 def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
           y: SweepAxis | None = None) -> dict[str, Any]:
+    # Только --x из командной строки — одна строка вариантов (например, вес одного фильтра).
+    one_row = x is not None and y is None
     x = x or cfg.sweep.x
-    y = y or cfg.sweep.y
-    arrays, _, _ = load_aligned(cfg, paths)
+    y = None if one_row else (y or cfg.sweep.y)
+    arrays, _ = load_input(cfg, paths)
     tile = max(200, cfg.preview.max_size // max(len(x.values), 1))
     small = {f: shrink(np.asarray(a), tile) for f, a in arrays.items()}
 
     images, labels = [], []
-    for yv in y.values:
+    for yv in (y.values if y else [None]):
         for xv in x.values:
-            c = cfg.with_param(x.param, xv).with_param(y.param, yv)
+            c = cfg.with_param(x.param, xv)
+            label = f"{x.param}={_fmt(xv)}"
+            if y is not None:
+                c = c.with_param(y.param, yv)
+                label += f" · {y.param}={_fmt(yv)}"
             layers = {}
             for f, a in arrays.items():
                 layers[f], _ = stretch_array(small[f], c.stretch.for_filter(f), stats_from=a)
             rgb, _ = compose_layers(c, layers)
             images.append(rgb)
-            labels.append(f"{x.param}={_fmt(xv)} · {y.param}={_fmt(yv)}")
-            console.print(f"  {labels[-1]}")
-    contact_sheet(images, labels, out_dir / "sweep.png", cols=len(x.values),
-                  title=f"{cfg.target}: столбцы — {x.param}, строки — {y.param}")
-    return {"x": x.model_dump(), "y": y.model_dump(), "previews": ["sweep.png"]}
+            labels.append(label)
+            console.print(f"  {label}")
+    title = f"{cfg.target}: столбцы — {x.param}" + (f", строки — {y.param}" if y else "")
+    contact_sheet(images, labels, out_dir / "sweep.png", cols=len(x.values), title=title)
+    return {"x": x.model_dump(), "y": y.model_dump() if y else None, "previews": ["sweep.png"]}

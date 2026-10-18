@@ -15,7 +15,6 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 
-from skyforge.align import load_aligned
 from skyforge.config import Config, StretchConfig
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
@@ -66,8 +65,8 @@ def stretched_dir(cfg: Config, paths: Paths) -> Path:
     return paths.work(cfg.slug, cfg.bin) / "stretched"
 
 
-def stretch_key(cfg: Config, align_meta: dict[str, Any]) -> dict[str, Any]:
-    return {"align": align_meta["key"], "stretch": cfg.stretch.model_dump(mode="json")}
+def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
+    return {"input": in_key, "stretch": cfg.stretch.model_dump(mode="json")}
 
 
 def stretch_all(cfg: Config, arrays: dict[str, np.ndarray]) -> tuple[dict[str, np.ndarray], dict[str, dict]]:
@@ -78,7 +77,9 @@ def stretch_all(cfg: Config, arrays: dict[str, np.ndarray]) -> tuple[dict[str, n
 
 
 def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
-    arrays, _, meta = load_aligned(cfg, paths)
+    from skyforge.clean import load_input  # clean сам использует растяжку для превью
+
+    arrays, in_key = load_input(cfg, paths)
     if not arrays:
         raise SkyforgeError("среди совмещённых кадров нет фильтров из конфига")
     d = stretched_dir(cfg, paths)
@@ -92,7 +93,7 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
         s = cfg.stretch.for_filter(f)
         console.print(f"  {f}: фон {stats[f]['black_value']:.4g} → 0, белая точка {stats[f]['white_value']:.4g} → 1, "
                       f"{s.method} a={s.a}, выжжено {stats[f]['white_clipped_percent']}%")
-    (d / "meta.json").write_text(json.dumps({"key": stretch_key(cfg, meta), "filters": list(stretched), "stats": stats},
+    (d / "meta.json").write_text(json.dumps({"key": stretch_key(cfg, in_key), "filters": list(stretched), "stats": stats},
                                             ensure_ascii=False, indent=2), encoding="utf-8")
 
     pv = cfg.preview.max_size

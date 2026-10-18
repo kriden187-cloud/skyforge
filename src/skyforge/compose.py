@@ -15,7 +15,6 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 
-from skyforge.align import load_aligned
 from skyforge.config import ColorConfig, Config
 from skyforge.filters import sort_by_wavelength, wavelength_um
 from skyforge.log import SkyforgeError, console
@@ -129,29 +128,31 @@ def composite_path(cfg: Config, paths: Paths) -> Path:
     return paths.work(cfg.slug, cfg.bin) / "composite.npy"
 
 
-def compose_key(cfg: Config, align_meta: dict[str, Any]) -> dict[str, Any]:
-    return {**stretch_key(cfg, align_meta), "filters": cfg.filters, "color": cfg.color.model_dump(mode="json")}
+def compose_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
+    return {**stretch_key(cfg, in_key), "filters": cfg.filters, "color": cfg.color.model_dump(mode="json")}
 
 
 def load_stretched(cfg: Config, paths: Paths) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
-    _, _, align_meta = load_aligned(cfg, paths)
+    from skyforge.clean import input_key  # clean импортирует compose для превью
+
+    in_key = input_key(cfg, paths)
     d = stretched_dir(cfg, paths)
     meta_path = d / "meta.json"
     if not meta_path.exists():
         raise SkyforgeError("нет растянутых кадров: сначала skyforge stretch")
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    if meta["key"] != stretch_key(cfg, align_meta):
+    if meta["key"] != stretch_key(cfg, in_key):
         raise SkyforgeError("растяжка сделана с другими параметрами или кадрами: перезапусти skyforge stretch")
     want = [f for f in meta["filters"] if not cfg.filters or f in cfg.filters]
-    return {f: np.load(d / f"{f}.npy") for f in want}, align_meta
+    return {f: np.load(d / f"{f}.npy") for f in want}, in_key
 
 
 def compose(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
-    layers, align_meta = load_stretched(cfg, paths)
+    layers, in_key = load_stretched(cfg, paths)
     rgb, info = compose_layers(cfg, layers)
     np.save(composite_path(cfg, paths), rgb)
     composite_path(cfg, paths).with_suffix(".json").write_text(
-        json.dumps({"key": compose_key(cfg, align_meta), **info}, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps({"key": compose_key(cfg, in_key), **info}, ensure_ascii=False, indent=2), encoding="utf-8")
     for f, col in info["colors"].items():
         console.print(f"  {f} ({wavelength_um(f, cfg.mission, cfg.instrument):.2f} мкм) → {col}")
 

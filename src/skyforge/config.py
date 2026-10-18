@@ -29,6 +29,37 @@ class AlignConfig(_Strict):
     crop_min_coverage: float = Field(0.99, gt=0, le=1)
 
 
+class StarsConfig(_Strict):
+    # Насыщенные ядра в i2d — дыры NaN с WHT=0 внутри поля (слоя DQ в продуктах уровня 3 нет).
+    fill_cores: bool = False
+    max_core_arcsec: float = Field(2.0, gt=0, description="дыры шире этого — не ядра, а пропуски мозаики")
+
+
+class BackgroundConfig(_Strict):
+    subtract: bool = False
+    # Шаг 1: постоянная поправка на каждую область CON/CTX (свой набор экспозиций) — убирает
+    # ступеньки между плитками мозаики, которые гладкая модель только размазывает.
+    tiles: bool = True
+    tile_min_area_arcsec2: float = Field(1.0, gt=0, description="меньше свободной площади — поправка от соседа")
+    tile_mask_dilate_arcsec: float = Field(4.0, ge=0, description="отступ от туманности при оценке плиток")
+    # Шаг 2: гладкая модель по блокам — остаточные градиенты.
+    smooth: bool = True
+    # Значения по умолчанию подобраны на NGC 3132: блок 4" и маска 1.5" съедали ореол оболочки.
+    box_arcsec: float = Field(8.0, gt=0, description="размер блока сетки фона")
+    filter_size: int = Field(3, ge=1, description="медианное сглаживание сетки, в блоках (нечётное)")
+    mask_sigma: float = Field(1.5, gt=0, description="порог маски источников над фоном, в σ")
+    mask_smooth_arcsec: float = Field(1.0, ge=0, description="сглаживание перед порогом: ловит слабую туманность")
+    mask_dilate_arcsec: float = Field(3.0, ge=0, description="расширение маски вокруг источников")
+    min_free: float = Field(0.3, gt=0, le=1, description="доля свободных от маски пикселей, чтобы блок считался")
+
+    @field_validator("filter_size")
+    @classmethod
+    def _odd(cls, v: int) -> int:
+        if v % 2 == 0:
+            raise ValueError("background.filter_size должен быть нечётным")
+        return v
+
+
 class StretchConfig(_Strict):
     method: Literal["asinh", "log", "sqrt", "linear"] = "asinh"
     black: float = Field(0.5, ge=0, lt=100, description="процентиль фона → 0")
@@ -100,6 +131,7 @@ class PreviewConfig(_Strict):
     max_size: int = Field(1600, ge=200, description="длинная сторона превью, px")
     checker_cell: int = Field(256, ge=8, description="клетка шахматки на полном разрешении, px")
     zoom: int = Field(400, ge=64, description="сторона кропа 100%, px")
+    core_zoom: int = Field(48, ge=8, description="сторона кропа ядра звезды, px")
 
 
 class SweepAxis(_Strict):
@@ -126,6 +158,8 @@ class Config(_Strict):
     reference: str | None = None
     bin: int = Field(1, ge=1)
     align: AlignConfig = AlignConfig()
+    stars: StarsConfig = StarsConfig()
+    background: BackgroundConfig = BackgroundConfig()
     stretch: StretchConfig = StretchConfig()
     color: ColorConfig = ColorConfig()
     finish: FinishConfig = FinishConfig()
@@ -192,7 +226,9 @@ class Config(_Strict):
             if k not in node or not isinstance(node[k], dict):
                 raise ValueError(f"нет такого параметра: {dotted}")
             node = node[k]
-        if keys[-1] not in node:
+        # В словарях по фильтрам (color.weights.F212N) ключа может ещё не быть.
+        open_dict = len(keys) >= 2 and keys[-2] == "weights"
+        if keys[-1] not in node and not open_dict:
             raise ValueError(f"нет такого параметра: {dotted}")
         node[keys[-1]] = value
         return Config.model_validate(data)
