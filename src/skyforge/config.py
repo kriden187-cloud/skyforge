@@ -29,6 +29,48 @@ class AlignConfig(_Strict):
     crop_min_coverage: float = Field(0.99, gt=0, le=1)
 
 
+class DestripeConfig(_Strict):
+    # Полосы 1/f детекторов NIRCam: смещения строк внутри каждой области CON (до совмещения).
+    enabled: bool = True
+    columns: bool = True  # после строк — то же по столбцам внутри каждой области CON
+    # 0 — вычитать медиану строки целиком (уровень области тоже уходит в ноль, как в задании);
+    # N — только отклонение от скользящей медианы по N строкам: уровень и плавный ход фона остаются.
+    window_rows: int = Field(201, ge=0, description="окно скользящей медианы, строк; 0 — вычитать медиану целиком")
+    mask_grow_px: int = Field(5, ge=0, description="расширение маски туманности и звёзд")
+    # Дифракционные лучи длиннее ореола в маске звёзд: луч вдоль столбца тянет медиану столбца,
+    # и destripe вычитает его как полосу (тёмная полоса вдоль луча). Пиксели ярче фона на pixel_sigma
+    # шума (с расширением pixel_grow_px) в медианы не идут.
+    pixel_sigma: float = Field(3.0, gt=0, description="порог яркого пикселя над фоном, в σ шума")
+    pixel_grow_px: int = Field(2, ge=0, description="расширение маски ярких пикселей")
+    # Линия, у которой свободна лишь часть длины внутри области (остальное под маской), даёт медиану
+    # только этой части — не уровень линии; такие линии получают значение от соседей.
+    min_free_fraction: float = Field(0.5, ge=0, le=1, description="доля свободных пикселей линии внутри области")
+    min_pixels: int = Field(50, ge=1, description="меньше свободных пикселей в строке — медиана от соседних строк")
+    min_region_rows: int = Field(20, ge=1,
+                                 description="область CON меньше min_pixels×min_region_rows пикселей приписывается соседней")
+    preview_filter: str | None = None  # для destripe_check.png; по умолчанию — самый полосатый фильтр
+
+
+class CleanConfig(_Strict):
+    destripe: DestripeConfig = DestripeConfig()
+
+
+class ReportCrop(_Strict):
+    # Координаты — центр кропа на итоговой картинке при bin 1 (x вправо, y вниз, как в просмотрщике).
+    name: str
+    x: int
+    y: int
+    size: int = Field(400, ge=16)
+
+
+class ReportConfig(_Strict):
+    crops: list[ReportCrop] = []
+    # Принятый результат для сравнения: data/baselines/<slug>/<baseline>/<стиль>_bin<N>.png
+    # (сохраняется командой skyforge baseline). Отчёт строит карту разности, фактуру и кропы рядом.
+    baseline: str | None = None
+    texture_ring: tuple[int, int] = (30, 200)  # кольцо вокруг центральной звезды (кроп core), px при bin 1
+
+
 class StarsConfig(_Strict):
     # Насыщенные ядра в i2d — дыры NaN с WHT=0 внутри поля (слоя DQ в продуктах уровня 3 нет).
     fill_cores: bool = False
@@ -53,6 +95,15 @@ class BackgroundConfig(_Strict):
     tiles: bool = True
     tile_min_area_arcsec2: float = Field(1.0, gt=0, description="меньше свободной площади — поправка от соседа")
     tile_mask_dilate_arcsec: float = Field(4.0, ge=0, description="отступ от туманности при оценке плиток")
+    # Область без своего неба (целиком под маской) получает поправку сшивкой по границе с измеренными соседями.
+    tile_band_px: int = Field(8, ge=1, description="полоса по обе стороны границы областей для сшивки")
+    # В сшивке не участвуют яркие пиксели (лучи звёзд, яркая туманность): внутри туманности ступенька
+    # на границе сбивается её структурой — такие области получают поправку ближайшей измеренной, как раньше.
+    tile_pixel_sigma: float = Field(3.0, gt=0, description="яркий пиксель для сшивки, в σ шума фона")
+    # Своя медиана — только если свободного неба достаточно и по площади, и по доле области: узкая полоса
+    # дизеринга у ореола, где свободен край, иначе получит уровень этого края, а не свой.
+    tile_min_free_fraction: float = Field(0.3, ge=0, le=1, description="доля свободных пикселей для своей медианы")
+    block_px: int = Field(64, ge=8, description="блок для метрики остаточных ступенек фона (медианы блоков)")
     # Шаг 2: гладкая модель по блокам — остаточные градиенты.
     smooth: bool = True
     # Значения по умолчанию подобраны на NGC 3132: блок 4" и маска 1.5" съедали ореол оболочки.
@@ -73,6 +124,9 @@ class BackgroundConfig(_Strict):
 
 class StretchConfig(_Strict):
     method: Literal["asinh", "log", "sqrt", "linear"] = "asinh"
+    # masks — black считается по маске пустого неба, white — по маске туманности (этап clean):
+    # очистка фона и обрезка кадра не двигают растяжку. frame — по всему кадру, как до фазы 3d.
+    anchor: Literal["masks", "frame"] = "masks"
     black: float = Field(0.5, ge=0, lt=100, description="процентиль фона → 0")
     white: float = Field(99.8, gt=0, le=100, description="процентиль ярких деталей → 1")
     a: float = Field(0.02, gt=0, description="сила растяжки: меньше — сильнее")
@@ -134,8 +188,13 @@ class ColorConfig(_Strict):
     star_saturation: float = Field(1.0, ge=0, le=1)
     overrides: dict[str, str] = {}
     weights: dict[str, float] = {}
+    # Нейтральный фон: чёрная точка по самым тёмным пикселям, затем медианы R, G, B по маске пустого
+    # неба (не туманность и не звёзды, плюс sky_grow_px) приводятся к общему уровню — среднему из трёх.
     neutral_background: bool = True
     background_percentile: float = Field(10.0, gt=0, lt=100)
+    sky_grow_px: int = Field(10, ge=0, description="отступ маски пустого неба от туманности и звёзд")
+    # Поправка каналов применяется с весом: 1 вне маски туманности, 0 внутри, мягкий край sky_feather_px.
+    sky_feather_px: float = Field(20.0, gt=0, description="мягкий край маски туманности для поправки каналов, px")
 
     @model_validator(mode="before")
     @classmethod
@@ -205,6 +264,7 @@ class Config(_Strict):
     reference: str | None = None
     bin: int = Field(1, ge=1)
     align: AlignConfig = AlignConfig()
+    clean: CleanConfig = CleanConfig()
     stars: StarsConfig = StarsConfig()
     background: BackgroundConfig = BackgroundConfig()
     stretch: StretchConfig = StretchConfig()
@@ -212,6 +272,7 @@ class Config(_Strict):
     finish: FinishConfig = FinishConfig()
     preview: PreviewConfig = PreviewConfig()
     sweep: SweepConfig = SweepConfig()
+    report: ReportConfig = ReportConfig()
     credit: str = "NASA, ESA, CSA, STScI (MAST)"
     author: str = "Denis"
     # Картинка для сравнения (пресс-релиз): в sweep и в отчёте по стилям — в соседней клетке.
@@ -289,7 +350,7 @@ class Config(_Strict):
 
 # Поля, которые не влияют на пиксели: в хеш обработки не входят, иначе одна и та же картинка
 # из плоского конфига и из стиля measured дала бы разные файлы (хеш пишется в метаданные).
-NON_PROCESSING = ("style", "reference_image", "sweep", "preview")
+NON_PROCESSING = ("style", "reference_image", "sweep", "preview", "report")
 
 
 def deep_merge(base: dict, over: dict) -> dict:

@@ -54,6 +54,16 @@ def to_display(a: np.ndarray) -> np.ndarray:
     return np.ascontiguousarray(np.flipud(a))
 
 
+def display_crop(shape: tuple[int, ...], x: int, y: int, size: int, bin_: int = 1) -> tuple[slice, slice]:
+    """Кроп, заданный на итоговой картинке при bin 1 (y вниз), → срез массива сетки (строка 0 — низ)."""
+    h, w = shape[:2]
+    s = max(8, size // bin_)
+    cx, cy = x // bin_, (h - 1) - y // bin_
+    r0 = int(np.clip(cy - s // 2, 0, max(h - s, 0)))
+    c0 = int(np.clip(cx - s // 2, 0, max(w - s, 0)))
+    return slice(r0, r0 + s), slice(c0, c0 + s)
+
+
 def to_uint8(a01: np.ndarray) -> np.ndarray:
     a = np.nan_to_num(np.asarray(a01, dtype=np.float32), nan=0.0)
     return (np.clip(a, 0, 1) * 255 + 0.5).astype(np.uint8)

@@ -126,7 +126,7 @@ def _write_styles(sky, cfg):
         data.pop(k)
     data["finish"] = {"north_up": True}
     # Синтетический кадр всего ~8″: «звёзды» и «туманность» различаются на мелком масштабе.
-    data["stars"].update(max_star_area_arcsec2=0.3, halo_arcsec=0.1)
+    data["stars"].update(max_star_area_arcsec2=0.3, halo_arcsec=0.1)  # уже так в фикстуре; явно — для читаемости
     d = sky.root / "configs" / "testobj"
     d.mkdir()
     (d / "base.yaml").write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")

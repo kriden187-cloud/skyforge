@@ -40,13 +40,31 @@ def curve(x: np.ndarray, method: str, a: float) -> np.ndarray:
     return x
 
 
-def stretch_array(arr: np.ndarray, s: StretchConfig,
-                  stats_from: np.ndarray | None = None) -> tuple[np.ndarray, dict[str, float]]:
-    """stats_from — полный кадр, если arr его уменьшенная копия (для sweep)."""
-    smp = sample(arr if stats_from is None else stats_from)
+def masked_sample(a: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    v = np.asarray(a, dtype=np.float32)[mask]
+    v = v[np.isfinite(v)]
+    step = max(1, math.ceil(v.size / STATS_SAMPLE_PIXELS))
+    return v[::step]
+
+
+def stretch_array(arr: np.ndarray, s: StretchConfig, stats_from: np.ndarray | None = None,
+                  masks: tuple[np.ndarray, np.ndarray] | None = None) -> tuple[np.ndarray, dict[str, float]]:
+    """stats_from — полный кадр, если arr его уменьшенная копия (для sweep).
+    masks — (пустое небо, туманность) на сетке stats_from: при anchor masks чёрная точка берётся
+    по небу, белая — по туманности."""
+    src = arr if stats_from is None else stats_from
+    smp = sample(src)
     if not np.isfinite(smp).any():
         raise SkyforgeError("в кадре нет ни одного числа — только NaN")
-    lo, hi = (float(v) for v in np.nanpercentile(smp, [s.black, s.white]))
+    anchor = "frame"
+    if s.anchor == "masks" and masks is not None:
+        sky_v, neb_v = masked_sample(src, masks[0]), masked_sample(src, masks[1])
+        if sky_v.size > 100 and neb_v.size > 100:
+            lo = float(np.percentile(sky_v, s.black))
+            hi = float(np.percentile(neb_v, s.white))
+            anchor = "masks"
+    if anchor == "frame":
+        lo, hi = (float(v) for v in np.nanpercentile(smp, [s.black, s.white]))
     if not hi > lo:
         raise SkyforgeError(f"процентили black={s.black} и white={s.white} дают одно значение {lo}: кадр пустой?")
     x = (np.asarray(arr, dtype=np.float32) - np.float32(lo)) / np.float32(hi - lo)
@@ -57,6 +75,7 @@ def stretch_array(arr: np.ndarray, s: StretchConfig,
         "white_value": hi,
         "white_clipped_percent": round(float(np.nanmean(smp >= hi) * 100), 3),
         "median_after": round(float(np.nanmedian(sample(y))), 4),
+        "anchor": anchor,
     }
     return y, stats
 
@@ -66,13 +85,27 @@ def stretched_dir(cfg: Config, paths: Paths) -> Path:
 
 
 def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
-    return {"input": in_key, "stretch": cfg.stretch.model_dump(mode="json")}
+    key = {"input": in_key, "stretch": cfg.stretch.model_dump(mode="json")}
+    if cfg.stretch.anchor == "masks":
+        key["sky_grow_px"] = cfg.color.sky_grow_px  # маска неба зависит от отступа
+    return key
 
 
-def stretch_all(cfg: Config, arrays: dict[str, np.ndarray]) -> tuple[dict[str, np.ndarray], dict[str, dict]]:
+def load_masks(cfg: Config, paths: Paths) -> tuple[np.ndarray, np.ndarray] | None:
+    """(пустое небо, туманность) с этапа clean; None, если масок нет."""
+    from skyforge.clean import load_nebula_sd, load_sky_mask
+
+    sky, sd = load_sky_mask(cfg, paths), load_nebula_sd(cfg, paths)
+    if sky is None or sd is None:
+        return None
+    return sky, sd > 0
+
+
+def stretch_all(cfg: Config, arrays: dict[str, np.ndarray],
+                masks: tuple[np.ndarray, np.ndarray] | None = None) -> tuple[dict[str, np.ndarray], dict[str, dict]]:
     out, stats = {}, {}
     for f, a in arrays.items():
-        out[f], stats[f] = stretch_array(a, cfg.stretch.for_filter(f))
+        out[f], stats[f] = stretch_array(a, cfg.stretch.for_filter(f), masks=masks)
     return out, stats
 
 
@@ -87,12 +120,16 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     for old in d.glob("*.npy"):
         old.unlink()
 
-    stretched, stats = stretch_all(cfg, arrays)
+    masks = load_masks(cfg, paths) if cfg.stretch.anchor == "masks" else None
+    if cfg.stretch.anchor == "masks" and masks is None:
+        console.print("[yellow]  stretch.anchor: masks — масок нет (clean выключен), растяжка по всему кадру[/]")
+    stretched, stats = stretch_all(cfg, arrays, masks)
     for f, y in stretched.items():
         np.save(d / f"{f}.npy", y)
         s = cfg.stretch.for_filter(f)
         console.print(f"  {f}: фон {stats[f]['black_value']:.4g} → 0, белая точка {stats[f]['white_value']:.4g} → 1, "
-                      f"{s.method} a={s.a}, выжжено {stats[f]['white_clipped_percent']}%")
+                      f"{s.method} a={s.a}, по {'маскам' if stats[f]['anchor'] == 'masks' else 'кадру'}, "
+                      f"выжжено {stats[f]['white_clipped_percent']}%")
     (d / "meta.json").write_text(json.dumps({"key": stretch_key(cfg, in_key), "filters": list(stretched), "stats": stats},
                                             ensure_ascii=False, indent=2), encoding="utf-8")
 

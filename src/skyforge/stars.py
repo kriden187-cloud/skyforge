@@ -110,9 +110,10 @@ def star_mask(a: np.ndarray, s: StarsConfig, scale_arcsec: float) -> tuple[np.nd
     is_nebula[1:] = area > max_area
     stars = is_star[labels]
     r = int(round(s.halo_arcsec / scale_arcsec))
-    if r > 0:
-        disk = np.hypot(*np.indices((2 * r + 1, 2 * r + 1)) - r) <= r  # круглый ореол, не квадрат
-        stars = ndimage.maximum_filter(stars.astype(np.uint8), footprint=disk) > 0
+    if r > 0 and stars.any():
+        # Круглый ореол через карту расстояний: то же, что расширение кругом радиуса r, но за линейное
+        # время (круглое окно в maximum_filter не раскладывается по осям — 100 с на мозаику 4900²).
+        stars = ndimage.distance_transform_edt(~stars) <= r
     return stars, is_nebula[labels]
 
 

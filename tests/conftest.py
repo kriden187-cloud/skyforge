@@ -142,7 +142,8 @@ def cfg() -> Config:
         "stretch": {"method": "asinh", "black": 1.0, "white": 99.9, "a": 0.05},
         "color": {"saturation": 1.1},
         "finish": {"denoise": 0.3, "sharpen": 0.5, "north_up": True},
-        "stars": {"fill_cores": True},
+        # Кадр всего ~8″: ореол звезды по умолчанию (1.5″) накрыл бы почти всё поле.
+        "stars": {"fill_cores": True, "halo_arcsec": 0.1, "max_star_area_arcsec2": 0.3},
         "background": {"subtract": True, "box_arcsec": 1.0, "mask_dilate_arcsec": 0.3, "mask_smooth_arcsec": 0.1,
                        "tile_mask_dilate_arcsec": 0.4, "tile_min_area_arcsec2": 0.2, "min_free": 0.2},
         "preview": {"max_size": 400, "checker_cell": 32, "zoom": 64},

@@ -12,13 +12,13 @@ from typing import Any
 
 import numpy as np
 
-from skyforge.clean import load_input, load_nebula_sd, load_star_weight
+from skyforge.clean import load_input, load_nebula_sd, load_sky_mask, load_star_weight
 from skyforge.compose import compose_layers
 from skyforge.config import Config, SweepAxis
 from skyforge.log import console
 from skyforge.paths import Paths
 from skyforge.preview import contact_sheet, shrink
-from skyforge.stretch import stretch_array
+from skyforge.stretch import load_masks, stretch_array
 
 
 def _fmt(v: float) -> str:
@@ -38,17 +38,22 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
     weight = load_star_weight(cfg.with_param("color.star_saturation", 0.0), paths) if needs_stars else None
     needs_nebula = any(c.color.shadows.scope == "nebula" and c.color.shadows.value > 0 for c in _variants(cfg, x, y))
     sd = load_nebula_sd(cfg, paths, required=True) if needs_nebula else None
+    sky = load_sky_mask(cfg, paths)
+    masks = load_masks(cfg, paths)  # статистика растяжки — по полному кадру и полным маскам
+    sd = sd if sd is not None else load_nebula_sd(cfg, paths)
     if crop:
         cx, cy, side = crop
         sl = (slice(max(cy - side // 2, 0), cy + side // 2), slice(max(cx - side // 2, 0), cx + side // 2))
         small = {f: np.asarray(a)[sl] for f, a in arrays.items()}
         weight = weight.crop(sl) if weight is not None else None
         sd = sd[sl] if sd is not None else None
+        sky = sky[sl] if sky is not None else None
     else:
         small = {f: shrink(np.asarray(a), tile) for f, a in arrays.items()}
         factor = math.ceil(max(next(iter(arrays.values())).shape) / tile)
         weight = weight.shrink(factor) if weight is not None else None
         sd = shrink(sd, tile) if sd is not None else None  # расстояние остаётся в пикселях полной сетки
+        sky = shrink(sky.astype(np.float32), tile) > 0.99 if sky is not None else None
     ref = _reference_tile(cfg, paths, tile) if not crop else None
 
     images, labels = [], []
@@ -64,8 +69,8 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
                 label += f" · {y.param}={_fmt(yv)}"
             layers = {}
             for f, a in arrays.items():
-                layers[f], _ = stretch_array(small[f], c.stretch.for_filter(f), stats_from=a)
-            rgb, _ = compose_layers(c, layers, weight, sd)
+                layers[f], _ = stretch_array(small[f], c.stretch.for_filter(f), stats_from=a, masks=masks)
+            rgb, _ = compose_layers(c, layers, weight, sd, sky)
             images.append(rgb)
             labels.append(label)
             console.print(f"  {label}")

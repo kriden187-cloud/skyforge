@@ -29,7 +29,7 @@ from skyforge.paths import Paths
 from skyforge.preview import (PREVIEW_A, PREVIEW_BLACK, PREVIEW_VERSION, PREVIEW_WHITE, cache_previews, checkerboard,
                               contact_sheet, quick_norm, save_png, shrink)
 
-ALIGN_VERSION = 2  # поднять, если меняется алгоритм: старый кеш станет недействительным
+ALIGN_VERSION = 9  # поднять, если меняется алгоритм: старый кеш станет недействительным
 
 
 # --- геометрия ---
@@ -174,6 +174,9 @@ def _cache_key(cfg: Config, prods: dict[str, Product], reference: str) -> dict[s
         "bin": cfg.bin,
         "north_up": cfg.finish.north_up,
         "align": cfg.align.model_dump(),
+        "destripe": cfg.clean.destripe.model_dump(),
+        "stars": cfg.stars.model_dump(),            # маски для destripe
+        "background": cfg.background.model_dump(),
     }
 
 
@@ -240,6 +243,11 @@ def align(cfg: Config, paths: Paths, out_dir: Path, *, force: bool = False) -> d
         cache_previews(info["previews"], out_dir, d / "previews")
         pv_path.write_text(json.dumps({"preview": pv_key, "info": info}, ensure_ascii=False, indent=2),
                            encoding="utf-8")
+    if (d / "previews" / "destripe_check.png").exists() and "destripe_check.png" not in info["previews"]:
+        cache_previews(["destripe_check.png"], d / "previews", out_dir)
+        info["previews"] = [*info["previews"], "destripe_check.png"]
+    if meta.get("destripe"):
+        info["destripe"] = meta["destripe"]
     info.update({"cached": cached, "reference": reference, "shape": meta["shape"],
                  "crop": meta["crop"], "pixel_scale_arcsec": meta["pixel_scale_arcsec"]})
     return info
@@ -259,9 +267,17 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
                   f"{'север вверх' if cfg.finish.north_up else 'ориентация опорного кадра'}")
 
     valid = np.ones(grid_shape, dtype=bool)
+    stripes: dict[str, Any] = {}
+    keep: dict[str, Any] | None = None
     for f, prod in prods.items():
-        console.print(f"  {f}: репроекция…")
         data, wcs = load_sci(paths.abs(prod.path))
+        if cfg.clean.destripe.enabled:
+            data, stripes[f], kept = _destripe_native(cfg, data, wcs, load_context(paths.abs(prod.path)))
+            pf = cfg.clean.destripe.preview_filter
+            if (pf and f == pf.upper()) or (not pf and (keep is None or stripes[f]["before"] > keep["info"]["before"])):
+                keep = {"filter": f, "info": stripes[f], **kept}  # для превью: заданный или самый полосатый
+            del kept
+        console.print(f"  {f}: репроекция…")
         data, wcs = bin_image(data, wcs, cfg.bin)
         out = reproject_nan_safe(data, wcs, grid_wcs, grid_shape, cfg.align.order)
         valid &= np.isfinite(out)
@@ -278,6 +294,8 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
             if (d / name).exists():
                 np.save(d / name, np.load(d / name)[r0:r1, c0:c1].copy())
     crop_wcs = grid_wcs.slice((slice(r0, r1), slice(c0, c1)))
+    if keep is not None:
+        _destripe_preview(cfg, keep, crop_wcs, (r1 - r0, c1 - c0), d / "previews" / "destripe_check.png")
 
     meta = {
         "key": key,
@@ -286,11 +304,83 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         "shape": [r1 - r0, c1 - c0],
         "crop": [r0, r1, c0, c1],
         "pixel_scale_arcsec": round(float(np.mean(proj_plane_pixel_scales(crop_wcs))) * 3600, 5),
+        "destripe": stripes,
         # Заголовок построчно, чтобы читать обратно через Header.fromstring(sep="\n").
         "wcs": "\n".join(card.image for card in crop_wcs.to_header(relax=True).cards),
     }
     (d / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     return meta
+
+
+def _destripe_native(cfg: Config, data: np.ndarray, wcs: WCS,
+                     labels: np.ndarray | None) -> tuple[np.ndarray, dict[str, Any], dict[str, Any]]:
+    from skyforge.destripe import destripe, destripe_mask, step_metric
+
+    scale = float(np.mean(proj_plane_pixel_scales(wcs))) * 3600
+    mask = destripe_mask(data, cfg, scale)
+    out, info = destripe(data, labels, mask, cfg.clean.destripe)
+    c = cfg.clean.destripe
+    info.update(rows_before=round(step_metric(data, mask, labels, c, 1), 6),
+                rows_after=round(step_metric(out, mask, labels, c, 1), 6),
+                cols_before=round(step_metric(data, mask, labels, c, 0), 6),
+                cols_after=round(step_metric(out, mask, labels, c, 0), 6))
+    info["before"], info["after"] = info["rows_before"], info["rows_after"]
+    console.print(f"  destripe: |Δ медиан соседних строк| {info['rows_before']:.3g} → {info['rows_after']:.3g}, "
+                  f"столбцов {info['cols_before']:.3g} → {info['cols_after']:.3g}")
+    return out, info, {"before": data, "after": out, "mask": mask, "wcs": wcs, "scale": scale}
+
+
+def _destripe_preview(cfg: Config, keep: dict[str, Any], grid_wcs: WCS, grid_shape: tuple[int, int],
+                      path: Path) -> None:
+    """Пустое небо 100% до и после destripe в исходной сетке фильтра и профиль медиан строк."""
+    import matplotlib.pyplot as plt
+
+    sky = next((c for c in cfg.report.crops if c.name == "sky"), None)
+    if sky is None:
+        console.print("  [yellow]destripe_check.png: в report.crops нет кропа sky — превью пропущено[/]")
+        return
+    rs, cs = _display_to_grid(sky, grid_shape, cfg.bin)
+    ra, dec = grid_wcs.pixel_to_world_values((cs.start + cs.stop) / 2, (rs.start + rs.stop) / 2)
+    nx, ny = keep["wcs"].world_to_pixel_values(ra, dec)
+    grid_scale = float(np.mean(proj_plane_pixel_scales(grid_wcs))) * 3600
+    side = max(16, int(round((rs.stop - rs.start) * grid_scale / keep["scale"])))
+    h, w = keep["before"].shape
+    r0 = int(np.clip(round(float(ny)) - side // 2, 0, max(h - side, 0)))
+    c0 = int(np.clip(round(float(nx)) - side // 2, 0, max(w - side, 0)))
+    sl = (slice(r0, r0 + side), slice(c0, c0 + side))
+    before, after, mask = keep["before"][sl], keep["after"][sl], keep["mask"][sl]
+    lo, hi = np.nanpercentile(before[~mask], [1, 99]) if (~mask).any() else (0, 1)
+    norm = lambda a: np.clip((a - lo) / (hi - lo if hi > lo else 1), 0, 1)  # noqa: E731
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)  # строки целиком под маской — ожидаемо
+        prof_b = np.nanmedian(np.where(mask, np.nan, before), axis=1)
+        prof_a = np.nanmedian(np.where(mask, np.nan, after), axis=1)
+    fig = plt.figure(figsize=(11, 9), facecolor="white")
+    for i, (img, title) in enumerate(((before, "до destripe"), (after, "после destripe"))):
+        ax = fig.add_subplot(2, 2, i + 1)
+        ax.imshow(norm(img), cmap="gray", origin="lower", interpolation="nearest")
+        ax.set_title(f"{keep['filter']}, пустое небо 100% — {title}")
+        ax.axis("off")
+    ax = fig.add_subplot(2, 1, 2)
+    rows = np.arange(r0, r0 + len(prof_b))
+    ax.plot(rows, prof_b, color="#c0392b", lw=1, label=f"до (|Δ соседних строк| {keep['info']['rows_before']:.3g})")
+    ax.plot(rows, prof_a, color="#2471a3", lw=1, label=f"после ({keep['info']['rows_after']:.3g})")
+    ax.set_xlabel("строка детектора (исходная сетка)")
+    ax.set_ylabel("медиана строки по пустому небу")
+    ax.set_title("плавный ход фона остаётся, полосы — быстрые скачки от строки к строке — уходят")
+    ax.legend()
+    fig.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=90)
+    plt.close(fig)
+
+
+def _display_to_grid(crop: Any, shape: tuple[int, int], bin_: int) -> tuple[slice, slice]:
+    from skyforge.preview import display_crop
+
+    return display_crop(shape, crop.x, crop.y, crop.size, bin_)
 
 
 def _previews(cfg: Config, arrays: dict[str, np.ndarray], reference: str, meta: dict[str, Any],

@@ -53,6 +53,7 @@ uv run skyforge sweep ngc3132 --style showcase --x color.weights.F212N=0.15,0.08
 | `skyforge sweep ngc3132 --x color.weights.F212N=1,0.7,0.5,0.3` | одна строка вариантов по одному параметру | `sweep.png` |
 | `skyforge sweep ngc3132 --x color.star_saturation=1,0.5,0.2 --crop 600,450,500` | то же на кропе 100% (X,Y,сторона) | `sweep.png` |
 | `skyforge report` | пересобрать HTML для последнего запуска | `report.html` |
+| `skyforge baseline ngc3132 --name phase-3d --from out/ngc3132/<папка>` | сохранить итог как принятый: с ним сравнивает отчёт (`report.baseline`) | `baseline_diff.png`, `crops_compare.png` |
 | `skyforge cache list` / `prune` | место на диске, чистка `data/work/` | — |
 
 Отдельные команды пишут в `out/<объект>/current/` (у стилей — `current/<стиль>/`), `run` — в новую папку с датой. Для папки стилей нужен `--style`; вместо имени можно указать путь к любому YAML.

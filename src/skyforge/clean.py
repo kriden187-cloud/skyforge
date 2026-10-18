@@ -30,7 +30,7 @@ from skyforge.stretch import stretch_array
 REVEAL_BLACK, REVEAL_WHITE, REVEAL_A = 1.0, 90.0, 0.02
 
 
-CLEAN_VERSION = 3  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
+CLEAN_VERSION = 7  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
 
 
 def enabled(cfg: Config) -> bool:
@@ -59,6 +59,18 @@ def load_star_weight(cfg: Config, paths: Paths) -> StarMask | None:
     window = json.loads(meta.read_text(encoding="utf-8"))["star_window_px"]
     meta_data = json.loads(meta.read_text(encoding="utf-8"))
     return StarMask(np.load(p), window, meta_data["star_detect_filter"])
+
+
+def load_sky_mask(cfg: Config, paths: Paths) -> np.ndarray | None:
+    """Пустое небо: не туманность и не звёзды, с отступом color.sky_grow_px. None, если масок нет."""
+    d = clean_dir(cfg, paths)
+    if not (d / "nebula_sd.npy").exists() or not (d / "star_weight.npy").exists():
+        return None
+    g = cfg.color.sky_grow_px
+    stars = np.load(d / "star_weight.npy") > 0.01
+    if g > 0:
+        stars = ndimage.binary_dilation(stars, iterations=g)
+    return (np.load(d / "nebula_sd.npy") < -g) & ~stars
 
 
 def clean_dir(cfg: Config, paths: Paths) -> Path:
@@ -144,7 +156,7 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
                 ped, ti = tile_pedestal(out, tiles, bc, scale)
                 out = out - np.nan_to_num(ped)
                 model += np.nan_to_num(ped)
-                fi.update(tiles=ti["tiles"], tiles_measured=ti["measured"])
+                fi.update(tiles=ti["tiles"], tiles_measured=ti["measured"], tiles_matched=ti["matched"])
             mask = np.zeros(out.shape, dtype=bool)
             if bc.smooth:
                 smooth, mask, box = background_model(out, bc, scale)
@@ -178,6 +190,15 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     np.save(d / "nebula_sd.npy", sd)
     info["nebula_percent"] = round(float((sd > 0).mean() * 100), 1)
     console.print(f"  маска туманности: {info['nebula_percent']}% кадра")
+    sky = load_sky_mask(cfg, paths)
+    if sky is not None:
+        info["blocks"] = {}
+        for f in after:
+            b0, n0 = block_spread(before[f], sky, cfg.background.block_px)
+            b1, n1 = block_spread(after[f], sky, cfg.background.block_px)
+            info["blocks"][f] = {"before": b0, "after": b1, "noise": n1, "ratio": round(b1 / n1, 3) if n1 else None}
+            console.print(f"  {f}: разброс медиан блоков {cfg.background.block_px}² по небу {b0:.3g} → {b1:.3g} "
+                          f"(шум фона {n1:.3g}, отношение {info['blocks'][f]['ratio']})")
     previews = []
     if cfg.background.subtract:
         _background_sheet(cfg, before, after, models, masks, out_dir / "background_model.png")
@@ -189,6 +210,26 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
         previews.append("star_cores.png")
     info["previews"] = previews
     return info
+
+
+def block_spread(a: np.ndarray, sky: np.ndarray, block: int) -> tuple[float, float]:
+    """Разброс медиан блоков block×block по пустому небу (блоки, где неба не меньше половины)
+    и шум фона (σ пикселя неба с отсечкой). Ступеньки плиток видны как разброс блоков."""
+    from astropy.stats import sigma_clipped_stats
+
+    h, w = a.shape
+    meds = []
+    for y in range(0, h - block + 1, block):
+        for x in range(0, w - block + 1, block):
+            m = sky[y:y + block, x:x + block]
+            if m.mean() >= 0.5:
+                v = a[y:y + block, x:x + block][m]
+                v = v[np.isfinite(v)]
+                if v.size:
+                    meds.append(float(np.median(v)))
+    v = a[sky & np.isfinite(a)]
+    noise = float(sigma_clipped_stats(v[:: max(1, v.size // 2_000_000)], sigma=3.0)[2]) if v.size else 0.0
+    return (round(float(np.std(meds)), 6) if len(meds) > 1 else 0.0), round(noise, 6)
 
 
 def nebula_signed_distance(layers: dict[str, np.ndarray], cfg: Config, scale: float) -> np.ndarray:
@@ -272,7 +313,8 @@ def _core_sheet(cfg: Config, before: dict, after: dict, holes: np.ndarray, path:
         "neutral_background": False, "shadows": cfg.color.shadows.model_copy(update={"value": 0.0})})})
     renders = []
     for src in (before, after):
-        layers = {f: stretch_array(a[sl], cfg.stretch.for_filter(f), stats_from=a)[0] for f, a in src.items()}
+        layers = {f: stretch_array(a[sl], cfg.stretch.for_filter(f).model_copy(update={"anchor": "frame"}),
+                                   stats_from=a)[0] for f, a in src.items()}
         renders.append(compose_layers(c, layers)[0])
     contact_sheet(renders, ["до: дыры насыщения пустые", "после: ядро заполнено кольцами"], path, cols=2,
                   title="Ядро самой насыщенной звезды, 100%: должно быть белым, без цветной точки",

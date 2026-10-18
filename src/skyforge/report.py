@@ -17,6 +17,8 @@ STAGES = [
     ("stretch", "4. Растяжка", "Пик фона прижат к нулю, хвост гистограммы тянется вправо, детали не выжжены."),
     ("compose", "5. Цвет", "Фон нейтральный, без зелёного или фиолетового оттенка; структура как в пресс-релизе."),
     ("finish", "6. Финиш", "На кропе 100% нет «пластилина» от денойза и светлых ореолов от резкости."),
+    ("baseline", "7. Сравнение с принятым",
+     "Разность с предыдущим тегом по туманности — только там, где её ждали; фактура в кольце в пределах 10%; кропы без новых артефактов."),
     ("sweep", "Перебор параметров", "Выбери клетку, которая нравится, и перенеси её числа в YAML."),
 ]
 
@@ -47,6 +49,10 @@ a{color:var(--accent)}code{color:#c9d4ff}
 {% if reference %}<div><a href="{{ reference }}"><img src="{{ reference }}" alt="референс"></a><div class="muted">референс</div></div>{% endif %}
 <div><a href="{{ hero_full }}"><img src="{{ hero }}" alt="итог"></a>{% if reference %}<div class="muted">наш итог</div>{% endif %}</div></div>
 <div class="muted">Полный размер: {% for f in finals %}<a href="{{ f }}">{{ f }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</div></section>{% endif %}
+
+{% if crops %}<section><h2>Кропы приёмки, 100%</h2><div class="imgs">{% for c in crops %}
+<a href="{{ c.file }}"><img src="{{ c.file }}" alt="{{ c.name }}" style="image-rendering:pixelated"></a>{% endfor %}</div>
+<div class="muted">{% for c in crops %}{{ c.name }}{% if not loop.last %} · {% endif %}{% endfor %}</div></section>{% endif %}
 
 {% for s in sections %}<section id="{{ s.key }}"><h2>{{ s.title }}</h2>
 <div class="check">Проверка: {{ s.check }}</div>
@@ -81,6 +87,8 @@ def _table(key: str, info: dict[str, Any]) -> dict[str, Any] | None:
                 ("pixel_scale_arcsec", 'пиксель, "'), ("exptime_s", "экспозиция, с"), ("date_obs", "снят"),
                 ("nan_percent", "NaN, %"), ("size_mb", "МБ")]
         return {"head": [h for _, h in cols], "rows": [[r.get(k, "") for k, _ in cols] for r in info["filters"]]}
+    if key == "align" and info.get("destripe") and "shifts_px" not in info:
+        return None
     if key == "align" and "shifts_px" in info:
         rows = [[f, s["dy"], s["dx"]] for f, s in info["shifts_px"].items()]
         rows.insert(0, [f"{info['reference']} (опорный)", 0, 0])
@@ -96,11 +104,27 @@ def _table(key: str, info: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _note(key: str, info: dict[str, Any]) -> str | None:
-    """Размер масок числом: видно, когда маска вдруг накрывает полкадра без причины."""
+    """Размер масок и сила destripe числом: видно, когда что-то вдруг ведёт себя без причины."""
+    if key == "baseline":
+        if info.get("skipped"):
+            return f"Сравнение не построено: {info['skipped']}"
+        return (f"С {info['baseline']}: средняя |разность| по туманности {info['nebula_diff_mean']:.4f} "
+                f"(99-й процентиль {info['nebula_diff_p99']:.3f}); фактура σ в кольце {info['texture_ring_px'][0]}–"
+                f"{info['texture_ring_px'][1]} px: {info['texture_sigma_baseline']:.4f} → {info['texture_sigma']:.4f} "
+                f"({info['texture_change_percent']:+.1f}%)")
+    if key == "align" and info.get("destripe"):
+        parts = [f"{f}: строки {d.get('rows_before', d['before']):.3g} → {d.get('rows_after', d['after']):.3g}"
+                 + (f", столбцы {d['cols_before']:.3g} → {d['cols_after']:.3g}" if "cols_before" in d else "")
+                 for f, d in info["destripe"].items()]
+        return "Destripe, среднее |медиана строки − соседней| по пустому небу: " + " · ".join(parts)
     if key != "clean" or "nebula_percent" not in info:
         return None
-    return (f"Маска туманности: {info['nebula_percent']}% кадра · маска звёзд: {info.get('star_mask_percent', '—')}% кадра "
+    note = (f"Маска туманности: {info['nebula_percent']}% кадра · маска звёзд: {info.get('star_mask_percent', '—')}% кадра "
             f"(звёзды ищутся по {info.get('star_detect_filter', '—')}).")
+    if info.get("blocks"):
+        parts = [f"{f}: {b['before']:.3g} → {b['after']:.3g} (шум {b['noise']:.3g})" for f, b in info["blocks"].items()]
+        note += " Разброс медиан блоков по пустому небу: " + " · ".join(parts)
+    return note
 
 
 def build_report(out_dir: Path) -> Path:
@@ -134,6 +158,7 @@ def build_report(out_dir: Path) -> Path:
                  + f"{run.get('started', '')} · {out_dir.name}",
         hero=hero, hero_full=final_names[0] if final_names else hero, finals=final_names,
         reference=next((p.name for p in sorted(out_dir.glob("reference.*"))), None),
+        crops=stages.get("finish", {}).get("crops", []),
         sections=sections, hashes=hashes, config=config,
     )
     path = out_dir / "report.html"
@@ -166,8 +191,29 @@ table{border-collapse:collapse;font-size:13px;margin-top:6px}td{padding:2px 8px 
 <div class="muted" style="margin-top:8px">Отличия от base:</div>
 {% if s.diff %}<ul>{% for d in s.diff %}<li><code>{{ d }}</code></li>{% endfor %}</ul>{% else %}<div class="muted">нет — это base</div>{% endif %}
 </div>{% endfor %}
-</div></main></body></html>
+</div>
+{% for row in crop_rows %}<h2 style="margin-top:26px">Кроп {{ row.name }}, 100%</h2><div class="row">
+{% for c in row.cells %}<div class="card"><a href="{{ c.src }}"><img src="{{ c.src }}" alt="{{ c.style }}" style="image-rendering:pixelated"></a>
+<div class="muted">{{ c.style }}</div></div>{% endfor %}</div>{% endfor %}
+{% if baseline %}<h2 style="margin-top:26px">Сравнение с принятым ({{ baseline.name }})</h2>
+{% for b in baseline.rows %}<div class="card" style="margin-top:12px"><h2>{{ b.style }}</h2><div class="muted">{{ b.note }}</div>
+{% for im in b.images %}<a href="{{ im }}"><img src="{{ im }}" style="margin-top:8px"></a>{% endfor %}</div>{% endfor %}{% endif %}
+{% if background_check %}<h2 style="margin-top:26px">Фон по каналам (кроп sky)</h2>
+<a href="background_check.png"><img src="background_check.png" style="max-width:100%"></a>{% endif %}
+</main></body></html>
 """
+
+
+def _baseline_rows(top: Path, styles: list[str]) -> dict[str, Any] | None:
+    rows, name = [], None
+    for s in styles:
+        info = json.loads((top / s / "run.json").read_text(encoding="utf-8")).get("stages", {}).get("baseline", {})
+        if not info or info.get("skipped"):
+            continue
+        name = info["baseline"]
+        rows.append({"style": s, "note": _note("baseline", info),
+                     "images": [f"{s}/{im}" for im in info.get("previews", []) if (top / s / im).exists()]})
+    return {"name": name, "rows": rows} if rows else None
 
 
 def build_comparison(top: Path, styles: list[str], diffs: dict[str, list[str]], reference: str | None) -> Path:
@@ -186,10 +232,18 @@ def build_comparison(top: Path, styles: list[str], diffs: dict[str, list[str]], 
             "files": [files[k] for k in ("png", "tif") if k in files],
             "diff": diffs.get(name, []),
         })
+    crop_rows: dict[str, list[dict[str, str]]] = {}
+    for name in styles:
+        run = json.loads((top / name / "run.json").read_text(encoding="utf-8"))
+        for c in run.get("stages", {}).get("finish", {}).get("crops", []):
+            crop_rows.setdefault(c["name"], []).append({"style": name, "src": f"{name}/{c['file']}"})
     env = Environment(autoescape=select_autoescape(default=True))
     html = env.from_string(COMPARISON).render(
         title=f"{target} · стили", subtitle=f"{len(styles)} стиля из одних данных · {top.name}",
-        reference=reference, styles=cards)
+        reference=reference, styles=cards,
+        crop_rows=[{"name": k, "cells": v} for k, v in crop_rows.items()],
+        background_check=(top / "background_check.png").exists(),
+        baseline=_baseline_rows(top, styles))
     path = top / "report.html"
     path.write_text(html, encoding="utf-8")
     return path

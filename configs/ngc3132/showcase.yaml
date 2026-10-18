@@ -3,9 +3,10 @@
 extends: measured
 stretch:
   per_filter:
-    F405N: { white: 99.95, a: 0.05 }
-    F470N: { white: 99.95, a: 0.05 }
-    F212N: { white: 99.5 }
+    # По маске туманности; по кадру было 99.95 и 99.5 (фаза 3c).
+    F405N: { white: 99.9, a: 0.05 }
+    F470N: { white: 99.9, a: 0.05 }
+    F212N: { white: 99.0 }
 color:
   overrides:
     F356W: "#ff9a20"

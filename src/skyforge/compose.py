@@ -175,15 +175,42 @@ def apply_shadows(rgb: np.ndarray, sc: Any, nebula_sd: np.ndarray | None) -> np.
     return rgb + w * (lifted - rgb)
 
 
-def base_color(cfg: Config, layers: dict[str, np.ndarray]) -> tuple[np.ndarray, dict[str, Any]]:
+def sky_weight(nebula_sd: np.ndarray | None, feather_px: float, shape: tuple[int, ...]) -> np.ndarray:
+    """1 вне маски туманности, 0 внутри, линейный мягкий край feather_px по обе стороны границы."""
+    if nebula_sd is None:
+        return np.ones(shape[:2], dtype=np.float32)
+    return np.clip(0.5 - nebula_sd / feather_px, 0, 1).astype(np.float32)
+
+
+def equalize_sky(rgb: np.ndarray, sky: np.ndarray,
+                 weight: np.ndarray | None = None) -> tuple[np.ndarray, list[float], list[float]]:
+    """Медианы R, G, B по пустому небу → их среднее. Поправка одна на канал, но применяется с весом
+    weight: на небе целиком, в туманности — нисколько (туманность не фон, её цвет не трогаем)."""
+    if sky.sum() == 0:
+        return rgb, [], []
+    med = [float(np.median(rgb[..., k][sky])) for k in range(3)]
+    target = float(np.mean(med))
+    delta = (target - np.asarray(med, dtype=np.float32))
+    w = np.ones(rgb.shape[:2], dtype=np.float32) if weight is None else weight
+    out = rgb + w[..., None] * delta
+    return np.clip(out, 0, 1).astype(np.float32), med, [target] * 3
+
+
+def base_color(cfg: Config, layers: dict[str, np.ndarray], sky: np.ndarray | None = None,
+               nebula_sd: np.ndarray | None = None) -> tuple[np.ndarray, dict[str, Any]]:
     """Цвета фильтров, смешивание, нейтральный фон — до подъёма теней."""
     colors = assign_colors(list(layers), cfg.mission, cfg.instrument, cfg.color)
     rgb = blend(layers, colors, cfg.color)
     bg = None
+    info: dict[str, Any] = {}
     if cfg.color.neutral_background:
         rgb, bg = neutralize(rgb, cfg.color.background_percentile)
-    info = {"colors": {f: "#%02x%02x%02x" % tuple(round(v * 255) for v in colors[f]) for f in colors},
-            "background_removed": bg}
+        if sky is not None:
+            w = sky_weight(nebula_sd, cfg.color.sky_feather_px, rgb.shape)
+            rgb, before, after = equalize_sky(rgb, sky, w)
+            info.update(sky_medians_before=[round(v, 5) for v in before], sky_level=round(after[0], 5) if after else None)
+    info.update({"colors": {f: "#%02x%02x%02x" % tuple(round(v * 255) for v in colors[f]) for f in colors},
+                 "background_removed": bg})
     return rgb, info
 
 
@@ -198,8 +225,8 @@ def tail_color(cfg: Config, rgb: np.ndarray, layers: dict[str, np.ndarray], star
 
 
 def compose_layers(cfg: Config, layers: dict[str, np.ndarray], star_mask: Any = None,
-                   nebula_sd: np.ndarray | None = None) -> tuple[np.ndarray, dict[str, Any]]:
-    rgb, info = base_color(cfg, layers)
+                   nebula_sd: np.ndarray | None = None, sky: np.ndarray | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+    rgb, info = base_color(cfg, layers, sky, nebula_sd)
     return tail_color(cfg, rgb, layers, star_mask, nebula_sd), info
 
 
@@ -227,12 +254,13 @@ def load_stretched(cfg: Config, paths: Paths) -> tuple[dict[str, np.ndarray], di
 
 
 def compose(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
-    from skyforge.clean import load_nebula_sd, load_star_weight
+    from skyforge.clean import load_nebula_sd, load_sky_mask, load_star_weight
 
     layers, in_key = load_stretched(cfg, paths)
     stars = load_star_weight(cfg, paths)
     sd = load_nebula_sd(cfg, paths, required=cfg.color.shadows.scope == "nebula" and cfg.color.shadows.value > 0)
-    base, info = base_color(cfg, layers)
+    sky = load_sky_mask(cfg, paths)
+    base, info = base_color(cfg, layers, sky, sd if sd is not None else load_nebula_sd(cfg, paths))
     rgb = tail_color(cfg, base, layers, stars, sd)
     composite_path(cfg, paths).parent.mkdir(parents=True, exist_ok=True)
     np.save(composite_path(cfg, paths), rgb)
@@ -254,7 +282,37 @@ def compose(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     if cfg.color.shadows.value > 0 and sd is not None:
         _shadows_scope_sheet(cfg, base, layers, stars, sd, out_dir / "shadows_scope.png")
         info["previews"].append("shadows_scope.png")
+    crop = next((c for c in cfg.report.crops if c.name == "sky"), None)
+    if crop is not None and sky is not None and cfg.color.neutral_background:
+        info["sky_check"] = _background_check(cfg, layers, stars, sd, sky, crop, out_dir / "background_check.png")
+        info["previews"].append("background_check.png")
     return info
+
+
+def _background_check(cfg: Config, layers: dict, stars: Any, sd: Any, sky: np.ndarray, crop: Any,
+                      path: Path) -> dict[str, Any]:
+    """Кроп sky 100% до и после выравнивания каналов по пустому небу; медианы R, G, B по маске неба в кропе."""
+    from skyforge.preview import display_crop
+
+    sl = display_crop(sky.shape, crop.x, crop.y, crop.size, cfg.bin)
+    off = cfg.model_copy(update={"color": cfg.color.model_copy(update={"neutral_background": False})})
+    rgb_no, _ = base_color(off, layers)
+    rgb_no, _ = neutralize(rgb_no, cfg.color.background_percentile)  # прежний шаг: только чёрная точка
+    rgb_eq, _ = base_color(cfg, layers, sky, sd)
+    crop_layers = {f: np.asarray(a)[sl] for f, a in layers.items()}
+    cs = stars.crop(sl) if stars is not None else None
+    csd = sd[sl] if sd is not None else None
+    images, labels, meds = [], [], {}
+    for name, base in (("до", rgb_no), ("после", rgb_eq)):
+        out = tail_color(cfg, base[sl], crop_layers, cs, csd)
+        m = sky[sl]
+        med = [float(np.median(out[..., k][m])) if m.any() else float("nan") for k in range(3)]
+        meds[name] = [round(v, 4) for v in med]
+        images.append(out)
+        labels.append(f"{name}: медианы R {med[0]:.3f} · G {med[1]:.3f} · B {med[2]:.3f}")
+    contact_sheet(images, labels, path, cols=2, tile_inches=5, interpolation="nearest",
+                  title=f"Пустое небо (кроп sky), 100%, стиль {cfg.style or '—'}: после — медианы каналов равны")
+    return meds
 
 
 def _shadows_scope_sheet(cfg: Config, base: np.ndarray, layers: dict, stars: Any, sd: np.ndarray, path: Path) -> None:

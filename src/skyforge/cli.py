@@ -293,6 +293,21 @@ def report(folder: Annotated[Optional[Path], typer.Argument(help="Папка в 
     console.print(f"Отчёт: {build_report(folder)}")
 
 
+@app.command()
+@_handle
+def baseline(config: ConfigArg,
+             name: Annotated[str, typer.Option(help="Имя принятого результата, обычно тег: phase-3c")],
+             run_dir: Annotated[Path, typer.Option("--from", help="Папка прогона (стиля или --all со стилями)")]) -> None:
+    """Сохранить итоговые PNG прогона как принятые: с ними сравнивает отчёт (report.baseline)."""
+    from skyforge.baseline import save_baseline
+
+    paths = _paths()
+    d = _style_dir(config, paths)
+    slug = Config.load(d / "base.yaml").slug if d else _load(config, paths).slug
+    for p in save_baseline(paths, slug, name, run_dir if run_dir.is_absolute() else paths.root / run_dir):
+        console.print(f"  {paths.rel(p)}")
+
+
 @cache_app.command("list")
 @_handle
 def cache_list() -> None:

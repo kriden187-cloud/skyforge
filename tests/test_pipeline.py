@@ -88,9 +88,9 @@ def test_full_run_is_reproducible_and_raw_untouched(sky, cfg, tmp_path):
                 "compose.png", "finish_zoom.png", "report.html", "config.yaml"):
         assert (a / img).exists(), img
     run = json.loads((a / "run.json").read_text(encoding="utf-8"))
-    assert set(run["stages"]) == {"fetch", "inspect", "align", "clean", "stretch", "compose", "finish"}
+    assert set(run["stages"]) == {"fetch", "inspect", "align", "clean", "stretch", "compose", "finish", "baseline"}
     cl = run["stages"]["clean"]["filters"]
-    assert cl["F090W"]["cores"] >= 1 and cl["F090W"]["tiles_measured"] == 2
+    assert cl["F090W"]["cores"] >= 1 and cl["F090W"]["tiles_measured"] + cl["F090W"]["tiles_matched"] == 2
 
     import tifffile
 
@@ -104,6 +104,8 @@ def test_tile_step_removed_in_pipeline(sky, cfg, tmp_path):
     from conftest import NOISE, TILE_STEP
     from skyforge.clean import clean, load_input
 
+    # Здесь проверяются именно поправки плиток в clean; destripe в align снял бы ступеньку раньше.
+    cfg = cfg.model_validate({**cfg.model_dump(mode="json"), "clean": {"destripe": {"enabled": False}}})
     align(cfg, sky, tmp_path / "o")
     raw, _, _ = load_aligned(cfg, sky)
     clean(cfg, sky, tmp_path / "o")

@@ -22,7 +22,7 @@ from skyforge.compose import composite_path, compose_key
 from skyforge.config import Config, FinishConfig
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
-from skyforge.preview import contact_sheet, save_png, to_display, to_uint8
+from skyforge.preview import contact_sheet, display_crop, save_png, to_display, to_uint8
 
 # denoise: 1.0 соответствует весу TV-регуляризации 0.1 на шкале яркости 0–1 — это уже сильное сглаживание.
 DENOISE_WEIGHT_AT_MAX = 0.1
@@ -103,5 +103,11 @@ def finish(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     contact_sheet([np.clip(np.nan_to_num(rgb[sl]), 0, 1), done[sl]],
                   ["до финиша, 100%", f"denoise {cfg.finish.denoise}, sharpen {cfg.finish.sharpen}, 100%"],
                   out_dir / "finish_zoom.png", cols=2)
-    return {"files": files, "shape": list(done.shape[:2]),
+    crops = []
+    for c in cfg.report.crops:
+        sl = display_crop(done.shape, c.x, c.y, c.size, cfg.bin)
+        name = f"crop_{c.name}.png"
+        Image.fromarray(to_display(to_uint8(done[sl]))).save(out_dir / name)
+        crops.append({"name": c.name, "file": name})
+    return {"files": files, "shape": list(done.shape[:2]), "crops": crops,
             "previews": ["finish_preview.png", "finish_zoom.png"]}

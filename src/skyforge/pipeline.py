@@ -30,6 +30,7 @@ LOOK = {
     "compose": ("compose.png", "фон нейтральный, структура как в пресс-релизе"),
     "finish": ("finish_zoom.png", "нет «пластилина» от денойза и ореолов от резкости"),
     "sweep": ("sweep.png", "выбери лучшую клетку и перенеси её числа в YAML"),
+    "baseline": ("baseline_diff.png, crops_compare.png", "разность с принятым — только там, где её ждали; фактура та же"),
 }
 
 
@@ -69,7 +70,10 @@ def run_all(cfg: Config, paths: Paths, *, offline: bool = False, force_align: bo
     run_stage("clean", lambda: clean(cfg, paths, out_dir), out_dir)
     run_stage("stretch", lambda: stretch(cfg, paths, out_dir), out_dir)
     run_stage("compose", lambda: compose(cfg, paths, out_dir), out_dir)
-    run_stage("finish", lambda: finish(cfg, paths, out_dir), out_dir)
+    fin = run_stage("finish", lambda: finish(cfg, paths, out_dir), out_dir)
+    from skyforge.baseline import compare
+
+    run_stage("baseline", lambda: compare(cfg, paths, out_dir, out_dir / fin["files"]["png"]), out_dir)
     StageLog(out_dir).set_meta(total_seconds=round(time.perf_counter() - t0, 1))
     report = build_report(out_dir)
     console.rule()
@@ -90,6 +94,22 @@ def copy_reference(cfg: Config, paths: Paths, out_dir: Path) -> str | None:
     return name
 
 
+def _stack_images(parts: list[Path], dst: Path) -> None:
+    """Превью стилей одно под другим (например, фон по каналам у measured и showcase)."""
+    from PIL import Image
+
+    ims = [Image.open(p).convert("RGB") for p in parts if p.exists()]
+    if not ims:
+        return
+    w = max(i.width for i in ims)
+    sheet = Image.new("RGB", (w, sum(i.height for i in ims)), (17, 17, 17))
+    y = 0
+    for im in ims:
+        sheet.paste(im, (0, y))
+        y += im.height
+    sheet.save(dst)
+
+
 def run_styles(cfgs: list[Config], paths: Paths, diffs: dict[str, list[str]], *, offline: bool = False,
                force_align: bool = False) -> Path:
     """Все стили одного объекта подряд в одну папку: общие этапы считаются один раз и берутся из кеша."""
@@ -101,6 +121,7 @@ def run_styles(cfgs: list[Config], paths: Paths, diffs: dict[str, list[str]], *,
         console.rule(f"[bold magenta]стиль {cfg.style}")
         run_all(cfg, paths, offline=offline, force_align=force_align, out_dir=top / cfg.style)
     ref_name = copy_reference(cfgs[0], paths, top)
+    _stack_images([top / c.style / "background_check.png" for c in cfgs], top / "background_check.png")
     report = build_comparison(top, [c.style for c in cfgs], diffs, ref_name)
     console.rule()
     console.print(f"[bold green]Готово.[/] Сравнение стилей: {report}")

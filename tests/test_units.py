@@ -281,7 +281,7 @@ def test_tile_pedestal_removes_step_and_keeps_nebula():
     c = BackgroundConfig(subtract=True, tile_mask_dilate_arcsec=0.5, tile_min_area_arcsec2=0.1, mask_smooth_arcsec=0.1)
     ped, info = tile_pedestal(a, tiles, c, scale_arcsec=0.05)
     out = a - ped
-    assert info == {"tiles": 2, "measured": 2}
+    assert info["tiles"] == 2 and info["measured"] == 2
     step = np.median(out[:, 150:][tiles[:, 150:] == 1]) - np.median(out[:, :50])
     assert abs(step) < 0.15  # было 1.5
     assert out[100, 100] - np.median(out[:, :50]) == pytest.approx(30, abs=1.5)  # туманность не съедена
