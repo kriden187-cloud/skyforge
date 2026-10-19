@@ -373,6 +373,18 @@ def tile_planes(a: np.ndarray, tiles: np.ndarray, c: BackgroundConfig,
     return corr, {"tiles": int((area > 0).sum()), "measured": measured, "matched": n_matched, "continued": n_continued}
 
 
+def pixel_noise(a: np.ndarray, ok: np.ndarray) -> float:
+    """Шум пикселя по разностям пикселей через 3 px (1.4826·MAD/√2): плавный ход фона и градиенты не влияют.
+    Разброс всего неба (σ с отсечкой) ими раздувается — и скачок «в σ» менялся от вычитания гладкой модели."""
+    lag = 3  # после проекции и стека соседние пиксели коррелированы — разность через 3 px их уже не связывает
+    pair = ok[:, lag:] & ok[:, :-lag]
+    d = (a[:, lag:] - a[:, :-lag])[pair]
+    if d.size < 100:
+        return 0.0
+    d = d[:: max(1, d.size // 2_000_000)]
+    return float(1.4826 * np.median(np.abs(d - np.median(d))) / np.sqrt(2))
+
+
 def boundary_jumps(a: np.ndarray, regions: np.ndarray, sky: np.ndarray, band_px: int) -> tuple[float, int]:
     """Средний |скачок| фона поперёк границ областей CON на пустом небе, в единицах σ шума фона."""
     ok = sky & np.isfinite(a) & (regions >= 0)
@@ -381,8 +393,51 @@ def boundary_jumps(a: np.ndarray, regions: np.ndarray, sky: np.ndarray, band_px:
     steps = boundary_steps(a, np.where(np.isfinite(a), regions, -1), ~ok, band_px)
     if not steps:
         return 0.0, 0
-    v = a[ok]
-    _, _, std = sigma_clipped_stats(v[:: max(1, v.size // 2_000_000)], sigma=CLIP_SIGMA)
+    std = pixel_noise(a, ok)
     tot = sum(abs(s) * m for s, m in steps.values())
     cnt = sum(m for _, m in steps.values())
     return (round(tot / cnt / std, 4) if std else 0.0), len(steps)
+
+
+
+def block_model(a: np.ndarray, c: BackgroundConfig, scale_arcsec: float) -> tuple[np.ndarray, np.ndarray, int]:
+    """Гладкий фон по блокам blocks_px (3g, для своей мозаики): медиана свободного неба в блоке;
+    блоки, где свободного неба меньше blocks_min_free (туманность, звёзды), не меряются, а продолжаются
+    от соседних измеренных (последовательное заполнение средним соседей); затем медиана 3×3 блоков и
+    гладкая (бикубическая) интерполяция до полного размера."""
+    from skyforge.config import StarsConfig  # noqa: F401  (тип для подсказки)
+    from skyforge.stars import star_mask
+
+    finite = np.isfinite(a)
+    mask = source_mask(a, c, scale_arcsec, for_tiles=True)
+    if c.blocks_mask_grow_px:
+        mask = ndimage.binary_dilation(mask, iterations=c.blocks_mask_grow_px)
+    free = finite & ~mask
+    b = c.blocks_px
+    H, W = a.shape
+    ny, nx = (H + b - 1) // b, (W + b - 1) // b
+    grid = np.full((ny, nx), np.nan)
+    for j in range(ny):
+        for i in range(nx):
+            sl = (slice(j * b, min((j + 1) * b, H)), slice(i * b, min((i + 1) * b, W)))
+            m = free[sl]
+            if m.mean() >= c.blocks_min_free:
+                grid[j, i] = float(np.median(a[sl][m]))
+    measured = int(np.isfinite(grid).sum())
+    if measured == 0:
+        return np.zeros_like(a), mask, b
+    # продолжить внутрь туманности от соседей, слоями
+    while not np.isfinite(grid).all():
+        known = np.isfinite(grid)
+        s_ = ndimage.convolve(np.where(known, grid, 0.0), np.ones((3, 3)), mode="constant")
+        n_ = ndimage.convolve(known.astype(float), np.ones((3, 3)), mode="constant")
+        ring = ~known & (n_ > 0)
+        if not ring.any():
+            break
+        grid[ring] = s_[ring] / n_[ring]
+    grid = ndimage.median_filter(np.nan_to_num(grid, nan=float(np.nanmedian(grid))), size=3, mode="nearest")
+    zy, zx = H / ny, W / nx
+    model = ndimage.zoom(grid, (zy, zx), order=3, mode="nearest", grid_mode=True)[:H, :W]
+    if model.shape != a.shape:
+        model = np.pad(model, ((0, H - model.shape[0]), (0, W - model.shape[1])), mode="edge")
+    return model.astype(np.float32), mask, b

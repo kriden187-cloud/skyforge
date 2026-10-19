@@ -12,7 +12,7 @@ from jinja2 import Environment, select_autoescape
 STAGES = [
     ("fetch", "1. Данные", "Какие файлы взяты и откуда."),
     ("build", "1½. Сборка из уровня 2",
-     "В кадре детектора полос нет; остаток уровней в перекрытиях мал; FWHM звёзд в пределах 5%, поток — 2% от i2d."),
+     "В кадре детектора полос нет; остаток уровней в перекрытиях мал; FWHM звёзд к i2d в допуске (±8% при FWHM < 2,5 px, иначе ±5%), поток к отдельным экспозициям — в 1%."),
     ("inspect", "2. Сырые кадры", "На каждом превью узнаётся объект, пустых и битых кадров нет."),
     ("align", "3. Совмещение", "Звёзды на границах клеток шахматки не смещены, на наложении нет цветных ореолов."),
     ("clean", "3½. Очистка", "Стыки плиток и градиенты ушли в модель фона, туманность осталась; ядро звезды белое."),
@@ -81,6 +81,16 @@ def _sha256(p: Path) -> str:
 
 
 def _table(key: str, info: dict[str, Any]) -> dict[str, Any] | None:
+    if key == "build" and info.get("filters"):
+        rows = []
+        for f, b in info["filters"].items():
+            for a in b.get("astrometry", []):
+                rows.append([f, a["экспозиция"], a["звёзд"], a["статус"], a["dx"], a["dy"], a["поворот_град"],
+                             a["остаток_до"], a["остаток_после"], a["точность"], a["применено_dx"], a["применено_dy"],
+                             "да" if a["исключена"] else ""])
+        if rows:
+            return {"head": ["фильтр", "экспозиция", "звёзд", "решение", "dx", "dy", "поворот, °", "остаток до, px",
+                             "после, px", "точность, px", "применено dx", "dy", "исключена"], "rows": rows}
     if key == "fetch" and info.get("products"):
         return {"head": ["фильтр", "откуда", "файл"],
                 "rows": [[f, p["source"], p["path"]] for f, p in info["products"].items()]}
@@ -111,8 +121,10 @@ def _note(key: str, info: dict[str, Any]) -> str | None:
         parts = []
         for f, b in info["filters"].items():
             st = b.get("stars", {})
+            fc = b.get("fwhm_check", {})
             parts.append(f"{f}: {b['exposures']} эксп., |Δ строк| {b['rows_before']:.3g} → {b['rows_after']:.3g}, "
-                         f"остаток уровней {b.get('level_residual_sigma')}σ, FWHM ×{st.get('fwhm_ratio')}, "
+                         f"остаток уровней {b.get('level_residual_sigma')}σ, FWHM ×{st.get('fwhm_ratio')}"
+                         + (f" (в допуске ±{fc['tol_percent']:g}%: {fc['passed']}/{fc['total']})" if fc else "") + ", "
                          f"поток ×{st.get('flux_ratio')} к i2d"
                          + (f" (к отдельным экспозициям: наша ×{st['flux_ratio_vs_single']}, i2d ×{st['i2d_ratio_vs_single']})"
                             if "flux_ratio_vs_single" in st else ""))

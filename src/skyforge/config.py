@@ -88,6 +88,31 @@ class Level2Config(_Strict):
     clip_sigma: float = Field(4.0, gt=0, description="выброс: |x − медиана стека| > clip·ERR + наклон·|∇медианы|")
     clip_gradient: float = Field(1.0, ge=0, description="допуск на крутизну (края звёзд при разной выборке пикселей)")
     match_levels: bool = True  # одна константа фона на экспозицию по парам перекрытий (МНК)
+    match_per_amp: bool = False  # константа на экспозицию и усилитель (4 полосы по 512 столбцов), если крест остаётся
+    # Веса стека: rnoise — 1/VAR_RNOISE (шум считывания, как ivm у drizzle); err — 1/ERR² (в ERR есть пуассоновский
+    # шум самой звезды: в ядре яркий отсчёт получает меньший вес, и поток звёзд занижается — у F090W на 2%).
+    weights: Literal["rnoise", "err"] = "rnoise"
+    # Астрометрическая подстройка экспозиций по звёздам i2d (аналог tweakreg). Правила 3g (решение Дениса):
+    # исправлять, если точность сдвига (остаток/√N) < tweak_max_precision; поворот — только при ≥ tweak_rot_min_stars
+    # звёздах и |поворот| ≥ tweak_rot_min_deg, иначе только сдвиг. Короткие волны: детекторы одной экспозиции
+    # сдвигаются вместе — детектор, отличающийся от медианы группы больше tweak_group_tol, получает медиану.
+    # Длинные волны (без соседей): точность ≥ порога или остаток после > tweak_lw_max_residual — не исправлять;
+    # если при этом остаток до > tweak_exclude_above — экспозиция исключается из стека.
+    tweak: bool = True
+    tweak_min_stars: int = Field(8, ge=3)
+    tweak_max_stars: int = Field(30, ge=3)
+    tweak_max_precision: float = Field(0.03, gt=0, description="px: точность сдвига rms/√N, ниже которой исправлять")
+    tweak_rot_min_stars: int = Field(20, ge=4)
+    tweak_rot_min_deg: float = Field(0.002, ge=0)
+    tweak_group_tol: float = Field(0.05, gt=0, description="px: отличие детектора от медианы своей экспозиции")
+    tweak_lw_max_residual: float = Field(0.2, gt=0, description="px: длинные волны — остаток после, выше которого не исправлять")
+    tweak_exclude_above: float = Field(0.3, gt=0, description="px: остаток до у неисправленной — исключить из стека")
+    overlap_block_px: int = Field(64, ge=8, description="блок для метрики и карты остатков в перекрытиях")
+    # Допуск FWHM звёзд к i2d (приёмка 3g): у недодискретизированных фильтров (медиана FWHM i2d < star_fwhm_small_px)
+    # гауссова подгонка FWHM чувствительна к субпиксельной фазе — допуск шире. На сборку не влияют.
+    star_fwhm_small_px: float = Field(2.5, gt=0)
+    star_fwhm_tol_small_percent: float = Field(8.0, gt=0)
+    star_fwhm_tol_percent: float = Field(5.0, gt=0)
 
 
 class StarsConfig(_Strict):
@@ -109,6 +134,12 @@ class StarsConfig(_Strict):
 
 class BackgroundConfig(_Strict):
     subtract: bool = False
+    # photutils — модель Background2D (как в 3d); blocks — свои блоки по свободному небу, внутри туманности
+    # модель продолжается от соседних блоков, а не меряется (3g, для своей мозаики уровня 2).
+    model: Literal["photutils", "blocks"] = "photutils"
+    blocks_px: int = Field(256, ge=16, description="блок модели blocks")
+    blocks_mask_grow_px: int = Field(10, ge=0, description="расширение маски туманности и звёзд для модели blocks")
+    blocks_min_free: float = Field(0.5, gt=0, le=1, description="доля свободных пикселей, чтобы блок мерился")
     # Шаг 1: постоянная поправка на каждую область CON/CTX (свой набор экспозиций) — убирает
     # ступеньки между плитками мозаики, которые гладкая модель только размазывает.
     tiles: bool = True

@@ -16,7 +16,7 @@ import numpy as np
 from scipy import ndimage
 
 from skyforge.align import load_aligned, load_tiles, read_aligned_meta
-from skyforge.background import background_model, boundary_jumps, tile_pedestal, tile_planes
+from skyforge.background import background_model, block_model, boundary_jumps, tile_pedestal, tile_planes
 from skyforge.compose import compose_layers
 from skyforge.config import Config
 from skyforge.log import SkyforgeError, console
@@ -30,7 +30,7 @@ from skyforge.stretch import stretch_array
 REVEAL_BLACK, REVEAL_WHITE, REVEAL_A = 1.0, 90.0, 0.02
 
 
-CLEAN_VERSION = 8  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
+CLEAN_VERSION = 10  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
 
 
 def enabled(cfg: Config) -> bool:
@@ -163,7 +163,7 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
                 tile_maps[f] = np.nan_to_num(ped)
             mask = np.zeros(out.shape, dtype=bool)
             if bc.smooth:
-                smooth, mask, box = background_model(out, bc, scale)
+                smooth, mask, box = (block_model if bc.model == "blocks" else background_model)(out, bc, scale)
                 out = out - smooth
                 model += np.nan_to_num(smooth)
                 fi["box_px"] = box
@@ -306,7 +306,18 @@ def _background_sheet(cfg: Config, before: dict, after: dict, models: dict, mask
                    np.clip((m - lo) / (hi - lo if hi > lo else 1), 0, 1),
                    quick_norm(a, REVEAL_BLACK, REVEAL_WHITE, REVEAL_A)]
         labels += [f"{f}: до", "маска источников", "модель фона", "после вычитания"]
-    contact_sheet(images, labels, path, cols=4, tile_inches=3.0,
+        # кропы пустого неба 100% до и после (sky, sky2 из report.crops), растяжка общая для «до» и «после»
+        from skyforge.preview import display_crop
+
+        for cr in [c for c in cfg.report.crops if c.name.startswith("sky")][:2]:
+            sl = display_crop(before[f].shape, cr.x, cr.y, cr.size, cfg.bin)
+            bb = before[f][sl]
+            lo_, hi_ = np.nanpercentile(bb, [REVEAL_BLACK, REVEAL_WHITE])
+            norm = lambda z: np.clip((np.nan_to_num(z, nan=lo_) - lo_) / (hi_ - lo_ if hi_ > lo_ else 1), 0, 1)  # noqa: E731
+            images += [norm(bb), norm(after[f][sl] + (np.nanmedian(bb) - np.nanmedian(after[f][sl])))]
+            labels += [f"{cr.name} до", f"{cr.name} после"]
+    n_crops = len([c for c in cfg.report.crops if c.name.startswith("sky")][:2])
+    contact_sheet(images, labels, path, cols=4 + 2 * n_crops, tile_inches=3.0,
                   title="Фон: стыки плиток и градиенты должны уйти в «модель», туманность — остаться")
 
 
