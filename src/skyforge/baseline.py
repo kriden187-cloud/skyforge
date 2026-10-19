@@ -67,6 +67,24 @@ def texture_sigma(img: np.ndarray, cx: float, cy: float, r0: float, r1: float) -
     return float(lum[ring].std()) if ring.any() else float("nan")
 
 
+def _common_part(cur: np.ndarray, base: np.ndarray, neb: np.ndarray):
+    """Сдвиг base относительно cur по взаимной корреляции яркости и общая часть обеих картинок.
+    Возвращает (cur, base, neb) на общей части и сдвиг (dy, dx): cur[y, x] ≈ base[y + dy, x + dx]."""
+    from skimage.registration import phase_cross_correlation
+
+    h, w = max(cur.shape[0], base.shape[0]), max(cur.shape[1], base.shape[1])
+    pad = lambda im: np.pad(im @ LUMA, ((0, h - im.shape[0]), (0, w - im.shape[1])))  # noqa: E731
+    sh, _, _ = phase_cross_correlation(pad(base), pad(cur), upsample_factor=1)
+    # phase_cross_correlation(ref=base, moving=cur): сдвиг, который надо приложить к cur, чтобы совпасть с base,
+    # то есть cur[y, x] ≈ base[y + dy, x + dx]
+    dy, dx = int(round(sh[0])), int(round(sh[1]))
+    y0, x0 = max(0, -dy), max(0, -dx)
+    y1, x1 = min(cur.shape[0], base.shape[0] - dy), min(cur.shape[1], base.shape[1] - dx)
+    if y1 - y0 < 100 or x1 - x0 < 100:
+        return None, None, None, (0, 0)
+    return (cur[y0:y1, x0:x1], base[y0 + dy:y1 + dy, x0 + dx:x1 + dx], neb[y0:y1, x0:x1], (y0, x0))
+
+
 def compare(cfg: Config, paths: Paths, out_dir: Path, final_png: Path) -> dict[str, Any]:
     p = baseline_file(paths, cfg)
     if p is None:
@@ -76,15 +94,21 @@ def compare(cfg: Config, paths: Paths, out_dir: Path, final_png: Path) -> dict[s
     from skyforge.clean import load_nebula_sd
 
     cur, base = _load(final_png), _load(p)
-    if cur.shape != base.shape:
-        return {"skipped": f"размер {cur.shape[1]}×{cur.shape[0]} не совпадает с принятым {base.shape[1]}×{base.shape[0]}"}
     sd = load_nebula_sd(cfg, paths)
     neb = np.flipud(sd) > 0 if sd is not None and sd.shape == cur.shape[:2] else np.ones(cur.shape[:2], bool)
+    shift = (0, 0)
+    if cur.shape != base.shape:
+        # Другая обрезка общего поля (например, своя сборка из уровня 2): совмещаем по содержимому
+        # и сравниваем только общую часть. Координаты кропов — в системе текущей картинки.
+        cur, base, neb, shift = _common_part(cur, base, neb)
+        if cur is None:
+            return {"skipped": "не удалось совместить с принятой картинкой"}
     diff = np.abs(cur - base).mean(axis=-1)
+    shift_c = shift  # начало общей части в координатах текущей картинки
 
     b = cfg.bin
     core = next((c for c in cfg.report.crops if c.name == "core"), None)
-    cx, cy = (core.x / b, core.y / b) if core else (cur.shape[1] / 2, cur.shape[0] / 2)
+    cx, cy = ((core.x / b - shift_c[1], core.y / b - shift_c[0]) if core else (cur.shape[1] / 2, cur.shape[0] / 2))
     r0, r1 = (v / b for v in cfg.report.texture_ring)
     t_cur, t_base = texture_sigma(cur, cx, cy, r0, r1), texture_sigma(base, cx, cy, r0, r1)
     change = (t_cur - t_base) / t_base * 100 if t_base else float("nan")
@@ -96,6 +120,7 @@ def compare(cfg: Config, paths: Paths, out_dir: Path, final_png: Path) -> dict[s
         "texture_sigma_baseline": round(t_base, 5),
         "texture_change_percent": round(change, 1),
         "texture_ring_px": [cfg.report.texture_ring[0], cfg.report.texture_ring[1]],
+        "shift_px": [int(shift[0]), int(shift[1])],
     }
     console.print(f"  сравнение с {cfg.report.baseline}: средняя разность по туманности {info['nebula_diff_mean']:.4f}, "
                   f"фактура σ {t_base:.4f} → {t_cur:.4f} ({change:+.1f}%)")
@@ -116,7 +141,8 @@ def compare(cfg: Config, paths: Paths, out_dir: Path, final_png: Path) -> dict[s
         imgs, labels = [], []
         for c in cfg.report.crops:
             s = max(8, c.size // b)
-            x0, y0 = int(np.clip(c.x // b - s // 2, 0, cur.shape[1] - s)), int(np.clip(c.y // b - s // 2, 0, cur.shape[0] - s))
+            x0 = int(np.clip(c.x // b - shift_c[1] - s // 2, 0, cur.shape[1] - s))
+            y0 = int(np.clip(c.y // b - shift_c[0] - s // 2, 0, cur.shape[0] - s))
             sl = (slice(y0, y0 + s), slice(x0, x0 + s))
             imgs += [np.flipud(base[sl]), np.flipud(cur[sl])]
             labels += [f"{c.name} · {cfg.report.baseline}", f"{c.name} · сейчас"]

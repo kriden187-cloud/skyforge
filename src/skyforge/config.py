@@ -71,6 +71,25 @@ class ReportConfig(_Strict):
     texture_ring: tuple[int, int] = (30, 200)  # кольцо вокруг центральной звезды (кроп core), px при bin 1
 
 
+class Level2Config(_Strict):
+    """Своя мозаика из отдельных экспозиций уровня 2 (_cal.fits) — source: level2."""
+    # destripe в системе детектора: строки — по каждому усилителю (полосы по 512 столбцов), затем столбцы.
+    amplifiers: int = Field(4, ge=1)
+    mask_grow_px: int = Field(5, ge=0, description="расширение маски туманности и звёзд из i2d в кадре экспозиции")
+    min_pixels: int = Field(50, ge=1, description="меньше свободных пикселей в линии — значение от соседних линий")
+    min_free_fraction: float = Field(0.3, ge=0, le=1, description="доля свободных пикселей линии")
+    # Окно скользящей медианы, как в 3d: вычитается быстрая часть (полосы), плавный ореол остаётся.
+    window: int = Field(201, ge=0)
+    columns: bool = True
+    pixel_sigma: float = Field(3.0, gt=0, description="яркие пиксели (лучи) — в σ шума, не идут в медианы")
+    # DQ: какие биты значат «плохой пиксель» (1 — DO_NOT_USE; он ставится и для насыщенных и отбракованных).
+    dq_bad: int = Field(1, ge=0)
+    # Сборка: взвешенное среднее (веса 1/ERR²) с отбрасыванием выбросов по стеку.
+    clip_sigma: float = Field(4.0, gt=0, description="выброс: |x − медиана стека| > clip·ERR + наклон·|∇медианы|")
+    clip_gradient: float = Field(1.0, ge=0, description="допуск на крутизну (края звёзд при разной выборке пикселей)")
+    match_levels: bool = True  # одна константа фона на экспозицию по парам перекрытий (МНК)
+
+
 class StarsConfig(_Strict):
     # Насыщенные ядра в i2d — дыры NaN с WHT=0 внутри поля (слоя DQ в продуктах уровня 3 нет).
     fill_cores: bool = False
@@ -262,6 +281,9 @@ class Config(_Strict):
     mission: Literal["jwst", "hst"] = "jwst"
     instrument: str = "nircam"
     proposal_id: str | None = None
+    # level3 — готовые мозаики i2d/drc; level2 — своя сборка из отдельных экспозиций (_cal.fits, только JWST).
+    source: Literal["level3", "level2"] = "level3"
+    level2: Level2Config = Level2Config()
     filters: list[str] = []
     allow_missing: bool = True
     calib_level: int = Field(3, ge=1, le=4)

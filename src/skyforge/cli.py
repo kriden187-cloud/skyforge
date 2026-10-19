@@ -143,6 +143,17 @@ def inspect(target: TargetArg, mission: MissionOpt = None, instrument: InstrOpt 
 
 @app.command()
 @_handle
+def build(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> None:
+    """source: level2 — своя мозаика по каждому фильтру из экспозиций _cal.fits на сетке i2d."""
+    from skyforge.level2 import build as do
+
+    paths = _paths()
+    cfg = _load(config, paths, bin_, style)
+    _stage(cfg, paths, "build", lambda out: do(cfg, paths, out))
+
+
+@app.command()
+@_handle
 def align(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None,
           force: Annotated[bool, typer.Option(help="Пересчитать, даже если кеш актуален")] = False) -> None:
     """Перевести все фильтры на сетку опорного и обрезать до общего поля."""

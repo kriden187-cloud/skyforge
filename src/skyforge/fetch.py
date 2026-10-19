@@ -290,8 +290,20 @@ def local_products(cfg: Config, paths: Paths) -> dict[str, Product]:
     return {f: found[f] for f in order}
 
 
-def require_products(cfg: Config, paths: Paths) -> dict[str, Product]:
+def require_products(cfg: Config, paths: Paths, level3: bool = False) -> dict[str, Product]:
+    """Файлы для конвейера. source: level2 — своя сборка из экспозиций (этап build) вместо i2d;
+    level3=True — всегда i2d (нужны самой сборке: сетка и маски)."""
     prods = local_products(cfg, paths)
+    if cfg.source == "level2" and not level3:
+        from skyforge.level2 import built_products
+
+        built = built_products(cfg, paths)
+        lacking = [f for f in prods if f not in built]
+        if lacking:
+            raise SkyforgeError(f"source: level2 — нет своей сборки для {lacking}: сначала skyforge build")
+        prods = {f: Product(filter=f, path=paths.rel(built[f]), source="level2", obs_id=p.obs_id,
+                            filename=built[f].name, size=built[f].stat().st_size, exptime=p.exptime,
+                            release=p.release, proposal_id=p.proposal_id) for f, p in prods.items()}
     if not prods:
         raise SkyforgeError(f"для {cfg.target} нет файлов: сначала skyforge fetch (или положи FITS в data/inbox/{cfg.slug}/)")
     missing = [f for f in cfg.filters if f not in prods]
@@ -387,3 +399,79 @@ def fetch(cfg: Config, paths: Paths, *, offline: bool = False, list_only: bool =
         console.print(f"[yellow]Нет данных: {', '.join(missing)} ({hint})[/]")
     order = sort_by_wavelength(list(found), cfg.mission, cfg.instrument)
     return FetchResult(products={f: found[f] for f in order}, missing=missing, available=avail)
+
+
+# --- уровень 2: отдельные экспозиции (_cal.fits) ---
+
+
+def level2_dir(cfg: Config, paths: Paths) -> Path:
+    return paths.raw / cfg.slug / "l2"
+
+
+def level2_manifest(cfg: Config, paths: Paths) -> Path:
+    return paths.raw / "manifests" / f"{cfg.slug}_{cfg.mission}_{cfg.instrument}_l2.json"
+
+
+def level2_files(cfg: Config, paths: Paths) -> dict[str, list[Path]]:
+    """Скачанные _cal.fits по фильтрам (по манифесту; только те, что на диске и правильного размера)."""
+    p = level2_manifest(cfg, paths)
+    if not p.exists():
+        return {}
+    man = json.loads(p.read_text(encoding="utf-8"))
+    out: dict[str, list[Path]] = {}
+    for f, items in man.get("files", {}).items():
+        if cfg.filters and f not in cfg.filters:
+            continue
+        files = [paths.abs(it["path"]) for it in items
+                 if paths.abs(it["path"]).exists() and paths.abs(it["path"]).stat().st_size == it["size"]]
+        if files:
+            out[f] = sorted(files)
+    return out
+
+
+def fetch_level2(cfg: Config, paths: Paths, *, list_only: bool = False, max_gb: float | None = None) -> dict[str, Any]:
+    """Продукты уровня 2 (_cal.fits) тех же наблюдений, из которых собраны мозаики уровня 3."""
+    if cfg.mission != "jwst":
+        raise SkyforgeError("source: level2 пока только для JWST (_cal.fits)")
+    man3 = load_manifest(cfg, paths)
+    avail = man3.get("available", {})
+    want = cfg.filters or list(avail)
+    missing = [f for f in want if f not in avail]
+    if missing:
+        raise SkyforgeError(f"нет сведений о наблюдениях для {missing}: сначала skyforge fetch (уровень 3)")
+    prods = product_lists([avail[f]["obsid"] for f in want])
+    obs_of = {avail[f]["obsid"]: f for f in want}
+    picks: dict[str, dict[str, dict[str, Any]]] = {f: {} for f in want}
+    for p in prods:
+        if (str(p.get("productSubGroupDescription")).upper() == "CAL" and int(p.get("calib_level") or -1) == 2
+                and str(p.get("productType")).upper() == "SCIENCE"):
+            f = obs_of.get(str(p.get("parent_obsid")))
+            if f:
+                picks[f][p["productFilename"]] = p
+    total = sum(int(p["size"]) for d in picks.values() for p in d.values())
+    t = Table(title=f"{cfg.target}: уровень 2 (_cal.fits)")
+    for col in ("фильтр", "файлов", "ГБ"):
+        t.add_column(col)
+    for f in want:
+        t.add_row(f, str(len(picks[f])), f"{sum(int(p['size']) for p in picks[f].values()) / 1e9:.2f}")
+    t.add_row("всего", str(sum(len(d) for d in picks.values())), f"{total / 1e9:.2f}")
+    console.print(t)
+    if list_only:
+        return {"files": {f: len(d) for f, d in picks.items()}, "gb": round(total / 1e9, 2)}
+    if max_gb is not None and total / 1e9 > max_gb:
+        raise SkyforgeError(f"уровень 2: {total / 1e9:.1f} ГБ больше лимита --max-gb {max_gb}")
+    d = level2_dir(cfg, paths)
+    mp = level2_manifest(cfg, paths)
+    man = json.loads(mp.read_text(encoding="utf-8")) if mp.exists() else {"files": {}}
+    for f in want:
+        items = []
+        for name, p in sorted(picks[f].items()):
+            dest = d / name
+            if not (dest.exists() and dest.stat().st_size == int(p["size"])):
+                console.print(f"  {f}: {name} ({int(p['size']) / 1e6:.0f} МБ)")
+                download(p["dataURI"], dest, int(p["size"]))
+            items.append({"path": paths.rel(dest), "size": int(p["size"])})
+        man["files"][f] = items
+        mp.parent.mkdir(parents=True, exist_ok=True)
+        mp.write_text(json.dumps(man, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"files": {f: len(v) for f, v in man["files"].items()}, "gb": round(total / 1e9, 2)}

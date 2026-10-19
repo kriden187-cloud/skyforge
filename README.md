@@ -42,7 +42,8 @@ uv run skyforge sweep ngc3132 --style showcase --x color.weights.F212N=0.15,0.08
 | Команда | Что делает | Что смотреть |
 | --- | --- | --- |
 | `skyforge fetch "NGC 3132" --list` | что есть в архиве: фильтры, экспозиции, эксклюзив | таблица в консоли |
-| `skyforge fetch ngc3132` | скачать фильтры из конфига в `data/raw/` | — |
+| `skyforge fetch ngc3132` | скачать фильтры из конфига в `data/raw/`; при `source: level2` — ещё и экспозиции `_cal.fits` в `data/raw/<объект>/l2/` | — |
+| `skyforge build ngc3132 --style measured` | `source: level2`: своя мозаика по каждому фильтру из экспозиций — destripe в кадре детектора, сведение уровней, стек на сетке i2d | `l2_destripe.png`, `l2_overlaps.png`, `l2_stars.png` |
 | `skyforge inspect ngc3132` | таблица и превью сырых кадров | `inspect_sheet.png` |
 | `skyforge align ngc3132` | общая сетка, север вверх, обрезка | `align_check.png`, `align_zoom.png` |
 | `skyforge clean ngc3132` | ядра звёзд, пьедесталы плиток мозаики, градиенты фона, маска звёзд | `background_model.png`, `star_cores.png`, `star_mask.png` |

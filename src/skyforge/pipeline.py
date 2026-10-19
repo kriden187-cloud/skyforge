@@ -24,6 +24,7 @@ from skyforge.stretch import stretch
 # Что смотреть после каждого этапа — печатается в консоль.
 LOOK = {
     "inspect": ("inspect_sheet.png", "на каждом превью узнаётся объект"),
+    "build": ("l2_destripe.png, l2_overlaps.png, l2_stars.png", "полосы ушли в кадре детектора, уровни в перекрытиях сведены, звёзды как в i2d"),
     "align": ("align_check.png, align_zoom.png", "звёзды на границах клеток не смещены, нет цветных ореолов"),
     "clean": ("background_model.png, star_cores.png", "стыки плиток ушли в модель фона, ядро звезды белое"),
     "stretch": ("stretch_hist.png, stretch_sheet.png", "пик фона у нуля, детали туманности не выжжены"),
@@ -36,7 +37,12 @@ LOOK = {
 
 def fetch_stage(cfg: Config, paths: Paths, offline: bool = False, max_gb: float | None = None) -> dict[str, Any]:
     res = fetch(cfg, paths, offline=offline, max_gb=max_gb)
-    return {"products": {f: asdict(p) for f, p in res.products.items()}, "missing": res.missing}
+    info: dict[str, Any] = {"products": {f: asdict(p) for f, p in res.products.items()}, "missing": res.missing}
+    if cfg.source == "level2" and not offline:
+        from skyforge.fetch import fetch_level2
+
+        info["level2"] = fetch_level2(cfg, paths, max_gb=max_gb)
+    return info
 
 
 def run_stage(name: str, fn: Callable[[], dict[str, Any]], out_dir: Path) -> dict[str, Any]:
@@ -65,6 +71,10 @@ def run_all(cfg: Config, paths: Paths, *, offline: bool = False, force_align: bo
     copy_reference(cfg, paths, out_dir)
     t0 = time.perf_counter()
     run_stage("fetch", lambda: fetch_stage(cfg, paths, offline=offline), out_dir)
+    if cfg.source == "level2":
+        from skyforge.level2 import build
+
+        run_stage("build", lambda: build(cfg, paths, out_dir), out_dir)
     run_stage("inspect", lambda: inspect(cfg, paths, out_dir), out_dir)
     run_stage("align", lambda: align(cfg, paths, out_dir, force=force_align), out_dir)
     run_stage("clean", lambda: clean(cfg, paths, out_dir), out_dir)
