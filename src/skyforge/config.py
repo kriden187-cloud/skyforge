@@ -167,6 +167,12 @@ class BackgroundConfig(_Strict):
     mask_smooth_arcsec: float = Field(1.0, ge=0, description="сглаживание перед порогом: ловит слабую туманность")
     mask_dilate_arcsec: float = Field(3.0, ge=0, description="расширение маски вокруг источников")
     min_free: float = Field(0.3, gt=0, le=1, description="доля свободных от маски пикселей, чтобы блок считался")
+    # Маска туманности (3h): ищется по кадру, где звёзды заменены местной медианой фона, расширяется диском.
+    # Квадратное расширение склеивало яркие звёзды со спайками и соседей в «туманность» — прямоугольные окна,
+    # в которых не работали поправка цвета неба, shadows и растяжка.
+    nebula_dilate_arcsec: float | None = Field(None, ge=0, description="радиус диска; None — mask_dilate_arcsec")
+    nebula_star_fraction: float = Field(0.5, gt=0, le=1, description="компонента, где звёзд больше этой доли, — не туманность")
+    nebula_drop_saturated: bool = True  # компоненты отдельно от главной с насыщенным ядром внутри — яркая звезда, не туманность
 
     @field_validator("filter_size")
     @classmethod
@@ -242,9 +248,13 @@ class ColorConfig(_Strict):
     star_saturation: float = Field(1.0, ge=0, le=1)
     overrides: dict[str, str] = {}
     weights: dict[str, float] = {}
-    # Нейтральный фон: чёрная точка по самым тёмным пикселям, затем медианы R, G, B по маске пустого
-    # неба (не туманность и не звёзды, плюс sky_grow_px) приводятся к общему уровню — среднему из трёх.
-    neutral_background: bool = True
+    # Нейтральный фон: чёрная точка по самым тёмным пикселям, затем цвет пустого неба (не туманность и не
+    # звёзды, плюс sky_grow_px) к серому. map — по блокам background_map_px: в каждом блоке медианы R, G, B
+    # приводятся к их среднему, карта гладкая и продолжена под маску от соседей; поправка только цветовая
+    # (сумма каналов в пикселе не меняется). constant — одна поправка на кадр (3d–3g). off — ничего.
+    neutral_background: Literal["map", "constant", "off"] = "map"
+    background_map_px: int = Field(256, ge=16, description="блок цветовой карты фона, px")
+    background_map_min_sky: float = Field(0.3, gt=0, le=1, description="доля пустого неба, чтобы блок мерился")
     background_percentile: float = Field(10.0, gt=0, lt=100)
     sky_grow_px: int = Field(10, ge=0, description="отступ маски пустого неба от туманности и звёзд")
     # Поправка каналов применяется с весом: 1 вне маски туманности, 0 внутри, мягкий край sky_feather_px.
@@ -261,6 +271,16 @@ class ColorConfig(_Strict):
         if isinstance(data, dict) and isinstance(data.get("shadows"), (int, float)):
             data = {**data, "shadows": {"value": data["shadows"]}}
         return data
+
+    @field_validator("neutral_background", mode="before")
+    @classmethod
+    def _neutral_bool(cls, v: object) -> object:
+        # до 3h было true/false: true — одна поправка на кадр
+        if v is True:
+            return "constant"
+        if v is False:
+            return "off"
+        return v
 
     @field_validator("overrides")
     @classmethod

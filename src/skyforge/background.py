@@ -413,7 +413,14 @@ def block_model(a: np.ndarray, c: BackgroundConfig, scale_arcsec: float) -> tupl
     if c.blocks_mask_grow_px:
         mask = ndimage.binary_dilation(mask, iterations=c.blocks_mask_grow_px)
     free = finite & ~mask
-    b = c.blocks_px
+    model, _ = block_map(a, free, c.blocks_px, c.blocks_min_free)
+    return model, mask, c.blocks_px
+
+
+def block_map(a: np.ndarray, free: np.ndarray, b: int, min_free: float) -> tuple[np.ndarray, int]:
+    """Гладкая карта по блокам b×b: медиана a по пикселям free в блоке, где их не меньше min_free; остальные
+    блоки продолжаются от измеренных соседей (слоями, средним соседей), затем медиана 3×3 блоков и
+    бикубическая интерполяция до полного размера. Возвращает карту и число измеренных блоков."""
     H, W = a.shape
     ny, nx = (H + b - 1) // b, (W + b - 1) // b
     grid = np.full((ny, nx), np.nan)
@@ -421,12 +428,12 @@ def block_model(a: np.ndarray, c: BackgroundConfig, scale_arcsec: float) -> tupl
         for i in range(nx):
             sl = (slice(j * b, min((j + 1) * b, H)), slice(i * b, min((i + 1) * b, W)))
             m = free[sl]
-            if m.mean() >= c.blocks_min_free:
+            if m.mean() >= min_free:
                 grid[j, i] = float(np.median(a[sl][m]))
     measured = int(np.isfinite(grid).sum())
     if measured == 0:
-        return np.zeros_like(a), mask, b
-    # продолжить внутрь туманности от соседей, слоями
+        return np.zeros_like(a, dtype=np.float32), 0
+    # продолжить под маску от соседей, слоями
     while not np.isfinite(grid).all():
         known = np.isfinite(grid)
         s_ = ndimage.convolve(np.where(known, grid, 0.0), np.ones((3, 3)), mode="constant")
@@ -440,4 +447,4 @@ def block_model(a: np.ndarray, c: BackgroundConfig, scale_arcsec: float) -> tupl
     model = ndimage.zoom(grid, (zy, zx), order=3, mode="nearest", grid_mode=True)[:H, :W]
     if model.shape != a.shape:
         model = np.pad(model, ((0, H - model.shape[0]), (0, W - model.shape[1])), mode="edge")
-    return model.astype(np.float32), mask, b
+    return model.astype(np.float32), measured

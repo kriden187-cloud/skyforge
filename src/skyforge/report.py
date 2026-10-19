@@ -117,6 +117,10 @@ def _table(key: str, info: dict[str, Any]) -> dict[str, Any] | None:
 
 def _note(key: str, info: dict[str, Any]) -> str | None:
     """Размер масок и сила destripe числом: видно, когда что-то вдруг ведёт себя без причины."""
+    if key == "compose" and "color_map_blocks" in info:
+        return (f"Цветовая карта фона: блоков неба {info['color_map_blocks']}, наибольшая поправка канала "
+                f"{info['color_map_max']}. Поправка только цветовая: сумма каналов до и после карты совпадает; "
+                "проверяется до finish — денойз считается по всему кадру и неизбежно реагирует на небо.")
     if key == "build" and info.get("filters"):
         parts = []
         for f, b in info["filters"].items():
@@ -143,7 +147,12 @@ def _note(key: str, info: dict[str, Any]) -> str | None:
         return "Destripe, среднее |медиана строки − соседней| по пустому небу: " + " · ".join(parts)
     if key != "clean" or "nebula_percent" not in info:
         return None
-    note = (f"Маска туманности: {info['nebula_percent']}% кадра · маска звёзд: {info.get('star_mask_percent', '—')}% кадра "
+    neb = info.get("nebula", {})
+    note = (f"Маска туманности: {info['nebula_percent']}% кадра"
+            + (f" (прежняя квадратная со звёздами — {info['nebula_percent_prev']}%; диск {neb.get('dilate_px')} px, "
+               f"исключено звёздных компонент {neb.get('dropped_star_components')}, отдельных с насыщенным ядром "
+               f"{neb.get('dropped_saturated')})" if "nebula_percent_prev" in info else "")
+            + f" · маска звёзд: {info.get('star_mask_percent', '—')}% кадра "
             f"(звёзды ищутся по {info.get('star_detect_filter', '—')}).")
     if info.get("blocks"):
         parts = [f"{f}: {b['jumps_before']:.3g}σ → {b['jumps_after']:.3g}σ" for f, b in info["blocks"].items() if "jumps_before" in b]

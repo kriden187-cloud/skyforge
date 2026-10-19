@@ -196,19 +196,41 @@ def equalize_sky(rgb: np.ndarray, sky: np.ndarray,
     return np.clip(out, 0, 1).astype(np.float32), med, [target] * 3
 
 
+def sky_color_map(rgb: np.ndarray, sky: np.ndarray, block_px: int, min_sky: float) -> tuple[np.ndarray, int]:
+    """Цветовая поправка неба по блокам: гладкие карты медиан R, G, B по пустому небу (продолжены под маску
+    от соседних блоков) → поправка каждого канала к их среднему. Сумма поправок по каналам в каждом
+    пикселе — ноль: яркость (сумма каналов) не меняется, меняется только цвет."""
+    from skyforge.background import block_map
+
+    maps, measured = [], 0
+    for k in range(3):
+        m, measured = block_map(rgb[..., k], sky & np.isfinite(rgb[..., k]), block_px, min_sky)
+        maps.append(m)
+    med = np.stack(maps, axis=-1)
+    return (med.mean(axis=-1, keepdims=True) - med).astype(np.float32), measured
+
+
 def base_color(cfg: Config, layers: dict[str, np.ndarray], sky: np.ndarray | None = None,
-               nebula_sd: np.ndarray | None = None) -> tuple[np.ndarray, dict[str, Any]]:
-    """Цвета фильтров, смешивание, нейтральный фон — до подъёма теней."""
+               nebula_sd: np.ndarray | None = None, mode: str | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+    """Цвета фильтров, смешивание, нейтральный фон — до подъёма теней. mode — вместо color.neutral_background."""
     colors = assign_colors(list(layers), cfg.mission, cfg.instrument, cfg.color)
     rgb = blend(layers, colors, cfg.color)
     bg = None
     info: dict[str, Any] = {}
-    if cfg.color.neutral_background:
+    mode = mode or cfg.color.neutral_background
+    if mode != "off":
         rgb, bg = neutralize(rgb, cfg.color.background_percentile)
-        if sky is not None:
+        if sky is not None and mode == "constant":
             w = sky_weight(nebula_sd, cfg.color.sky_feather_px, rgb.shape)
             rgb, before, after = equalize_sky(rgb, sky, w)
             info.update(sky_medians_before=[round(v, 5) for v in before], sky_level=round(after[0], 5) if after else None)
+        elif sky is not None and mode == "map" and sky.any():
+            w = sky_weight(nebula_sd, cfg.color.sky_feather_px, rgb.shape)
+            delta, measured = sky_color_map(rgb, sky, cfg.color.background_map_px, cfg.color.background_map_min_sky)
+            # без обрезки в 0–1: обрезка поменяла бы сумму каналов; итог обрезается на следующих шагах
+            rgb = rgb + w[..., None] * delta
+            info.update(color_map_blocks=measured, color_map_max=round(float(np.abs(delta).max()), 5),
+                        sky_medians_after=[round(float(np.median(rgb[..., k][sky])), 5) for k in range(3)])
     info.update({"colors": {f: "#%02x%02x%02x" % tuple(round(v * 255) for v in colors[f]) for f in colors},
                  "background_removed": bg})
     return rgb, info
@@ -217,6 +239,9 @@ def base_color(cfg: Config, layers: dict[str, np.ndarray], sky: np.ndarray | Non
 def tail_color(cfg: Config, rgb: np.ndarray, layers: dict[str, np.ndarray], star_mask: Any = None,
                nebula_sd: np.ndarray | None = None) -> np.ndarray:
     """Тени, насыщенность, обесцвечивание звёзд."""
+    # Цветовая карта фона не обрезает значения (сумма каналов должна сохраниться точно); отрицательный канал
+    # здесь — шум неба ниже нуля. Без обрезки shadows обнулил бы весь пиксель с отрицательной яркостью.
+    rgb = np.clip(rgb, 0, 1)
     rgb = apply_shadows(rgb, cfg.color.shadows, nebula_sd)
     rgb = saturate(rgb, cfg.color.saturation)
     det_layer = layers.get(star_mask.detect) if star_mask is not None else None
@@ -282,11 +307,71 @@ def compose(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     if cfg.color.shadows.value > 0 and sd is not None:
         _shadows_scope_sheet(cfg, base, layers, stars, sd, out_dir / "shadows_scope.png")
         info["previews"].append("shadows_scope.png")
-    crop = next((c for c in cfg.report.crops if c.name == "sky"), None)
-    if crop is not None and sky is not None and cfg.color.neutral_background:
-        info["sky_check"] = _background_check(cfg, layers, stars, sd, sky, crop, out_dir / "background_check.png")
+    mcrop = next((c for c in cfg.report.crops if c.name == "sky3"), None)
+    if mcrop is not None and sky is not None:
+        if _nebula_mask_check(cfg, paths, layers, stars, mcrop, out_dir / "nebula_mask_check.png"):
+            info["previews"].append("nebula_mask_check.png")
+    crops = [c for c in cfg.report.crops if c.name.startswith("sky")]
+    if crops and sky is not None and cfg.color.neutral_background == "map":
+        info["sky_check"] = _color_map_check(cfg, layers, stars, sd if sd is not None else load_nebula_sd(cfg, paths),
+                                             sky, crops, out_dir / "background_check.png")
         info["previews"].append("background_check.png")
     return info
+
+
+def _nebula_mask_check(cfg: Config, paths: Paths, layers: dict, stars: Any, crop: Any, path: Path) -> bool:
+    """Кроп (sky3) 100% и ×5 с прежней маской туманности (квадрат, со звёздами) и с новой (3h)."""
+    from skyforge.clean import clean_dir, load_sky_mask
+    from skyforge.preview import display_crop
+
+    d = clean_dir(cfg, paths)
+    if not (d / "nebula_sd_prev.npy").exists():
+        return False
+    images, labels = [], []
+    for name, fn in (("прежняя маска", "nebula_sd_prev.npy"), ("новая маска", "nebula_sd.npy")):
+        sd = np.load(d / fn)
+        sl = display_crop(sd.shape, crop.x, crop.y, crop.size, cfg.bin)
+        base, _ = base_color(cfg, layers, load_sky_mask(cfg, paths, fn), sd)
+        out = tail_color(cfg, base[sl], {f: np.asarray(a)[sl] for f, a in layers.items()},
+                         stars.crop(sl) if stars is not None else None, sd[sl])
+        images += [out, np.clip(out * 5, 0, 1)]
+        labels += [f"{name}, 100%", f"{name}, ×5"]
+    contact_sheet(images, labels, path, cols=2, tile_inches=4.5, interpolation="nearest",
+                  title=f"Кроп {crop.name}, стиль {cfg.style or '—'}: с новой маской при ×5 плашек вокруг звёзд нет")
+    return True
+
+
+def _color_map_check(cfg: Config, layers: dict, stars: Any, sd: Any, sky: np.ndarray, crops: list,
+                     path: Path) -> dict[str, Any]:
+    """Карта цветовой поправки (R, G, B) и кропы неба 100% и ×5: до (одна поправка на кадр, как в 3g)
+    и после (карта). Медианы каналов по пустому небу каждого кропа."""
+    from skyforge.preview import display_crop
+
+    before, _ = base_color(cfg, layers, sky, sd, mode="constant")
+    after, _ = base_color(cfg, layers, sky, sd, mode="map")
+    rgb0, _ = neutralize(blend(layers, assign_colors(list(layers), cfg.mission, cfg.instrument, cfg.color), cfg.color),
+                         cfg.color.background_percentile)
+    delta, _ = sky_color_map(rgb0, sky, cfg.color.background_map_px, cfg.color.background_map_min_sky)
+    lim = float(np.abs(delta).max()) or 1.0
+    images = [np.clip(0.5 + delta / (2 * lim), 0, 1)]
+    labels = [f"карта поправки R, G, B (серое — 0, ±{lim:.3g})"]
+    meds: dict[str, Any] = {}
+    for crop in crops:
+        sl = display_crop(sky.shape, crop.x, crop.y, crop.size, cfg.bin)
+        cl = {f: np.asarray(a)[sl] for f, a in layers.items()}
+        cs = stars.crop(sl) if stars is not None else None
+        csd = sd[sl] if sd is not None else None
+        for name, base in (("до", before), ("после", after)):
+            out = tail_color(cfg, base[sl], cl, cs, csd)
+            m = sky[sl]
+            med = [float(np.median(out[..., k][m])) if m.any() else float("nan") for k in range(3)]
+            meds[f"{crop.name} {name}"] = [round(v, 4) for v in med]
+            images += [out, np.clip(out * 5, 0, 1)]
+            labels += [f"{crop.name} {name}, 100%", f"{crop.name} {name}, ×5: R {med[0]:.3f} G {med[1]:.3f} B {med[2]:.3f}"]
+    contact_sheet(images, labels, path, cols=4, tile_inches=3.6, interpolation="nearest",
+                  title=f"Цвет неба, стиль {cfg.style or '—'}: до — одна поправка на кадр, после — карта по блокам "
+                        f"{cfg.color.background_map_px} px; при ×5 после — серое без пятен")
+    return meds
 
 
 def _background_check(cfg: Config, layers: dict, stars: Any, sd: Any, sky: np.ndarray, crop: Any,
@@ -295,7 +380,7 @@ def _background_check(cfg: Config, layers: dict, stars: Any, sd: Any, sky: np.nd
     from skyforge.preview import display_crop
 
     sl = display_crop(sky.shape, crop.x, crop.y, crop.size, cfg.bin)
-    off = cfg.model_copy(update={"color": cfg.color.model_copy(update={"neutral_background": False})})
+    off = cfg.model_copy(update={"color": cfg.color.model_copy(update={"neutral_background": "off"})})
     rgb_no, _ = base_color(off, layers)
     rgb_no, _ = neutralize(rgb_no, cfg.color.background_percentile)  # прежний шаг: только чёрная точка
     rgb_eq, _ = base_color(cfg, layers, sky, sd)

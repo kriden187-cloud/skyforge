@@ -350,3 +350,73 @@ def test_fit_plane_ignores_outliers():
     v[:200] += 50                               # звёзды/лучи
     a, b, c = fit_plane(x, y, v)
     assert abs(a - 2) < 0.05 and abs(b - 0.03) < 0.002 and abs(c + 0.02) < 0.002
+
+
+def test_nebula_mask_drops_stars_keeps_nebula_and_uses_disk():
+    """3h: туманность — в маске; яркая звезда со спайками и насыщенным ядром отдельно от туманности — нет;
+    плотное скопление звёзд — нет; расширение диском (маска вокруг круглой туманности круглая)."""
+    from skyforge.clean import nebula_mask
+
+    rng = np.random.default_rng(3)
+    n = 1400
+    yy, xx = np.indices((n, n))
+    img = rng.normal(0, 1.0, (n, n)).astype(np.float32)
+    cy, cx = 450, 450
+    img += 8.0 * (np.hypot(yy - cy, xx - cx) < 180)                      # туманность-диск
+    sy, sx = 1100, 1100                                                    # яркая звезда далеко от туманности
+    img += 3000 * np.exp(-((yy - sy) ** 2 + (xx - sx) ** 2) / (2 * 3.0**2))
+    for k in range(-260, 261):                                             # спайки 520 px крестом
+        if abs(k) > 6:
+            img[sy + k, sx - 1:sx + 2] += 40
+            img[sy - 1:sy + 2, sx + k] += 40
+    img[sy - 2:sy + 3, sx - 2:sx + 3] = np.nan                             # насыщенное ядро
+    cores = ~np.isfinite(img)
+    stars = np.hypot(yy - sy, xx - sx) < 30
+    for y, x in [(300 + 22 * i, 1050 + 22 * j) for i in range(5) for j in range(5)]:  # скопление звёзд
+        img += 500 * np.exp(-((yy - y) ** 2 + (xx - x) ** 2) / (2 * 2.0**2))
+        stars |= np.hypot(yy - y, xx - x) < 25
+    cfg = Config.model_validate({"target": "t", "background": {"nebula_dilate_arcsec": 3.0, "mask_sigma": 5.0}})
+    mask, info = nebula_mask({"F1": img}, cfg, 0.063, stars, cores, window_px=95)
+    assert mask[cy, cx] and mask[cy + 180, cx]
+    assert not mask[sy, sx + 100] and not mask[sy + 200, sx]               # звезда со спайками — не туманность
+    assert not mask[390, 1100]                                             # скопление — не туманность
+    # диск: протяжённость маски по оси и по диагонали одинакова (у квадрата диагональ длиннее на ~20 px)
+    axis = max(r for r in range(150, 400) if mask[cy, cx + r])
+    diag = max(r for r in range(150, 400) if mask[cy + int(r / np.sqrt(2)), cx + int(r / np.sqrt(2))])
+    assert abs(diag - axis) <= 6, (axis, diag)
+    assert info["dropped_saturated"] >= 1 or info["dropped_star_components"] >= 1
+
+
+def test_sky_color_map_keeps_brightness_and_nebula():
+    """3h: цветовая карта убирает плавный цветной градиент неба, сумма каналов в каждом пикселе та же
+    (до 1e-6), туманность не трогается."""
+    from skyforge.compose import assign_colors, base_color, blend, neutralize
+
+    rng = np.random.default_rng(5)
+    n = 768
+    yy, xx = np.indices((n, n))
+    sd = (150 - np.hypot(yy - 384, xx - 384)).astype(np.float32)       # туманность радиуса 150
+    layers = {}
+    for k, f in enumerate(("F090W", "F212N", "F444W")):
+        grad = 0.03 * (xx / n if k == 1 else 1 - yy / n)                   # у каждого фильтра свой градиент неба
+        L = 0.05 + grad + rng.normal(0, 0.01, (n, n))
+        L[sd > 0] += 0.4 + 0.1 * k
+        layers[f] = L.astype(np.float32)
+    sky = sd < -25
+    cfg = Config.model_validate({"target": "t", "color": {"background_map_px": 128}})
+    assert cfg.color.neutral_background == "map"
+    ref, _ = neutralize(blend(layers, assign_colors(list(layers), "JWST", "NIRCAM", cfg.color), cfg.color),
+                        cfg.color.background_percentile)
+    out, info = base_color(cfg, layers, sky, sd)
+    assert np.abs(out.sum(-1) - ref.sum(-1)).max() < 1e-6                 # яркость не изменилась
+    assert np.allclose(out[384, 384], ref[384, 384], atol=1e-6)          # цвет туманности не тронут
+    for sl in ((slice(0, 128), slice(0, 128)), (slice(640, 768), slice(640, 768)), (slice(0, 128), slice(640, 768))):
+        m = sky[sl]
+        before = [float(np.median(ref[sl][..., k][m])) for k in range(3)]
+        after = [float(np.median(out[sl][..., k][m])) for k in range(3)]
+        assert max(after) - min(after) < 0.25 * (max(before) - min(before)) + 1e-3, (before, after)
+
+
+def test_neutral_background_bool_compat():
+    assert Config.model_validate({"target": "t", "color": {"neutral_background": True}}).color.neutral_background == "constant"
+    assert Config.model_validate({"target": "t", "color": {"neutral_background": False}}).color.neutral_background == "off"
