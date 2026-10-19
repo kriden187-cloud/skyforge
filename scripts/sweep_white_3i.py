@@ -25,8 +25,18 @@ from skyforge.preview import contact_sheet, display_crop, shrink
 from skyforge.stretch import load_masks, stretch_array
 
 
-def nasa_on_grid(ours: np.ndarray, ref_path: str, ours_pts: list, ref_guess: list) -> np.ndarray:
-    """Референс NASA на нашей сетке: подобие по двум звёздам (уточнение по максимуму рядом с подсказкой)."""
+# Звёзды с насыщенным ядром: центральная, внизу справа, слева в оболочке — на нашей картинке (кадр 2261×2022)
+# и на ngc3132_nasa.jpg (3000 px). Проверено по максимумам яркости (3j).
+OURS_STARS = [(1134, 877), (1902, 1701), (767, 892)]
+NASA_STARS = [(1497, 1310), (2500, 2386), (1019, 1331)]
+
+
+def nasa_on_grid(ours: np.ndarray, ref_path: str, ours_pts: list | None = None, ref_guess: list | None = None,
+                 refine: bool = False) -> np.ndarray:
+    """Референс NASA на нашей сетке (строка 0 — низ): подобие по звёздам. По умолчанию — по трём известным
+    звёздам без поиска (поиск максимума на нашей картинке сбивается, если ядро звезды изменено)."""
+    ours_pts = ours_pts if ours_pts is not None and refine else OURS_STARS
+    ref_guess = ref_guess if ref_guess is not None and refine else NASA_STARS
     ref = np.asarray(Image.open(ref_path).convert("RGB")).astype(np.float32) / 255
 
     def peak(img, x, y, r):
@@ -36,8 +46,8 @@ def nasa_on_grid(ours: np.ndarray, ref_path: str, ours_pts: list, ref_guess: lis
         j, i = np.unravel_index(np.argmax(win), win.shape)
         return x0 + i, y0 + j
 
-    o = [peak(ours, x, y, 30) for x, y in ours_pts]
-    n = [peak(ref, x, y, 80) for x, y in ref_guess]
+    o = [peak(ours, x, y, 30) for x, y in ours_pts] if refine else list(ours_pts)
+    n = [peak(ref, x, y, 80) for x, y in ref_guess] if refine else list(ref_guess)
     t = SimilarityTransform()
     t.estimate(np.array(o, float), np.array(n, float))
     return warp(ref, t, output_shape=ours.shape[:2], order=1)[::-1]   # сетка: строка 0 — низ

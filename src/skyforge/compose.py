@@ -176,7 +176,26 @@ def saturate(rgb: np.ndarray, s: float, gamut: str = "clip") -> np.ndarray:
     return np.clip(out, 0, 1)
 
 
-def apply_shadows(rgb: np.ndarray, sc: Any, nebula_sd: np.ndarray | None) -> np.ndarray:
+def halo_weight(rgb: np.ndarray, nebula_sd: np.ndarray, sc: Any, star_w: np.ndarray | None = None) -> np.ndarray:
+    """Вес подъёма за маской туманности от сигнала: сглаженная яркость (звёзды заменены уровнем неба) над
+    уровнем неба, делённая на halo_k·σ сглаженного неба, в 0–1. Небо — самые тёмные 30% сглаженной
+    яркости за маской; σ — разброс там же (ступеньки и плавный ход фона), не шум пикселя."""
+    from scipy.ndimage import gaussian_filter
+
+    base = rgb.max(axis=-1) if sc.by == "max" else rgb @ LUMA
+    out = nebula_sd < -sc.feather_px
+    stars = (star_w > 0.01) if star_w is not None else np.zeros(base.shape, bool)
+    level0 = float(np.nanmedian(base[out & ~stars]))
+    s = gaussian_filter(np.where(stars, level0, base).astype(np.float32), sc.halo_smooth_px)
+    v = s[out & ~stars]
+    dark = v[v < np.percentile(v, 30)]
+    level = float(np.median(dark))
+    sigma = float(1.4826 * np.median(np.abs(dark - level))) or 1e-6
+    return np.clip((s - level) / (sc.halo_k * sigma), 0, 1).astype(np.float32)
+
+
+def apply_shadows(rgb: np.ndarray, sc: Any, nebula_sd: np.ndarray | None, star_w: np.ndarray | None = None,
+                  halo_w: np.ndarray | None = None) -> np.ndarray:
     """Подъём теней по всему кадру или только в маске туманности с мягким краем feather_px."""
     if sc.value <= 0:
         return rgb
@@ -186,7 +205,15 @@ def apply_shadows(rgb: np.ndarray, sc: Any, nebula_sd: np.ndarray | None) -> np.
     if nebula_sd is None:
         raise SkyforgeError("color.shadows.scope: nebula — нет маски туманности: запусти skyforge clean")
     w = np.clip(0.5 + nebula_sd / sc.feather_px, 0, 1).astype(np.float32)[..., None]
-    return rgb + w * (lifted - rgb)
+    out = rgb + w * (lifted - rgb)
+    if sc.outside > 0:  # за маской — своя сила (внешний ореол), с весом от сигнала при halo_k > 0
+        if sc.halo_k > 0:
+            hw = halo_w if halo_w is not None else halo_weight(rgb, nebula_sd, sc, star_w)
+            w_out = (1 - w) * hw[..., None]
+        else:
+            w_out = 1 - w
+        out = out + w_out * (shadows(rgb, sc.outside, sc.by) - rgb)
+    return out
 
 
 def sky_weight(nebula_sd: np.ndarray | None, feather_px: float, shape: tuple[int, ...]) -> np.ndarray:
@@ -268,17 +295,53 @@ def base_color(cfg: Config, layers: dict[str, np.ndarray], sky: np.ndarray | Non
     return rgb, info
 
 
+def star_chroma(rgb: np.ndarray, stars: list, c: Any) -> np.ndarray:
+    """Цвет вокруг звёзд с насыщенным ядром: яркость (самый яркий канал) та же, доли каналов — сглаженные
+    по соседям с весом яркости; обрезанные белые пиксели в расчёт цвета не идут, ядро берёт цвет кольца."""
+    from scipy.ndimage import gaussian_filter
+
+    out = rgb.copy()
+    h, w = rgb.shape[:2]
+    R = int(np.ceil(c.r_out_px + 3 * c.core_sigma_px))
+    for row, col, _, _ in stars:
+        y0, y1, x0, x1 = max(row - R, 0), min(row + R + 1, h), max(col - R, 0), min(col + R + 1, w)
+        sub = rgb[y0:y1, x0:x1]
+        m = sub.max(axis=-1)
+        frac = sub / np.maximum(m, 1e-6)[..., None]
+        wgt = np.where(sub.min(axis=-1) < 0.99, m, 0).astype(np.float32)          # белое обрезанное — без цвета
+        num = np.stack([gaussian_filter(frac[..., k] * wgt, c.sigma_px) for k in range(3)], -1)
+        den = gaussian_filter(wgt, c.sigma_px)[..., None]
+        num2 = np.stack([gaussian_filter(frac[..., k] * wgt, c.core_sigma_px) for k in range(3)], -1)
+        den2 = gaussian_filter(wgt, c.core_sigma_px)[..., None]
+        small = den / np.maximum(gaussian_filter(np.ones_like(wgt), c.sigma_px)[..., None], 1e-6)
+        mix = np.clip(small * 4, 0, 1)                                            # мало цвета рядом — берём шире
+        col_s = mix * num / np.maximum(den, 1e-6) + (1 - mix) * num2 / np.maximum(den2, 1e-6)
+        col_s = col_s / np.maximum(col_s.max(axis=-1, keepdims=True), 1e-6)       # самый яркий канал = 1
+        yy, xx = np.mgrid[y0:y1, x0:x1]
+        r = np.hypot(yy - row, xx - col)
+        t = np.where(r < c.r_in_px, 1.0, 0.5 + 0.5 * np.cos(np.pi * np.clip((r - c.r_in_px) / (c.r_out_px - c.r_in_px), 0, 1)))
+        t = np.where(r >= c.r_out_px, 0.0, t)[..., None]
+        new = m[..., None] * col_s
+        out[y0:y1, x0:x1] = (sub + t * (new - sub)).astype(np.float32)
+    return np.clip(out, 0, 1)
+
+
 def tail_color(cfg: Config, rgb: np.ndarray, layers: dict[str, np.ndarray], star_mask: Any = None,
-               nebula_sd: np.ndarray | None = None) -> np.ndarray:
+               nebula_sd: np.ndarray | None = None, sat_stars: list | None = None) -> np.ndarray:
     """Тени, насыщенность, обесцвечивание звёзд."""
     # Цветовая карта фона не обрезает значения (сумма каналов должна сохраниться точно); отрицательный канал
     # здесь — шум неба ниже нуля. Без обрезки shadows обнулил бы весь пиксель с отрицательной яркостью.
     rgb = np.clip(rgb, 0, 1)
-    rgb = apply_shadows(rgb, cfg.color.shadows, nebula_sd)
+    rgb = apply_shadows(rgb, cfg.color.shadows, nebula_sd, star_mask.weight if star_mask is not None else None)
     rgb = saturate(rgb, cfg.color.saturation, cfg.color.saturation_gamut)
     det_layer = layers.get(star_mask.detect) if star_mask is not None else None
-    return desaturate_stars(rgb, star_mask, cfg.color.star_saturation, det_layer,
-                            cfg.stars.nebula_level).astype(np.float32)
+    rgb = desaturate_stars(rgb, star_mask, cfg.color.star_saturation, det_layer, cfg.stars.nebula_level).astype(np.float32)
+    if cfg.color.star_chroma.enabled and sat_stars:
+        sc = cfg.color.star_chroma
+        if sc.outside_nebula_only and nebula_sd is not None:
+            sat_stars = [s for s in sat_stars if nebula_sd[s[0], s[1]] < 0]
+        rgb = star_chroma(rgb, sat_stars, sc)
+    return rgb
 
 
 def compose_layers(cfg: Config, layers: dict[str, np.ndarray], star_mask: Any = None,
@@ -321,7 +384,9 @@ def compose(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     sd = load_nebula_sd(cfg, paths, required=cfg.color.shadows.scope == "nebula" and cfg.color.shadows.value > 0)
     sky = load_sky_mask(cfg, paths)
     base, info = base_color(cfg, layers, sky, sd if sd is not None else load_nebula_sd(cfg, paths), field=field)
-    rgb = tail_color(cfg, base, layers, stars, sd)
+    from skyforge.clean import load_saturated_stars
+
+    rgb = tail_color(cfg, base, layers, stars, sd, load_saturated_stars(cfg, paths))
     composite_path(cfg, paths).parent.mkdir(parents=True, exist_ok=True)
     np.save(composite_path(cfg, paths), rgb)
     composite_path(cfg, paths).with_suffix(".json").write_text(

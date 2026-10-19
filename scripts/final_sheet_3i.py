@@ -1,6 +1,6 @@
 """3i: итоговые листы — «phase-3h | 3i | NASA» целиком и кропы приёмки (100%, sky-кропы ещё ×5).
 
-Запуск: uv run python scripts/final_sheet_3i.py <папка> <прогон --all> [стиль]
+Запуск: uv run python scripts/final_sheet_3i.py <папка> <прогон --all> [стиль] [baseline] [фаза]
 """
 
 from __future__ import annotations
@@ -33,15 +33,16 @@ def crop(img: np.ndarray, x: int, y: int, s: int) -> np.ndarray:
 def main() -> None:
     out, run = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
     style = sys.argv[3] if len(sys.argv) > 3 else "showcase"
+    tag = sys.argv[4] if len(sys.argv) > 4 else "phase-3h"
+    phase = sys.argv[5] if len(sys.argv) > 5 else "3i"
     P = Paths(pathlib.Path(".").resolve())
     cfg = Config.load(f"configs/ngc3132/{style}.yaml", style).model_copy(update={"bin": 1})
     now = load(run / style / f"ngc3132_{style}.png")
-    base = load(P.root / "data" / "baselines" / "ngc3132" / "phase-3h" / f"{style}_bin1.png")
-    nasa = nasa_on_grid(now, str(P.abs(cfg.reference_image)), [(1133, 876), (1901, 1701)],
-                        [(1491, 1313), (2500, 2388)])[::-1]
-    cols = (("phase-3h", base), ("3i", now), ("NASA", nasa))
-    contact_sheet([shrink(im, 900)[::-1] for _, im in cols], [n for n, _ in cols], out / f"30_{style}_3h_3i_NASA.png",
-                  cols=3, tile_inches=6, title=f"{style}: phase-3h | 3i | NASA (NASA приведён к нашей сетке по двум звёздам)")
+    base = load(P.root / "data" / "baselines" / "ngc3132" / tag / f"{style}_bin1.png")
+    nasa = nasa_on_grid(now, str(P.abs(cfg.reference_image)))[::-1]
+    cols = ((tag, base), (phase, now), ("NASA", nasa))
+    contact_sheet([shrink(im, 900)[::-1] for _, im in cols], [n for n, _ in cols], out / f"30_{style}_{tag}_{phase}_NASA.png",
+                  cols=3, tile_inches=6, title=f"{style}: {tag} | {phase} | NASA (NASA приведён к нашей сетке по трём звёздам)")
     crops = {c.name: c for c in with_resolved_crops(cfg, P).report.crops}
     order = ["core", "inner", "edge", "star_left", "sky", "sky2", "sky3", "sky4"]
     tiles, labels = [], []
@@ -54,8 +55,14 @@ def main() -> None:
             for name, im in cols:
                 tiles.append(np.clip(crop(im, c.x, c.y, c.size) * 5, 0, 1))
                 labels.append(f"{n} · {name} · ×5")
+    stars = [("центральная", (1134, 877)), ("внизу справа", (1902, 1701)), ("слева", (767, 892)),
+             ("поле 1", (1966, 1179)), ("поле 2", (276, 1412)), ("поле 3", (845, 1758))]
+    for sname, (x, y) in stars:
+        for name, im in cols:
+            tiles.append(np.kron(im[y - 40:y + 40, x - 40:x + 40], np.ones((3, 3, 1))))
+            labels.append(f"{sname} · {name} · 80 px ×3")
     contact_sheet([t[::-1] for t in tiles], labels, out / f"31_{style}_кропы_приёмки.png", cols=3, tile_inches=3.6,
-                  interpolation="nearest", title=f"{style}: кропы приёмки 3i — phase-3h, 3i, NASA")
+                  interpolation="nearest", title=f"{style}: кропы приёмки {phase} — {tag}, {phase}, NASA")
 
 
 if __name__ == "__main__":

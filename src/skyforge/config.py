@@ -243,6 +243,7 @@ class StretchConfig(_Strict):
     # вокруг звёзд с насыщенным ядром (их крылья в синих фильтрах в сотни раз ярче туманности рядом).
     exclude_stars: bool = True
     saturated_stars: SaturatedStarsConfig = SaturatedStarsConfig()
+
     exclude_radius_px: float = Field(150.0, ge=0, description="радиус диска вокруг звезды с насыщенным ядром, px при bin 1")
 
     @model_validator(mode="before")
@@ -287,6 +288,27 @@ class ShadowsConfig(_Strict):
     # all — по всему кадру; nebula — только внутри маски туманности (этап clean), фон остаётся на чёрной точке.
     scope: Literal["all", "nebula"] = "all"
     feather_px: float = Field(20.0, gt=0, description="ширина мягкого края маски, px сетки")
+    # scope nebula: подъём за маской туманности (внешний ореол, 3j) — своей силой; внутри маски — value, как раньше.
+    outside: float = Field(0.0, ge=0, description="сила подъёма за маской туманности, 0 — выкл")
+    # Подъём за маской — с весом от самого сигнала (3j): сглаженная яркость (звёзды вырезаны) над уровнем неба,
+    # делённая на halo_k·σ сглаженного неба, в 0–1. Где сигнал на уровне неба (и его ступенек), подъёма нет;
+    # без новой границы. halo_k 0 — подъём за маской ровный.
+    halo_k: float = Field(0.0, ge=0)
+    halo_smooth_px: float = Field(30.0, gt=0, description="сглаживание яркости для веса ореола, px")
+
+
+class StarChromaConfig(_Strict):
+    # 3j: цвет звёзд с насыщенным ядром (clean): яркость пикселя (самый яркий канал) не меняется, цвет (доли
+    # каналов) сглаживается по соседям — пёстрая крупа на лучах от разной дифракции фильтров уходит; белые
+    # обрезанные пиксели ядра цвета не имеют, в расчёт не идут и получают цвет кольца крыльев.
+    enabled: bool = False
+    r_in_px: float = Field(80.0, gt=0, description="до этого радиуса от звезды — целиком")
+    r_out_px: float = Field(140.0, gt=0, description="к этому радиусу — плавно в ноль")
+    sigma_px: float = Field(5.0, gt=0, description="сглаживание цвета, px")
+    core_sigma_px: float = Field(15.0, gt=0, description="сглаживание цвета для обрезанного ядра, px")
+    # Только звёзды вне маски туманности: у звёзд внутри неё лучи отличаются от туманности цветом, а не яркостью,
+    # и сглаженный цвет растворяет звезду в туманности (3j).
+    outside_nebula_only: bool = True
 
 
 class ColorConfig(_Strict):
@@ -300,6 +322,7 @@ class ColorConfig(_Strict):
     # clip — прирост цветности и обрезка в 0–1; limit — прирост ограничивается в пикселе так, чтобы ни один
     # канал не вышел за 0–1 (оттенок и рисунок в ярких цветных областях сохраняются, 3i).
     saturation_gamut: Literal["clip", "limit"] = "clip"
+    star_chroma: StarChromaConfig = StarChromaConfig()
     # Подъём теней: число (= value) или {value, scope, feather_px}.
     shadows: ShadowsConfig = ShadowsConfig()
     # Насыщенность звёзд поля внутри маски звёзд (stars.*): 1 — как есть, 0 — серые с той же яркостью.
