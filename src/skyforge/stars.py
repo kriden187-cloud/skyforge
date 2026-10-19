@@ -74,17 +74,21 @@ class StarMask:
     weight: np.ndarray
     window_px: int
     detect: str  # фильтр, в котором искались звёзды: по нему считается доля звёздного света на туманности
+    origin: tuple[int, int] = (0, 0)  # начало поля статистики: от него идёт сетка блоков местного фона
 
     def crop(self, sl: tuple[slice, slice]) -> StarMask:
-        return StarMask(self.weight[sl], self.window_px, self.detect)
+        return StarMask(self.weight[sl], self.window_px, self.detect,
+                        (self.origin[0] - (sl[0].start or 0), self.origin[1] - (sl[1].start or 0)))
 
     def shrink(self, factor: int) -> StarMask:
         from skyforge.preview import nan_block_mean
 
-        return StarMask(nan_block_mean(self.weight, factor), max(3, self.window_px // max(factor, 1)), self.detect)
+        f = max(factor, 1)
+        return StarMask(nan_block_mean(self.weight, factor), max(3, self.window_px // f), self.detect,
+                        (self.origin[0] // f, self.origin[1] // f))
 
 
-def star_mask(a: np.ndarray, s: StarsConfig, scale_arcsec: float) -> tuple[np.ndarray, np.ndarray]:
+def star_mask(a: np.ndarray, s: StarsConfig, scale_arcsec: float, field: object = None) -> tuple[np.ndarray, np.ndarray]:
     """Маска звёзд поля и маска плотной туманности для одного фильтра.
 
     Звезда — компактная связная область выше mask_sigma с пиком выше peak_sigma и площадью
@@ -92,7 +96,7 @@ def star_mask(a: np.ndarray, s: StarsConfig, scale_arcsec: float) -> tuple[np.nd
     из маски исключаются жёстко. Слабые волокна защищает уже не маска, а доля звёздного
     света в пикселе (compose.desaturate_stars).
     """
-    smp = sample(a)
+    smp = sample(field.values(a) if field is not None else a)  # field — поле статистики (skyforge.field)
     med, _, std = sigma_clipped_stats(smp[np.isfinite(smp)], sigma=3.0)
     excess = np.where(np.isfinite(a), a - np.float32(med), 0)
     det = excess > s.mask_sigma * std

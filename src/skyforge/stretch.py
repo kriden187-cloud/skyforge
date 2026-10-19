@@ -41,18 +41,23 @@ def curve(x: np.ndarray, method: str, a: float) -> np.ndarray:
 
 
 def masked_sample(a: np.ndarray, mask: np.ndarray) -> np.ndarray:
-    v = np.asarray(a, dtype=np.float32)[mask]
-    v = v[np.isfinite(v)]
-    step = max(1, math.ceil(v.size / STATS_SAMPLE_PIXELS))
-    return v[::step]
+    # Выборка на той же решётке, что и sample(): шаг зависит от размера кадра, а не от числа пикселей маски —
+    # иначе изменение маски на краю сдвигало бы всю выборку и процентили по всему кадру (3h, п.4).
+    v = sample(a)[sample(np.asarray(mask, dtype=np.float32)) > 0.5]
+    return v[np.isfinite(v)]
 
 
 def stretch_array(arr: np.ndarray, s: StretchConfig, stats_from: np.ndarray | None = None,
-                  masks: tuple[np.ndarray, np.ndarray] | None = None) -> tuple[np.ndarray, dict[str, float]]:
+                  masks: tuple[np.ndarray, np.ndarray] | None = None,
+                  field: Any = None) -> tuple[np.ndarray, dict[str, float]]:
     """stats_from — полный кадр, если arr его уменьшенная копия (для sweep).
     masks — (пустое небо, туманность) на сетке stats_from: при anchor masks чёрная точка берётся
     по небу, белая — по туманности."""
     src = arr if stats_from is None else stats_from
+    if field is not None:  # поле статистики (skyforge.field): процентили — только там, где есть все фильтры
+        if masks is not None:
+            masks = (field.mask(masks[0]), field.mask(masks[1]))
+        src = field.values(src)
     smp = sample(src)
     if not np.isfinite(smp).any():
         raise SkyforgeError("в кадре нет ни одного числа — только NaN")
@@ -102,10 +107,11 @@ def load_masks(cfg: Config, paths: Paths) -> tuple[np.ndarray, np.ndarray] | Non
 
 
 def stretch_all(cfg: Config, arrays: dict[str, np.ndarray],
-                masks: tuple[np.ndarray, np.ndarray] | None = None) -> tuple[dict[str, np.ndarray], dict[str, dict]]:
+                masks: tuple[np.ndarray, np.ndarray] | None = None,
+                field: Any = None) -> tuple[dict[str, np.ndarray], dict[str, dict]]:
     out, stats = {}, {}
     for f, a in arrays.items():
-        out[f], stats[f] = stretch_array(a, cfg.stretch.for_filter(f), masks=masks)
+        out[f], stats[f] = stretch_array(a, cfg.stretch.for_filter(f), masks=masks, field=field)
     return out, stats
 
 
@@ -123,7 +129,9 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     masks = load_masks(cfg, paths) if cfg.stretch.anchor == "masks" else None
     if cfg.stretch.anchor == "masks" and masks is None:
         console.print("[yellow]  stretch.anchor: masks — масок нет (clean выключен), растяжка по всему кадру[/]")
-    stretched, stats = stretch_all(cfg, arrays, masks)
+    from skyforge.align import stats_field
+
+    stretched, stats = stretch_all(cfg, arrays, masks, stats_field(cfg, paths, list(arrays.values())))
     for f, y in stretched.items():
         np.save(d / f"{f}.npy", y)
         s = cfg.stretch.for_filter(f)

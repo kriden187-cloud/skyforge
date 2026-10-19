@@ -290,3 +290,88 @@ def test_tile_pedestal_removes_step_and_keeps_nebula():
 def test_with_param_creates_filter_weight():
     c = Config.model_validate({"target": "X", "filters": ["F212N"]})
     assert c.with_param("color.weights.F212N", 0.5).color.weights == {"F212N": 0.5}
+
+
+def test_union_grid_extends_lattice_without_shift(tmp_path):
+    """3h п.4: сетка по объединению покрытий — та же решётка, расширенная на целое число пикселей;
+    внутри прежней сетки репроекция даёт те же пиксели."""
+    from astropy.io import fits
+    from skyforge.align import reproject_nan_safe, union_grid
+
+    grid = make_wcs(0.1, (200, 200), 0.0, (0, 0))
+    other = make_wcs(0.1, (200, 200), 20.0, (60, -40))              # второй фильтр сдвинут и повёрнут
+    rng = np.random.default_rng(1)
+    data = rng.normal(0, 1, (200, 200)).astype(np.float32)
+    p = tmp_path / "other.fits"
+    fits.HDUList([fits.PrimaryHDU(), fits.ImageHDU(data, header=other.to_header(), name="SCI")]).writeto(p)
+    w2, shape2 = union_grid(grid, (200, 200), [p])
+    assert shape2[0] > 200 and shape2[1] > 200
+    off = np.round(np.asarray(w2.wcs.crpix) - np.asarray(grid.wcs.crpix)).astype(int)   # (x, y)
+    assert np.allclose(np.asarray(w2.wcs.crpix) - np.asarray(grid.wcs.crpix), off)
+    a = reproject_nan_safe(data, other, grid, (200, 200), "bilinear")
+    b = reproject_nan_safe(data, other, w2, shape2, "bilinear")
+    inner = b[off[1]:off[1] + 200, off[0]:off[0] + 200]
+    ok = np.isfinite(a)
+    assert np.array_equal(np.isfinite(inner), ok) and np.allclose(inner[ok], a[ok], atol=1e-6, rtol=0)
+    assert np.isfinite(b).sum() > np.isfinite(a).sum()                 # снаружи прежней сетки тоже есть данные
+
+
+def test_blend_renormalizes_where_filters_missing():
+    """Где фильтра нет, цвет собирается из имеющихся: край не темнеет и не уходит в цвет отсутствующего."""
+    c = ColorConfig()
+    a = np.full((4, 4), 0.6, dtype=np.float32)
+    b = a.copy()
+    b[:, 2:] = np.nan                                                   # второго фильтра справа нет
+    colors = {"A": (1.0, 0.5, 0.0), "B": (0.0, 0.5, 1.0)}
+    rgb = blend({"A": a, "B": b}, colors, c)
+    assert np.allclose(rgb[0, 0], [0.6, 0.6, 0.6], atol=1e-6)          # оба фильтра: серый той же яркости
+    assert np.allclose(rgb[0, 3], [0.6, 0.6, 0.0], atol=1e-6)          # только A: его цвет, без потемнения G
+    rgb_none = blend({"A": np.full((2, 2), np.nan, np.float32), "B": np.full((2, 2), np.nan, np.float32)}, colors, c)
+    assert (rgb_none == 0).all()
+
+
+def test_crops_on_sky_follow_grid_change():
+    """Кроп с центром на небе показывает то же место на любой сетке: при расширении кадра на (dx, dy)
+    пиксели центра сдвигаются ровно на столько же (3h: в 3g кропы в пикселях съехали при смене кадра)."""
+    from skyforge.align import resolve_crops
+    from skyforge.config import ReportCrop
+
+    a = make_wcs(0.063, (2000, 2000), 35.0, (0, 0))
+    b = a.deepcopy()
+    b.wcs.crpix = np.asarray(b.wcs.crpix) + [236, 300]                  # тот же кадр внутри расширенного
+    ra, dec = a.pixel_to_world_values(812, 1500)
+    c = ReportCrop(name="sky", ra=float(ra), dec=float(dec), size=400)
+    ca = resolve_crops([c], a, 2000, 1)[0]
+    cb = resolve_crops([c], b, 2400, 1)[0]
+    assert (ca.x, ca.y) == (812, 2000 - 1 - 1500)
+    assert cb.x - ca.x == 236 and cb.y - ca.y == (2400 - 2000) - 300     # картинка: y вниз, кадр выше на 400
+    c4 = resolve_crops([c], binned_wcs(a, 4, (2000, 2000)), 500, 4)[0]
+    assert abs(c4.x - ca.x) <= 4 and abs(c4.y - ca.y) <= 4
+    with pytest.raises(ValidationError):
+        ReportCrop(name="x", ra=1.0, size=100)
+
+
+def test_channel_rect_drops_strip_without_channel():
+    from skyforge.align import channel_rect
+
+    sw = np.zeros((300, 400), bool)
+    lw = np.zeros((300, 400), bool)
+    sw[10:290, 0:400] = True                                            # короткие волны шире слева и справа
+    lw[0:300, 40:380] = True
+    lw[150, 200] = False                                                # битый пиксель внутри — не в счёт
+    r0, r1, c0, c1 = channel_rect({"SW": sw, "LW": lw}, [["LW"], ["SW"]])
+    assert (r0, r1, c0, c1) == (10, 290, 40, 380)
+
+
+def test_block_median_map_does_not_depend_on_frame_extension():
+    """Сетка блоков идёт от начала поля: при расширении кадра медиана внутри прежней области та же."""
+    from skyforge.field import block_median_map
+
+    rng = np.random.default_rng(2)
+    big = rng.normal(0, 1, (700, 800)).astype(np.float32)
+    r, c = 113, 57
+    inner = big[r:r + 500, c:c + 600]
+    a = block_median_map(inner, 95, (0, 0))
+    b = block_median_map(big, 95, (r, c))[r:r + 500, c:c + 600]
+    m = 200                                                              # вдали от края окно видит одно и то же
+    assert np.allclose(a[m:-m, m:-m], b[m:-m, m:-m], atol=1e-6)

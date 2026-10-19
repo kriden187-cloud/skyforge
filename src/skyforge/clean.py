@@ -58,7 +58,8 @@ def load_star_weight(cfg: Config, paths: Paths) -> StarMask | None:
         raise SkyforgeError("для color.star_saturation нужна маска звёзд: запусти skyforge clean")
     window = json.loads(meta.read_text(encoding="utf-8"))["star_window_px"]
     meta_data = json.loads(meta.read_text(encoding="utf-8"))
-    return StarMask(np.load(p), window, meta_data["star_detect_filter"])
+    rect = read_aligned_meta(cfg, paths).get("intersection")
+    return StarMask(np.load(p), window, meta_data["star_detect_filter"], (rect[0], rect[2]) if rect else (0, 0))
 
 
 def load_sky_mask(cfg: Config, paths: Paths, nebula: str = "nebula_sd.npy") -> np.ndarray | None:
@@ -126,8 +127,13 @@ def clean(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
 
 
 def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any]:
+    from skyforge.align import with_resolved_crops
+    from skyforge.field import make_field
+
     arrays, _, meta = load_aligned(cfg, paths)
+    cfg = with_resolved_crops(cfg, paths)
     scale = meta["pixel_scale_arcsec"]
+    field = make_field(list(arrays.values()), meta.get("intersection"))
     d.mkdir(parents=True, exist_ok=True)
     for old in d.glob("*.npy"):
         old.unlink()
@@ -172,7 +178,7 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
             models[f], masks[f] = model, mask
         after[f] = out.astype(np.float32)
         np.save(d / f"{f}.npy", after[f])
-        star_masks[f] = star_mask(after[f], cfg.stars, scale)
+        star_masks[f] = star_mask(after[f], cfg.stars, scale, field)
         info["filters"][f] = fi
         parts = []
         if "cores" in fi:
@@ -191,11 +197,11 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     np.save(d / "star_weight.npy", weight)
     info["star_mask_percent"] = round(float((weight > 0.5).mean() * 100), 2)
     console.print(f"  маска звёзд (по {detect}): {info['star_mask_percent']}% кадра")
-    nebula, ni = nebula_mask(after, cfg, scale, star_masks[detect][0], holes_all, smask.window_px)
+    nebula, ni = nebula_mask(after, cfg, scale, star_masks[detect][0], holes_all, smask.window_px, field)
     sd = signed_distance(nebula)
     np.save(d / "nebula_sd.npy", sd)
     # прежняя маска (квадрат, со звёздами) — только для сравнения в отчёте и превью
-    old = nebula_mask_square(after, cfg, scale)
+    old = nebula_mask_square(after, cfg, scale, field)
     np.save(d / "nebula_sd_prev.npy", signed_distance(old))
     info["nebula_percent"] = round(float(nebula.mean() * 100), 1)
     info["nebula_percent_prev"] = round(float(old.mean() * 100), 1)
@@ -281,22 +287,17 @@ def signed_distance(mask: np.ndarray) -> np.ndarray:
     return (ndimage.distance_transform_edt(mask) - ndimage.distance_transform_edt(~mask)).astype(np.float32)
 
 
-def fill_stars(a: np.ndarray, stars: np.ndarray, window_px: int) -> np.ndarray:
-    """Пиксели звёзд → местная медиана фона без звёзд (окно window_px). Остальные пиксели не меняются."""
-    from skyforge.preview import nan_block_mean
+def fill_stars(a: np.ndarray, stars: np.ndarray, window_px: int, origin: tuple[int, int] = (0, 0)) -> np.ndarray:
+    """Пиксели звёзд → местная медиана фона без звёзд (окно window_px). Остальные пиксели не меняются.
+    origin — начало поля статистики: от него идёт сетка блоков."""
+    from skyforge.field import block_median_map
 
     x = np.where(stars, np.nan, a).astype(np.float32)
-    factor = max(1, window_px // 16)  # медиана на уменьшенной копии, как compose.local_background
-    small = nan_block_mean(x, factor)
-    bad = ~np.isfinite(small)
-    if bad.all():
+    if not np.isfinite(x).any():
         return np.array(a, dtype=np.float32, copy=True)
-    if bad.any():
-        small = small[tuple(ndimage.distance_transform_edt(bad, return_distances=False, return_indices=True))]
-    med = ndimage.median_filter(small, size=max(3, window_px // factor) | 1, mode="nearest")
-    bg = ndimage.zoom(med, (a.shape[0] / med.shape[0], a.shape[1] / med.shape[1]), order=1, mode="nearest")
+    bg = block_median_map(x, window_px, origin, fill_empty=True)
     out = np.array(a, dtype=np.float32, copy=True)
-    out[stars] = bg[: a.shape[0], : a.shape[1]][stars]
+    out[stars] = bg[stars]
     return out
 
 
@@ -308,7 +309,8 @@ def _star_with_halo_px(cfg: Config, scale: float) -> float:
 
 
 def nebula_mask(layers: dict[str, np.ndarray], cfg: Config, scale: float, stars: np.ndarray | None = None,
-                cores: np.ndarray | None = None, window_px: int = 95) -> tuple[np.ndarray, dict[str, Any]]:
+                cores: np.ndarray | None = None, window_px: int = 95,
+                field: Any = None) -> tuple[np.ndarray, dict[str, Any]]:
     """Маска туманности (3h): по каждому фильтру звёзды (stars) заменяются местной медианой фона, на этом
     кадре — чувствительная маска фона (background.*), расширенная диском nebula_dilate_arcsec. Крупные
     компоненты — туманность, кроме тех, где звёзд больше nebula_star_fraction. В объединении по фильтрам
@@ -323,8 +325,9 @@ def nebula_mask(layers: dict[str, np.ndarray], cfg: Config, scale: float, stars:
     dropped_stars = 0
     for a in layers.values():
         finite = np.isfinite(a)
-        src = fill_stars(a, stars & finite, window_px) if stars is not None else a
-        m = (ndimage.distance_transform_edt(~source_mask(src, plain, scale)) <= r) & finite
+        origin = field.origin if field is not None else (0, 0)
+        src = fill_stars(a, stars & finite, window_px, origin) if stars is not None else a
+        m = (ndimage.distance_transform_edt(~source_mask(src, plain, scale, field=field)) <= r) & finite
         labels, n = ndimage.label(m, structure=np.ones((3, 3)))
         if n == 0:
             continue
@@ -353,7 +356,7 @@ def nebula_mask(layers: dict[str, np.ndarray], cfg: Config, scale: float, stars:
                     "dropped_saturated": dropped_sat}
 
 
-def nebula_mask_square(layers: dict[str, np.ndarray], cfg: Config, scale: float) -> np.ndarray:
+def nebula_mask_square(layers: dict[str, np.ndarray], cfg: Config, scale: float, field: Any = None) -> np.ndarray:
     """Прежняя маска (до 3h): квадратное расширение, звёзды не вычитаются. Только для сравнения."""
     from skyforge.background import source_mask
 
@@ -361,7 +364,7 @@ def nebula_mask_square(layers: dict[str, np.ndarray], cfg: Config, scale: float)
     star_with_halo = _star_with_halo_px(cfg, scale)
     nebula = np.zeros(next(iter(layers.values())).shape, dtype=bool)
     for a in layers.values():
-        m = source_mask(a, bc, scale)
+        m = source_mask(a, bc, scale, field=field)
         labels, n = ndimage.label(m, structure=np.ones((3, 3)))
         if n == 0:
             continue

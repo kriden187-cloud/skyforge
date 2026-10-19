@@ -85,6 +85,100 @@ def target_grid(ref_wcs: WCS, ref_shape: tuple[int, int], north_up: bool) -> tup
     return wcs, tuple(int(s) for s in shape)
 
 
+def union_grid(grid_wcs: WCS, grid_shape: tuple[int, int], files: list[Path]) -> tuple[WCS, tuple[int, int]]:
+    """Сетка опорного кадра, расширенная на целое число пикселей так, чтобы вместить данные всех файлов.
+    Решётка та же (сдвиг CRPIX на целое): пиксели внутри прежней сетки репроецируются как раньше."""
+    from astropy.io import fits
+
+    from skyforge.fitsio import _sci_index, _wcs
+
+    lo = np.array([0.0, 0.0])
+    hi = np.array([grid_shape[1] - 1.0, grid_shape[0] - 1.0])
+    for p in files:
+        with fits.open(p, memmap=True, mode="readonly") as h:
+            i = _sci_index(h)
+            data = h[i].data
+            wcs = _wcs(h[i].header)
+            ok = np.isfinite(data[::8, ::8])
+            rows, cols = np.flatnonzero(ok.any(axis=1)) * 8, np.flatnonzero(ok.any(axis=0)) * 8
+        if rows.size == 0:
+            continue
+        ys = [rows[0] - 8, rows[-1] + 8]
+        xs = [cols[0] - 8, cols[-1] + 8]
+        cx, cy = np.meshgrid(xs, ys)
+        gx, gy = grid_wcs.world_to_pixel(wcs.pixel_to_world(cx.ravel(), cy.ravel()))
+        lo = np.minimum(lo, [np.min(gx), np.min(gy)])
+        hi = np.maximum(hi, [np.max(gx), np.max(gy)])
+    c_lo, r_lo = (int(np.floor(v)) for v in lo)
+    c_hi, r_hi = (int(np.ceil(v)) + 1 for v in hi)
+    w = grid_wcs.deepcopy()
+    w.wcs.crpix = np.asarray(w.wcs.crpix) - [c_lo, r_lo]
+    if w.sip is not None:
+        w.sip = Sip(w.sip.a, w.sip.b, w.sip.ap, w.sip.bp, w.wcs.crpix)
+    w.wcs.set()
+    return w, (r_hi - r_lo, c_hi - c_lo)
+
+
+def channel_rect(finite: dict[str, np.ndarray], groups: list[list[str]], hole_px: int = 2000) -> tuple[int, int, int, int]:
+    """Прямоугольник, внутри которого в каждой группе фильтров есть хотя бы один: края без канала (полосы,
+    где есть только короткие или только длинные волны) срезаются. Мелкие дыры внутри (битые пиксели,
+    ядра звёзд) не в счёт — по ним прямоугольник не сжимается."""
+    from scipy import ndimage
+
+    ok = np.ones(next(iter(finite.values())).shape, dtype=bool)
+    for g in groups:
+        have = [finite[f] for f in g if f in finite]
+        if have:
+            ok &= np.logical_or.reduce(have)
+    labels, n = ndimage.label(~ok)
+    if n:
+        sizes = ndimage.sum_labels(~ok, labels, index=np.arange(1, n + 1))
+        border = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
+        small = np.zeros(n + 1, dtype=bool)
+        small[1:] = sizes <= hole_px
+        small[border] = False
+        ok |= small[labels]
+    return inscribed_rect(ok, 1.0)
+
+
+def stats_field(cfg: Config, paths: Paths, arrays: list[np.ndarray]) -> Any:
+    """Поле статистики (skyforge.field): общее поле всех фильтров из метаданных align."""
+    from skyforge.field import make_field
+
+    return make_field(arrays, read_aligned_meta(cfg, paths).get("intersection"))
+
+
+def resolve_crops(crops: list[Any], wcs: WCS, height: int, bin_: int) -> list[Any]:
+    """Кропы с центром на небе (ra, dec) → x, y на итоговой картинке при bin 1 для этой сетки."""
+    out = []
+    for c in crops:
+        if c.ra is None:
+            out.append(c)
+            continue
+        col, row = wcs.world_to_pixel_values(c.ra, c.dec)
+        out.append(c.model_copy(update={"x": int(round(float(col))) * bin_,
+                                        "y": int(round(height - 1 - float(row))) * bin_}))
+    return out
+
+
+def with_resolved_crops(cfg: Config, paths: Paths) -> Config:
+    """Копия конфига, где report.crops пересчитаны в пиксели текущей сетки align."""
+    if not any(c.ra is not None for c in cfg.report.crops):
+        return cfg
+    from astropy.io import fits
+
+    meta = read_aligned_meta(cfg, paths)
+    wcs = WCS(fits.Header.fromstring(meta["wcs"], sep="\n"))
+    crops = resolve_crops(cfg.report.crops, wcs, meta["shape"][0], cfg.bin)
+    return cfg.model_copy(update={"report": cfg.report.model_copy(update={"crops": crops})})
+
+
+def load_coverage(cfg: Config, paths: Paths) -> np.ndarray | None:
+    """Число фильтров на пиксель (этап align); None для старого кеша без карты."""
+    p = aligned_dir(cfg, paths) / "coverage.npy"
+    return np.load(p) if p.exists() else None
+
+
 def inscribed_rect(mask: np.ndarray, min_coverage: float) -> tuple[int, int, int, int]:
     """Прямоугольник без пустых краёв: начинаем с рамки вокруг данных и срезаем худший край,
     пока на каждом краю не останется не меньше min_coverage заполненных пикселей.
@@ -266,7 +360,12 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
     console.print(f"align: сетка {reference}, {grid_shape[1]}×{grid_shape[0]} px, bin {cfg.bin}, "
                   f"{'север вверх' if cfg.finish.north_up else 'ориентация опорного кадра'}")
 
+    if cfg.align.crop == "union":
+        grid_wcs, grid_shape = union_grid(grid_wcs, grid_shape, [paths.abs(p.path) for p in prods.values()])
+        console.print(f"  объединение покрытий: сетка расширена до {grid_shape[1]}×{grid_shape[0]} px")
     valid = np.ones(grid_shape, dtype=bool)
+    count = np.zeros(grid_shape, dtype=np.uint8)
+    finite: dict[str, np.ndarray] = {}
     stripes: dict[str, Any] = {}
     keep: dict[str, Any] | None = None
     for f, prod in prods.items():
@@ -281,14 +380,29 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         data, wcs = bin_image(data, wcs, cfg.bin)
         out = reproject_nan_safe(data, wcs, grid_wcs, grid_shape, cfg.align.order)
         valid &= np.isfinite(out)
+        count += np.isfinite(out)
+        if cfg.align.crop == "union" and cfg.align.channel_groups:
+            finite[f] = np.isfinite(out)
         np.save(d / f"{f}.npy", out)
         labels = load_context(paths.abs(prod.path))
         if labels is not None:
             np.save(d / f"{f}.tiles.npy", _reproject_labels(labels, wcs, cfg.bin, grid_wcs, grid_shape))
         del data, out
 
-    r0, r1, c0, c1 = inscribed_rect(valid, cfg.align.crop_min_coverage)
-    console.print(f"  обрезка до общего поля: {c1 - c0}×{r1 - r0} px из {grid_shape[1]}×{grid_shape[0]}")
+    ir0, ir1, ic0, ic1 = inscribed_rect(valid, cfg.align.crop_min_coverage)
+    if cfg.align.crop == "union" and cfg.align.channel_groups:
+        r0, r1, c0, c1 = channel_rect(finite, cfg.align.channel_groups)
+        del finite
+        console.print(f"  кадр: в каждой группе каналов есть фильтр — {c1 - c0}×{r1 - r0} px "
+                      f"(общее поле {ic1 - ic0}×{ir1 - ir0})")
+    elif cfg.align.crop == "union":
+        rows, cols = np.flatnonzero(count.any(axis=1)), np.flatnonzero(count.any(axis=0))
+        r0, r1, c0, c1 = int(rows[0]), int(rows[-1]) + 1, int(cols[0]), int(cols[-1]) + 1
+        console.print(f"  кадр по объединению покрытий: {c1 - c0}×{r1 - r0} px (общее поле {ic1 - ic0}×{ir1 - ir0})")
+    else:
+        r0, r1, c0, c1 = ir0, ir1, ic0, ic1
+        console.print(f"  обрезка до общего поля: {c1 - c0}×{r1 - r0} px из {grid_shape[1]}×{grid_shape[0]}")
+    np.save(d / "coverage.npy", count[r0:r1, c0:c1].copy())
     for f in prods:
         for name in (f"{f}.npy", f"{f}.tiles.npy"):
             if (d / name).exists():
@@ -303,6 +417,9 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         "reference": reference,
         "shape": [r1 - r0, c1 - c0],
         "crop": [r0, r1, c0, c1],
+        "mode": cfg.align.crop,
+        # общее поле (все фильтры) в координатах кадра: в union — граница прежнего кадра
+        "intersection": [int(max(ir0, r0) - r0), int(min(ir1, r1) - r0), int(max(ic0, c0) - c0), int(min(ic1, c1) - c0)],
         "pixel_scale_arcsec": round(float(np.mean(proj_plane_pixel_scales(crop_wcs))) * 3600, 5),
         "destripe": stripes,
         # Заголовок построчно, чтобы читать обратно через Header.fromstring(sep="\n").
@@ -335,7 +452,7 @@ def _destripe_preview(cfg: Config, keep: dict[str, Any], grid_wcs: WCS, grid_sha
     """Пустое небо 100% до и после destripe в исходной сетке фильтра и профиль медиан строк."""
     import matplotlib.pyplot as plt
 
-    sky = next((c for c in cfg.report.crops if c.name == "sky"), None)
+    sky = next((c for c in resolve_crops(cfg.report.crops, grid_wcs, grid_shape[0], cfg.bin) if c.name == "sky"), None)
     if sky is None:
         console.print("  [yellow]destripe_check.png: в report.crops нет кропа sky — превью пропущено[/]")
         return
@@ -423,5 +540,27 @@ def _previews(cfg: Config, arrays: dict[str, np.ndarray], reference: str, meta: 
         console.print(f"  остаточный сдвиг {f} относительно {reference}: dy={s['dy']:+.2f} dx={s['dx']:+.2f} px")
     if worst > 1.0:
         console.print("[yellow]  сдвиг больше пикселя: посмотри align_zoom.png — возможно, кадры не совмещены[/]")
-    return {"checker_pair": [reference, other], "shifts_px": shifts,
-            "previews": ["align_check.png", "align_zoom.png"]}
+    count = np.sum([np.isfinite(np.asarray(a)) for a in arrays.values()], axis=0)
+    _coverage_preview(count, len(arrays), meta.get("intersection"), out_dir / "coverage.png", pv.max_size)
+    return {"checker_pair": [reference, other], "shifts_px": shifts, "mode": meta.get("mode", "intersection"),
+            "coverage_percent": {str(k): round(float((count == k).mean() * 100), 2) for k in range(len(arrays) + 1)},
+            "previews": ["align_check.png", "align_zoom.png", "coverage.png"]}
+
+
+def _coverage_preview(count: np.ndarray, n: int, inter: list[int] | None, path: Path, max_size: int) -> None:
+    """Число фильтров на пиксель; пунктир — общее поле всех фильтров (граница кадра в режиме intersection)."""
+    import matplotlib.pyplot as plt
+
+    f = max(1, int(np.ceil(max(count.shape) / max_size)))
+    small = count[::f, ::f]
+    fig, ax = plt.subplots(figsize=(8, 8 * small.shape[0] / small.shape[1] + 0.6))
+    im = ax.imshow(small[::-1], cmap=plt.get_cmap("viridis", n + 1), vmin=-0.5, vmax=n + 0.5, interpolation="nearest")
+    if inter:
+        r0, r1, c0, c1 = (v / f for v in inter)
+        h = small.shape[0]
+        ax.plot([c0, c1, c1, c0, c0], [h - r0, h - r0, h - r1, h - r1, h - r0], "w--", lw=1.2)
+    fig.colorbar(im, ax=ax, ticks=range(n + 1), fraction=0.04, label="фильтров на пиксель")
+    ax.set_title("Покрытие: число фильтров на пиксель; пунктир — поле, где есть все фильтры")
+    ax.axis("off")
+    fig.savefig(path, dpi=100, bbox_inches="tight")
+    plt.close(fig)

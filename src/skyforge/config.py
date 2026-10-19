@@ -25,6 +25,12 @@ class _Strict(BaseModel):
 
 class AlignConfig(_Strict):
     order: Literal["nearest-neighbor", "bilinear", "biquadratic", "bicubic"] = "bilinear"
+    # intersection — кадр обрезается до поля, где есть все фильтры; union — объединение покрытий: сетка
+    # опорного кадра расширяется на целое число пикселей, где фильтра нет — NaN, цвет из имеющихся.
+    crop: Literal["intersection", "union"] = "intersection"
+    # union: группы фильтров (обычно по каналам R, G, B) — кадр обрезается до прямоугольника, где в каждой
+    # группе есть хотя бы один фильтр; пусто — до рамки вокруг всех данных.
+    channel_groups: list[list[str]] = []
     # Доля непустых пикселей на краю обрезки: 1.0 — ни одного NaN на границе.
     crop_min_coverage: float = Field(0.99, gt=0, le=1)
 
@@ -56,11 +62,22 @@ class CleanConfig(_Strict):
 
 
 class ReportCrop(_Strict):
-    # Координаты — центр кропа на итоговой картинке при bin 1 (x вправо, y вниз, как в просмотрщике).
+    # Центр кропа: x, y — на итоговой картинке при bin 1 (x вправо, y вниз, как в просмотрщике) или
+    # ra, dec (градусы) — на небе: такие кропы при любой смене сетки (bin, union, другая обрезка)
+    # пересчитываются в пиксели автоматически и показывают то же место.
     name: str
-    x: int
-    y: int
+    x: int | None = None
+    y: int | None = None
+    ra: float | None = None
+    dec: float | None = None
     size: int = Field(400, ge=16)
+
+    @model_validator(mode="after")
+    def _center(self) -> "ReportCrop":
+        if (self.ra is None) != (self.dec is None) or (self.x is None) != (self.y is None) or \
+                (self.ra is None and self.x is None):
+            raise ValueError(f"report.crops.{self.name}: нужен центр — x и y или ra и dec")
+        return self
 
 
 class ReportConfig(_Strict):

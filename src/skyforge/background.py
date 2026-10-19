@@ -17,6 +17,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 from astropy.stats import sigma_clipped_stats
 from photutils.background import Background2D, MedianBackground
@@ -30,21 +32,23 @@ from skyforge.stretch import sample
 CLIP_SIGMA = 3.0  # отсечка выбросов при оценке шума фона
 
 
-def source_mask(a: np.ndarray, c: BackgroundConfig, scale_arcsec: float, for_tiles: bool = False) -> np.ndarray:
+def source_mask(a: np.ndarray, c: BackgroundConfig, scale_arcsec: float, for_tiles: bool = False,
+                field: Any = None) -> np.ndarray:
     """for_tiles — маска для поправок плиток. Порог по сглаженному кадру считается в единицах
     шума отдельного пикселя: иначе сама ступенька пьедестала (доли σ, но на тысячах пикселей)
     после сглаживания становится «источником» и прячет плитку под маску. Зато вокруг туманности
     маска шире (tile_mask_dilate_arcsec): полосы CON тянутся до края кадра, и оценивать их
     надёжнее по дальним частям, чем по ореолу."""
+    # field (skyforge.field.StatsField) — медиана и шум считаются только в поле, где есть все фильтры
     finite = np.isfinite(a)
-    smp = sample(a)
+    smp = sample(field.values(a) if field is not None else a)
     med, _, std = sigma_clipped_stats(smp[np.isfinite(smp)], sigma=CLIP_SIGMA)  # std — шум пикселя
     s = np.where(finite, a - np.float32(med), 0).astype(np.float32)
     smooth_px = c.mask_smooth_arcsec / scale_arcsec
     if smooth_px > 0:
         s = gaussian_filter(s, smooth_px)
     if not for_tiles:
-        smp_s = sample(np.where(finite, s, np.nan))
+        smp_s = sample(field.values(np.where(finite, s, np.nan)) if field is not None else np.where(finite, s, np.nan))
         _, _, std = sigma_clipped_stats(smp_s[np.isfinite(smp_s)], sigma=CLIP_SIGMA)
     mask = s > c.mask_sigma * std
     dilate = c.tile_mask_dilate_arcsec if for_tiles else c.mask_dilate_arcsec

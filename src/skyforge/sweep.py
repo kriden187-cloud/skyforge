@@ -39,7 +39,10 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
     needs_nebula = any(c.color.shadows.scope == "nebula" and c.color.shadows.value > 0 for c in _variants(cfg, x, y))
     sd = load_nebula_sd(cfg, paths, required=True) if needs_nebula else None
     sky = load_sky_mask(cfg, paths)
+    from skyforge.align import stats_field
+
     masks = load_masks(cfg, paths)  # статистика растяжки — по полному кадру и полным маскам
+    field = stats_field(cfg, paths, list(arrays.values()))
     sd = sd if sd is not None else load_nebula_sd(cfg, paths)
     if crop:
         cx, cy, side = crop
@@ -69,7 +72,7 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
                 label += f" · {y.param}={_fmt(yv)}"
             layers = {}
             for f, a in arrays.items():
-                layers[f], _ = stretch_array(small[f], c.stretch.for_filter(f), stats_from=a, masks=masks)
+                layers[f], _ = stretch_array(small[f], c.stretch.for_filter(f), stats_from=a, masks=masks, field=field)
             rgb, _ = compose_layers(c, layers, weight, sd, sky)
             images.append(rgb)
             labels.append(label)

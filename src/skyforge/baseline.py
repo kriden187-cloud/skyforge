@@ -91,8 +91,10 @@ def compare(cfg: Config, paths: Paths, out_dir: Path, final_png: Path) -> dict[s
         return {"skipped": "report.baseline не задан"}
     if not p.exists():
         return {"skipped": f"нет принятой картинки {paths.rel(p)} (сохраняется: skyforge baseline)"}
+    from skyforge.align import with_resolved_crops
     from skyforge.clean import load_nebula_sd
 
+    cfg = with_resolved_crops(cfg, paths)  # кропы — в пикселях текущей картинки
     cur, base = _load(final_png), _load(p)
     sd = load_nebula_sd(cfg, paths)
     neb = np.flipud(sd) > 0 if sd is not None and sd.shape == cur.shape[:2] else np.ones(cur.shape[:2], bool)

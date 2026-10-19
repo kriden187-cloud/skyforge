@@ -55,7 +55,8 @@ def export_metadata(cfg: Config, extra: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def export(rgb: np.ndarray, base: Path, meta: dict[str, Any]) -> dict[str, str]:
+def export(rgb: np.ndarray, base: Path, meta: dict[str, Any], nodata: np.ndarray | None = None) -> dict[str, str]:
+    """nodata — пиксели без единого фильтра: в PNG прозрачные (альфа 0), в TIFF чёрные."""
     base.parent.mkdir(parents=True, exist_ok=True)
     tif = base.with_suffix(".tif")
     png = base.with_suffix(".png")
@@ -70,7 +71,10 @@ def export(rgb: np.ndarray, base: Path, meta: dict[str, Any]) -> dict[str, str]:
     info.add_itxt("Author", meta["credit"])
     info.add_itxt("Software", meta["software"])
     info.add_itxt("Description", desc)
-    Image.fromarray(to_display(to_uint8(rgb))).save(png, pnginfo=info)
+    u8 = to_uint8(rgb)
+    if nodata is not None and nodata.any():
+        u8 = np.dstack([u8, np.where(nodata, 0, 255).astype(np.uint8)])
+    Image.fromarray(to_display(u8)).save(png, pnginfo=info)
     return {"tif": tif.name, "png": png.name}
 
 
@@ -89,9 +93,15 @@ def finish(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     if cmeta["key"] != compose_key(cfg, input_key(cfg, paths)):
         raise SkyforgeError("композиция сделана с другими параметрами: перезапусти skyforge stretch и compose")
 
+    from skyforge.align import load_coverage, read_aligned_meta, with_resolved_crops
+
     rgb = np.load(cp)
     done = finish_array(rgb, cfg.finish)
-    files = export(done, output_base(cfg, out_dir), export_metadata(cfg, cmeta))
+    coverage = load_coverage(cfg, paths)
+    nodata = coverage == 0 if coverage is not None and coverage.shape == done.shape[:2] else None
+    if nodata is not None:
+        done[nodata] = 0  # без единого фильтра — чёрный (в PNG прозрачный)
+    files = export(done, output_base(cfg, out_dir), export_metadata(cfg, cmeta), nodata)
     console.print(f"  итог: {files['png']}, {files['tif']} ({done.shape[1]}×{done.shape[0]})")
 
     pv = cfg.preview
@@ -104,10 +114,31 @@ def finish(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
                   ["до финиша, 100%", f"denoise {cfg.finish.denoise}, sharpen {cfg.finish.sharpen}, 100%"],
                   out_dir / "finish_zoom.png", cols=2)
     crops = []
-    for c in cfg.report.crops:
+    for c in with_resolved_crops(cfg, paths).report.crops:
         sl = display_crop(done.shape, c.x, c.y, c.size, cfg.bin)
         name = f"crop_{c.name}.png"
         Image.fromarray(to_display(to_uint8(done[sl]))).save(out_dir / name)
         crops.append({"name": c.name, "file": name})
-    return {"files": files, "shape": list(done.shape[:2]), "crops": crops,
-            "previews": ["finish_preview.png", "finish_zoom.png"]}
+    previews = ["finish_preview.png", "finish_zoom.png"]
+    am = read_aligned_meta(cfg, paths)
+    if am.get("mode") == "union" and am.get("intersection"):
+        _frame_preview(done, am["intersection"], out_dir / "finish_frame.png", pv.max_size)
+        previews.append("finish_frame.png")
+    return {"files": files, "shape": list(done.shape[:2]), "crops": crops, "previews": previews}
+
+
+def _frame_preview(done: np.ndarray, inter: list[int], path: Path, max_size: int) -> None:
+    """Итог по объединению покрытий; пунктир — прежний кадр (поле, где есть все фильтры)."""
+    import matplotlib.pyplot as plt
+
+    f = max(1, int(np.ceil(max(done.shape[:2]) / max_size)))
+    img = to_display(to_uint8(done[::f, ::f]))
+    h = img.shape[0]
+    r0, r1, c0, c1 = (v / f for v in inter)
+    fig, ax = plt.subplots(figsize=(9, 9 * img.shape[0] / img.shape[1]))
+    ax.imshow(img, interpolation="lanczos")
+    ax.plot([c0, c1, c1, c0, c0], [h - r0, h - r0, h - r1, h - r1, h - r0], "w--", lw=1.0)
+    ax.set_title("Итог по объединению покрытий; пунктир — прежний кадр (все фильтры)")
+    ax.axis("off")
+    fig.savefig(path, dpi=100, bbox_inches="tight", facecolor="#111")
+    plt.close(fig)
