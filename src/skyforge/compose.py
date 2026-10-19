@@ -91,16 +91,23 @@ def neutralize(rgb: np.ndarray, pct: float, field: Any = None) -> tuple[np.ndarr
     return np.clip(out, 0, 1), bg
 
 
-def shadows(rgb: np.ndarray, k: float) -> np.ndarray:
+def shadows(rgb: np.ndarray, k: float, by: str = "luma") -> np.ndarray:
     """Подъём теней после смешивания: asinh(k·яркость)/asinh(k), оттенок не меняется.
 
     average делит каждый канал на число вкладов, и деталь, яркая лишь в паре фильтров
     из шести (внешняя оболочка), темнеет втрое. Общая растяжка подняла бы её вместе с
     фоном и стыками мозаики; здесь поднимаются средние тона уже собранной картинки.
     k — сила: больше — сильнее, 0 — выкл.
+    by: max — множитель по самому яркому каналу: тот поднимается кривой asinh и остаётся ≤ 1, остальные
+    каналы — тем же множителем; деление пикселя не нужно, яркие цветные области не упираются в 1.
     """
     if k <= 0:
         return rgb
+    if by == "max":
+        m = rgb.max(axis=-1)
+        y = np.arcsinh(k * m) / np.arcsinh(k)
+        gain = np.where(m > 0, y / np.maximum(m, np.finfo(np.float32).tiny), 0)
+        return np.clip(rgb * gain[..., None], 0, 1).astype(np.float32)
     lum = rgb @ LUMA
     y = np.arcsinh(k * lum) / np.arcsinh(k)
     gain = np.where(lum > 0, y / np.maximum(lum, np.finfo(np.float32).tiny), 0)
@@ -153,18 +160,27 @@ def desaturate_stars(rgb: np.ndarray, mask: Any, s: float, det_layer: np.ndarray
     return np.clip(rgb + w * (grey - rgb), 0, 1)
 
 
-def saturate(rgb: np.ndarray, s: float) -> np.ndarray:
+def saturate(rgb: np.ndarray, s: float, gamut: str = "clip") -> np.ndarray:
+    """Насыщенность вокруг яркости пикселя. gamut limit — самый яркий канал пикселя остаётся прежним, остальные
+    расходятся от него (пиксель масштабируется обратно к исходному максимуму): канал не выходит за 1 и не
+    прижимается к общему потолку — в яркой цветной области рисунок сохраняется (обрезка его стирает)."""
     if s == 1.0:
         return rgb
     luma = (rgb @ LUMA)[..., None]
-    return np.clip(luma + s * (rgb - luma), 0, 1)
+    out = luma + s * (rgb - luma)
+    if gamut == "limit":
+        m0 = rgb.max(axis=-1, keepdims=True)
+        m1 = out.max(axis=-1, keepdims=True)
+        out = out * np.where(m1 > 0, m0 / np.maximum(m1, np.float32(1e-6)), 0)
+        return np.clip(out, 0, 1).astype(np.float32)
+    return np.clip(out, 0, 1)
 
 
 def apply_shadows(rgb: np.ndarray, sc: Any, nebula_sd: np.ndarray | None) -> np.ndarray:
     """Подъём теней по всему кадру или только в маске туманности с мягким краем feather_px."""
     if sc.value <= 0:
         return rgb
-    lifted = shadows(rgb, sc.value)
+    lifted = shadows(rgb, sc.value, sc.by)
     if sc.scope == "all":
         return lifted
     if nebula_sd is None:
@@ -259,7 +275,7 @@ def tail_color(cfg: Config, rgb: np.ndarray, layers: dict[str, np.ndarray], star
     # здесь — шум неба ниже нуля. Без обрезки shadows обнулил бы весь пиксель с отрицательной яркостью.
     rgb = np.clip(rgb, 0, 1)
     rgb = apply_shadows(rgb, cfg.color.shadows, nebula_sd)
-    rgb = saturate(rgb, cfg.color.saturation)
+    rgb = saturate(rgb, cfg.color.saturation, cfg.color.saturation_gamut)
     det_layer = layers.get(star_mask.detect) if star_mask is not None else None
     return desaturate_stars(rgb, star_mask, cfg.color.star_saturation, det_layer,
                             cfg.stars.nebula_level).astype(np.float32)

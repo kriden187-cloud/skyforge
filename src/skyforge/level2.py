@@ -571,7 +571,7 @@ def _key(cfg: Config, files: list[Path], i2d: Path) -> dict[str, Any]:
             "i2d": [i2d.name, i2d.stat().st_size], "level2": cfg.level2.model_dump(exclude=CHECK_ONLY),
             # только то, от чего зависят маски источников (иначе любое переключение в background пересобирает мозаику)
             "masks": {k: getattr(cfg.background, k) for k in ("mask_sigma", "mask_smooth_arcsec", "tile_mask_dilate_arcsec")}
-            | {"stars": cfg.stars.model_dump()}}
+            | {"stars": cfg.stars.mask_key()}}
 
 
 def built_products(cfg: Config, paths: Paths) -> dict[str, Path]:

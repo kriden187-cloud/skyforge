@@ -35,8 +35,80 @@ def unsharp(rgb: np.ndarray, radius: float, amount: float) -> np.ndarray:
     return (rgb + np.float32(amount) * (rgb - blurred)).astype(np.float32)
 
 
-def finish_array(rgb: np.ndarray, f: FinishConfig) -> np.ndarray:
+def split_stars(rgb: np.ndarray, weight: np.ndarray, feather_px: float, window_px: int,
+                origin: tuple[int, int] = (0, 0), core_sigma: float = 3.0) -> tuple[np.ndarray, np.ndarray]:
+    """Звёзды отдельно от туманности.
+
+    Под маской звёзд clean (вес > 0,5: звезда с ореолом) — местная медиана соседей вне маски (фон под звездой).
+    Звезда — только то, что выше этого фона заметнее разброса внутри масок (core_sigma·σ по яркости): ореол
+    маски — десятки пикселей, и туманность под ним иначе гасла бы вместе со звездой. Слой звёзд —
+    избыток над фоном сверх tau с мягким краем feather_px вокруг ядра; без звёзд = кадр − звёзды."""
+    from skyforge.compose import LUMA
+    from skyforge.field import block_median_map
+
+    mask = np.asarray(weight) > 0.5
+    if not mask.any():
+        return rgb, np.zeros_like(rgb)
+    fill = np.stack([block_median_map(np.where(mask, np.nan, rgb[..., k]), window_px, origin, fill_empty=True)
+                     for k in range(3)], axis=-1)
+    excess = rgb - fill
+    e = excess @ LUMA
+    v = e[mask]
+    tau = core_sigma * 1.4826 * float(np.median(np.abs(v - np.median(v))))
+    core = mask & (e > tau)
+    if not core.any():
+        return rgb, np.zeros_like(rgb)
+    from scipy.ndimage import distance_transform_edt
+
+    alpha = np.clip(1 - distance_transform_edt(~core) / feather_px, 0, 1) * mask
+    # в слой звёзд — только свет выше разброса туманности (tau): светлые детали туманности рядом со звездой не гаснут
+    stars = (alpha[..., None] * np.clip(excess - np.float32(tau), 0, None)).astype(np.float32)
+    return (rgb - stars).astype(np.float32), stars
+
+
+def shrink_stars(stars: np.ndarray, radius: float) -> np.ndarray:
+    """Уменьшение звёзд: минимум по диску радиуса radius (морфологическое сжатие) по каждому каналу."""
+    from scipy.ndimage import grey_erosion
+
+    if radius <= 0:
+        return stars
+    r = int(np.ceil(radius))
+    yy, xx = np.mgrid[-r:r + 1, -r:r + 1]
+    disk = (yy**2 + xx**2) <= radius**2
+    return np.stack([grey_erosion(stars[..., k], footprint=disk) for k in range(3)], axis=-1).astype(np.float32)
+
+
+def local_contrast(rgb: np.ndarray, nebula_sd: np.ndarray, lc: Any, px: float = 1.0) -> np.ndarray:
+    """Локальный контраст внутри маски туманности по самому яркому каналу пикселя, один множитель на три канала
+    (оттенок не меняется). Подъём деталей плавно сходится к 1: m' = 1 − (1 − m)·exp(−подъём/(1 − m)) — канал
+    за 1 не выходит и не прижимается к общему потолку (деление пикселя на максимум делало рельс, 3i)."""
+    m = rgb.max(axis=-1)
+    detail = m - gaussian_filter(m, sigma=lc.radius * px)
+    w = np.clip(nebula_sd / (lc.feather_px * px), 0, 1)
+    boost = np.float32(lc.amount) * detail * w
+    room = np.maximum(1 - m, np.float32(1e-6))
+    new = np.where(boost > 0, 1 - room * np.exp(-boost / room), np.maximum(m + boost, 0))
+    gain = np.where(m > 1e-6, new / np.maximum(m, 1e-6), 1).astype(np.float32)
+    return np.clip(rgb * gain[..., None], 0, 1).astype(np.float32)
+
+
+def finish_array(rgb: np.ndarray, f: FinishConfig, star_weight: np.ndarray | None = None,
+                 nebula_sd: np.ndarray | None = None, origin: tuple[int, int] = (0, 0), px: float = 1.0) -> np.ndarray:
+    """Финиш: (3i) звёзды отдельно от туманности — локальный контраст без звёзд, звёзды × scale и сжатие;
+    затем денойз и резкость. px — масштаб длин (для уменьшенных копий в sweep); nebula_sd — в пикселях этой сетки."""
     out = np.asarray(rgb, dtype=np.float32)
+    st, lc = f.stars, f.local_contrast
+    stars_on = star_weight is not None and (st.scale < 1 or st.shrink > 0)
+    contrast_on = nebula_sd is not None and lc.amount > 0
+    if stars_on or contrast_on:
+        if star_weight is not None:
+            starless, stars = split_stars(out, star_weight, st.feather_px * px,
+                                          max(8, int(round(st.fill_window_px * px))), origin)
+        else:
+            starless, stars = out, np.zeros_like(out)
+        if contrast_on:
+            starless = local_contrast(starless, nebula_sd, lc, px)
+        out = np.clip(starless + np.float32(st.scale) * shrink_stars(stars, st.shrink * px), 0, 1).astype(np.float32)
     if f.denoise > 0:
         out = denoise_tv_chambolle(out, weight=f.denoise * DENOISE_WEIGHT_AT_MAX, channel_axis=-1,
                                    max_num_iter=f.denoise_iters).astype(np.float32)
@@ -78,6 +150,70 @@ def export(rgb: np.ndarray, base: Path, meta: dict[str, Any], nodata: np.ndarray
     return {"tif": tif.name, "png": png.name}
 
 
+def finish_masks(cfg: Config, paths: Paths) -> tuple[np.ndarray | None, np.ndarray | None, tuple[int, int]]:
+    """Маска звёзд и знаковое расстояние до края туманности (этап clean), начало поля статистики —
+    только если финиш их использует (3i); иначе None."""
+    from skyforge.align import read_aligned_meta
+    from skyforge.clean import clean_dir, load_nebula_sd
+
+    st, lc = cfg.finish.stars, cfg.finish.local_contrast
+    if not (st.scale < 1 or st.shrink > 0 or lc.amount > 0):
+        return None, None, (0, 0)
+    p = clean_dir(cfg, paths) / "star_weight.npy"
+    sw = np.load(p) if p.exists() else None
+    rect = read_aligned_meta(cfg, paths).get("intersection")
+    return sw, load_nebula_sd(cfg, paths), ((rect[0], rect[2]) if rect else (0, 0))
+
+
+def finish_region(rgb: np.ndarray, f: FinishConfig, sw: np.ndarray | None, sd: np.ndarray | None,
+                  origin: tuple[int, int], sl: tuple[slice, slice]) -> np.ndarray:
+    """Финиш кропа с запасом вокруг (размытие локального контраста и окно медианы видят соседей)."""
+    pad = int(3 * f.local_contrast.radius + f.stars.fill_window_px + f.stars.feather_px)
+    h, w = rgb.shape[:2]
+    r0, r1 = max(0, sl[0].start - pad), min(h, sl[0].stop + pad)
+    c0, c1 = max(0, sl[1].start - pad), min(w, sl[1].stop + pad)
+    big = (slice(r0, r1), slice(c0, c1))
+    out = finish_array(rgb[big], f, sw[big] if sw is not None else None, sd[big] if sd is not None else None,
+                       (origin[0] - r0, origin[1] - c0))
+    return out[sl[0].start - r0:sl[0].stop - r0, sl[1].start - c0:sl[1].stop - c0]
+
+
+def _finish_sheets(cfg: Config, rgb: np.ndarray, sw: Any, sd: Any, origin: tuple[int, int],
+                   crops: list[Any], out_dir: Path) -> list[str]:
+    """Превью 3i: поле звёзд при scale 1 / 0,7 / 0,5 и core, inner при amount 0 / 0,3 / 0,6 (кропы 100%)."""
+    made = []
+    by = {c.name: c for c in crops}
+    f = cfg.finish
+    if sw is not None and "sky3" in by:
+        c = by["sky3"]
+        sl = display_crop(rgb.shape, c.x, c.y, c.size, cfg.bin)
+        imgs, labels = [], []
+        for s in (1.0, 0.7, 0.5):
+            fs = f.model_copy(update={"stars": f.stars.model_copy(update={"scale": s})})
+            imgs.append(finish_region(rgb, fs, sw, sd, origin, sl))
+            labels.append(f"звёзды × {s:g}, shrink {f.stars.shrink:g}")
+        contact_sheet(imgs, labels, out_dir / "finish_stars.png", cols=3, tile_inches=4.5, interpolation="nearest",
+                      title="Поле звёзд 100%: меньше и тише, без тёмных колец и без «дырок» в туманности")
+        made.append("finish_stars.png")
+    if sd is not None:
+        imgs, labels = [], []
+        for name in ("core", "inner"):
+            if name not in by:
+                continue
+            c = by[name]
+            sl = display_crop(rgb.shape, c.x, c.y, c.size, cfg.bin)
+            for amt in (0.0, 0.3, 0.6):
+                fa = f.model_copy(update={"local_contrast": f.local_contrast.model_copy(update={"amount": amt})})
+                imgs.append(finish_region(rgb, fa, sw, sd, origin, sl))
+                labels.append(f"{name}: local_contrast {amt:g}, radius {f.local_contrast.radius:g}")
+        if imgs:
+            contact_sheet(imgs, labels, out_dir / "finish_contrast.png", cols=3, tile_inches=4.5,
+                          interpolation="nearest",
+                          title="Локальный контраст 100%: структура внутри кольца, волокна без «пластилина» и ореолов")
+            made.append("finish_contrast.png")
+    return made
+
+
 def output_base(cfg: Config, out_dir: Path) -> Path:
     suffix = f"_bin{cfg.bin}" if cfg.bin > 1 else ""
     style = f"_{cfg.style}" if cfg.style else ""
@@ -96,7 +232,8 @@ def finish(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     from skyforge.align import load_coverage, read_aligned_meta, with_resolved_crops
 
     rgb = np.load(cp)
-    done = finish_array(rgb, cfg.finish)
+    sw, sd, origin = finish_masks(cfg, paths)
+    done = finish_array(rgb, cfg.finish, sw, sd, origin)
     coverage = load_coverage(cfg, paths)
     nodata = coverage == 0 if coverage is not None and coverage.shape == done.shape[:2] else None
     if nodata is not None:
@@ -120,6 +257,8 @@ def finish(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
         Image.fromarray(to_display(to_uint8(done[sl]))).save(out_dir / name)
         crops.append({"name": c.name, "file": name})
     previews = ["finish_preview.png", "finish_zoom.png"]
+    if sw is not None or sd is not None:
+        previews += _finish_sheets(cfg, rgb, sw, sd, origin, with_resolved_crops(cfg, paths).report.crops, out_dir)
     am = read_aligned_meta(cfg, paths)
     if am.get("mode") == "union" and am.get("intersection"):
         _frame_preview(done, am["intersection"], out_dir / "finish_frame.png", pv.max_size)

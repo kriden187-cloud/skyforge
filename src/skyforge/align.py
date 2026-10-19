@@ -294,7 +294,7 @@ def _cache_key(cfg: Config, prods: dict[str, Product], reference: str) -> dict[s
         "north_up": cfg.finish.north_up,
         "align": cfg.align.model_dump(),
         "destripe": cfg.clean.destripe.model_dump(),
-        "stars": cfg.stars.model_dump(),            # маски для destripe
+        "stars": cfg.stars.mask_key(),              # маски для destripe
         "background": cfg.background.model_dump(),
     }
 

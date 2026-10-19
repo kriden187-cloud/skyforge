@@ -153,6 +153,15 @@ class StarsConfig(_Strict):
     # Звёзды ищутся в одном фильтре: по умолчанию самом коротковолновом — там у звезды самый резкий
     # пик, а узлы туманности и фоновые галактики слабые. Туманность исключается по всем фильтрам.
     detect_filter: str | None = None
+    # Звёзды с насыщенным ядром (3i): дыра насыщения не меньше saturated_min_core_px хотя бы в saturated_min_filters
+    # фильтрах. Для NGC 3132 — центральная звезда, звезда внизу справа и звезда в оболочке слева.
+    saturated_min_core_px: int = Field(50, ge=1)
+    saturated_min_filters: int = Field(2, ge=1)
+
+    def mask_key(self) -> dict:
+        """Поля, от которых зависят маски для destripe и сборки уровня 2 (без поиска звёзд с насыщенным ядром —
+        он на этапе clean и в ключи build/align не входит)."""
+        return self.model_dump(exclude={"saturated_min_core_px", "saturated_min_filters"})
 
 
 class BackgroundConfig(_Strict):
@@ -205,6 +214,21 @@ class BackgroundConfig(_Strict):
         return v
 
 
+class SaturatedStarsConfig(_Strict):
+    # 3i: звёзды с насыщенным ядром (clean) отдельно от туманности до растяжки — skyforge.satstars.
+    enabled: bool = False
+    r_in_px: float = Field(100.0, gt=0, description="слой звезды целиком до этого радиуса, px при bin 1")
+    r_out_px: float = Field(150.0, gt=0, description="к этому радиусу слой плавно уходит в ноль, px при bin 1")
+    profile_percentile: float = Field(30.0, gt=0, lt=100, description="процентиль по кольцу для профиля звезды")
+    color_ring_px: tuple[float, float] = (20.0, 60.0)  # кольцо, по которому берётся цвет звезды (вне заполненных ядер)
+    a: float = Field(0.01, gt=0, description="asinh слоя звезды: белая точка — ядро")
+    # Внутри core_r_px туманность не восстанавливается: она ровная, с уровнем кольца снаружи, звезда — всё выше
+    # неё (сумма фильтров, один цвет). 30 px: у центральной звезды NGC 3132 разброс профиля по кольцу падает
+    # ниже половины белой точки туманности на 30 px, у двух других — на 16 px. 0 — только радиальная модель.
+    core_r_px: float = Field(30.0, ge=0)
+    core_feather_px: float = Field(10.0, gt=0, description="переход от ядра к радиальной модели, px")
+
+
 class StretchConfig(_Strict):
     method: Literal["asinh", "log", "sqrt", "linear"] = "asinh"
     # masks — black считается по маске пустого неба, white — по маске туманности (этап clean):
@@ -215,6 +239,11 @@ class StretchConfig(_Strict):
     a: float = Field(0.02, gt=0, description="сила растяжки: меньше — сильнее")
     # Переопределения для отдельных фильтров: {F187N: {white: 99.9}}; неуказанное берётся из общих полей.
     per_filter: dict[str, dict[str, float]] = {}
+    # 3i: в выборку для белой точки по туманности не идут звёзды — маска звёзд clean и диски exclude_radius_px
+    # вокруг звёзд с насыщенным ядром (их крылья в синих фильтрах в сотни раз ярче туманности рядом).
+    exclude_stars: bool = True
+    saturated_stars: SaturatedStarsConfig = SaturatedStarsConfig()
+    exclude_radius_px: float = Field(150.0, ge=0, description="радиус диска вокруг звезды с насыщенным ядром, px при bin 1")
 
     @model_validator(mode="before")
     @classmethod
@@ -252,6 +281,9 @@ class ShadowsConfig(_Strict):
     # Подъём теней после смешивания: asinh(k·яркость)/asinh(k), оттенок не меняется.
     # БОЛЬШЕ — СИЛЬНЕЕ, 0 — выкл. (Прежний lift: value = 1/lift, lift 0.25 → 4.)
     value: float = Field(0.0, ge=0)
+    # luma — множитель по яркости, пиксель с каналом за 1 делится целиком (канал ровно 1: в яркой цветной
+    # области рисунок стирается); max — множитель по самому яркому каналу: канал за 1 не выходит (3i).
+    by: Literal["luma", "max"] = "luma"
     # all — по всему кадру; nebula — только внутри маски туманности (этап clean), фон остаётся на чёрной точке.
     scope: Literal["all", "nebula"] = "all"
     feather_px: float = Field(20.0, gt=0, description="ширина мягкого края маски, px сетки")
@@ -265,6 +297,9 @@ class ColorConfig(_Strict):
     # ярче, но при 4+ фильтрах сводит туманность в белый и жёлтый.
     blend: Literal["average", "screen"] = "average"
     saturation: float = Field(1.0, ge=0)
+    # clip — прирост цветности и обрезка в 0–1; limit — прирост ограничивается в пикселе так, чтобы ни один
+    # канал не вышел за 0–1 (оттенок и рисунок в ярких цветных областях сохраняются, 3i).
+    saturation_gamut: Literal["clip", "limit"] = "clip"
     # Подъём теней: число (= value) или {value, scope, feather_px}.
     shadows: ShadowsConfig = ShadowsConfig()
     # Насыщенность звёзд поля внутри маски звёзд (stars.*): 1 — как есть, 0 — серые с той же яркостью.
@@ -321,11 +356,30 @@ class ColorConfig(_Strict):
         return {normalize_filter_name(k): w for k, w in v.items()}
 
 
+class FinishStarsConfig(_Strict):
+    # Разделение звёзд и туманности (3i): под маской звёзд (clean, расширенной с мягким краем feather_px)
+    # слой «без звёзд» заполняется местной медианой; звёзды = кадр − без звёзд. scale 1, shrink 0 — как раньше.
+    scale: float = Field(1.0, ge=0, le=1, description="яркость слоя звёзд")
+    shrink: float = Field(0.0, ge=0, description="радиус уменьшения ядра (минимум по диску), px")
+    feather_px: float = Field(6.0, gt=0, description="мягкий край маски звёзд, px")
+    fill_window_px: int = Field(48, ge=8, description="окно местной медианы под звездой, px")
+
+
+class LocalContrastConfig(_Strict):
+    # Локальный контраст слоя без звёзд внутри маски туманности (мягкий край feather_px, вне маски — ноль):
+    # самый яркий канал + amount·(он − размытая копия с радиусом radius), подъём плавно сходится к 1.
+    radius: float = Field(80.0, gt=0, description="радиус размытой копии (σ гаусса), px")
+    amount: float = Field(0.0, ge=0, description="сила, 0 — выкл")
+    feather_px: float = Field(30.0, gt=0)
+
+
 class FinishConfig(_Strict):
     denoise: float = Field(0.0, ge=0, le=1, description="0 — выкл, 1 — максимум")
     denoise_iters: int = Field(100, ge=1)
     sharpen: float = Field(0.0, ge=0, description="сила нерезкой маски, 0 — выкл")
     sharpen_radius: float = Field(2.0, gt=0, description="радиус нерезкой маски в пикселях")
+    stars: FinishStarsConfig = FinishStarsConfig()
+    local_contrast: LocalContrastConfig = LocalContrastConfig()
     # Применяется на этапе align: поворот на север делается одной интерполяцией вместе с совмещением.
     north_up: bool = True
 
@@ -436,12 +490,15 @@ class Config(_Strict):
         data = self.model_dump(mode="json")
         node = data
         keys = dotted.split(".")
-        for k in keys[:-1]:
+        # В словарях по фильтрам (color.weights.F212N, stretch.per_filter.F090W.white) ключа может ещё не быть.
+        per_filter = len(keys) >= 3 and keys[-3] == "per_filter"
+        for i, k in enumerate(keys[:-1]):
+            if per_filter and i == len(keys) - 2 and k not in node:
+                node[k] = {}
             if k not in node or not isinstance(node[k], dict):
                 raise ValueError(f"нет такого параметра: {dotted}")
             node = node[k]
-        # В словарях по фильтрам (color.weights.F212N) ключа может ещё не быть.
-        open_dict = len(keys) >= 2 and keys[-2] == "weights"
+        open_dict = (len(keys) >= 2 and keys[-2] == "weights") or per_filter
         if keys[-1] not in node and not open_dict:
             raise ValueError(f"нет такого параметра: {dotted}")
         node[keys[-1]] = value

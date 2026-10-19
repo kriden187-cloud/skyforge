@@ -30,7 +30,7 @@ from skyforge.stretch import stretch_array
 REVEAL_BLACK, REVEAL_WHITE, REVEAL_A = 1.0, 90.0, 0.02
 
 
-CLEAN_VERSION = 11  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
+CLEAN_VERSION = 12  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
 
 
 def enabled(cfg: Config) -> bool:
@@ -73,6 +73,45 @@ def load_sky_mask(cfg: Config, paths: Paths, nebula: str = "nebula_sd.npy") -> n
     if g > 0:
         stars = ndimage.binary_dilation(stars, iterations=g)
     return (np.load(d / nebula) < -g) & ~stars
+
+
+def saturated_stars(holes_by_f: dict[str, np.ndarray], min_core_px: int, min_filters: int) -> list[list[int]]:
+    """Звёзды с насыщенным ядром: компоненты объединения дыр насыщения площадью ≥ min_core_px, которые есть
+    хотя бы в min_filters фильтрах. [строка, столбец центра; площадь; число фильтров] на сетке."""
+    if not holes_by_f:
+        return []
+    union = np.logical_or.reduce(list(holes_by_f.values()))
+    labels, n = ndimage.label(union, structure=np.ones((3, 3)))
+    out = []
+    for i in range(1, n + 1):
+        comp = labels == i
+        area = int(comp.sum())
+        nf = int(sum(h[comp].any() for h in holes_by_f.values()))
+        if area >= min_core_px and nf >= min_filters:
+            r, c = ndimage.center_of_mass(comp)
+            out.append([int(round(r)), int(round(c)), area, nf])
+    return out
+
+
+def load_saturated_stars(cfg: Config, paths: Paths) -> list[list[int]]:
+    meta = clean_dir(cfg, paths) / "meta.json"
+    if not meta.exists():
+        return []
+    return json.loads(meta.read_text(encoding="utf-8")).get("saturated_stars", [])
+
+
+def star_exclusion(cfg: Config, paths: Paths, shape: tuple[int, int]) -> np.ndarray:
+    """Пиксели звёзд для выборки процентилей: маска звёзд clean и диски вокруг звёзд с насыщенным ядром."""
+    out = np.zeros(shape, dtype=bool)
+    p = clean_dir(cfg, paths) / "star_weight.npy"
+    if p.exists():
+        out |= np.load(p) > 0.01
+    r = cfg.stretch.exclude_radius_px / cfg.bin
+    if r > 0:
+        yy, xx = np.ogrid[: shape[0], : shape[1]]
+        for row, col, _, _ in load_saturated_stars(cfg, paths):
+            out |= (yy - row) ** 2 + (xx - col) ** 2 <= r * r
+    return out
 
 
 def clean_dir(cfg: Config, paths: Paths) -> Path:
@@ -141,6 +180,7 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     before = {f: np.asarray(a, dtype=np.float32) for f, a in arrays.items()}
     after: dict[str, np.ndarray] = {}
     holes_all = np.zeros(next(iter(before.values())).shape, dtype=bool)
+    holes_by_f: dict[str, np.ndarray] = {}
     info: dict[str, Any] = {"enabled": True, "filters": {}}
     models, masks = {}, {}
     star_masks = {}
@@ -152,6 +192,7 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
             holes = find_core_holes(out, core_area_px(cfg.stars.max_core_arcsec, scale))
             out = fill_rings(out, holes)
             holes_all |= holes
+            holes_by_f[f] = holes
             fi["core_pixels"] = int(holes.sum())
             fi["cores"] = int(ndimage.label(holes, structure=np.ones((3, 3)))[1])
         if cfg.background.subtract:
@@ -193,6 +234,11 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     smask = star_weight(star_masks, detect, cfg.stars, scale)
     weight = smask.weight
     info["star_detect_filter"] = detect
+    info["saturated_stars"] = saturated_stars(holes_by_f, cfg.stars.saturated_min_core_px,
+                                              cfg.stars.saturated_min_filters)
+    if info["saturated_stars"]:
+        console.print("  звёзды с насыщенным ядром (строка, столбец сетки; площадь; фильтров): "
+                      + ", ".join(f"({r}, {c}; {a}; {k})" for r, c, a, k in info["saturated_stars"]))
     info["star_window_px"] = smask.window_px
     np.save(d / "star_weight.npy", weight)
     info["star_mask_percent"] = round(float((weight > 0.5).mean() * 100), 2)

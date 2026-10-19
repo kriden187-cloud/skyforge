@@ -59,6 +59,9 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
         sky = shrink(sky.astype(np.float32), tile) > 0.99 if sky is not None else None
     ref = _reference_tile(cfg, paths, tile) if not crop else None
 
+    # finish.* в осях — на каждой клетке ещё и финиш (звёзды, локальный контраст, денойз); длины — в пикселях клетки
+    with_finish = x.param.startswith("finish.") or (y is not None and y.param.startswith("finish."))
+    px_factor = 1 if crop else math.ceil(max(next(iter(arrays.values())).shape) / tile)
     images, labels = [], []
     for yv in (y.values if y else [None]):
         if ref is not None:
@@ -66,14 +69,20 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
             labels.append("референс")
         for xv in x.values:
             c = cfg.with_param(x.param, xv)
-            label = f"{x.param}={_fmt(xv)}"
+            # в подписи — последнее имя параметра: полные пути (finish.local_contrast.amount) налезают друг на друга
+            label = f"{x.param.split('.')[-1]}={_fmt(xv)}"
             if y is not None:
                 c = c.with_param(y.param, yv)
-                label += f" · {y.param}={_fmt(yv)}"
+                label += f" · {y.param.split('.')[-1]}={_fmt(yv)}"
             layers = {}
             for f, a in arrays.items():
                 layers[f], _ = stretch_array(small[f], c.stretch.for_filter(f), stats_from=a, masks=masks, field=field)
             rgb, _ = compose_layers(c, layers, weight, sd, sky)
+            if with_finish:
+                from skyforge.finish import finish_array
+
+                rgb = finish_array(rgb, c.finish, weight.weight if weight is not None else None,
+                                   None if sd is None else sd / px_factor, (0, 0), 1 / px_factor)
             images.append(rgb)
             labels.append(label)
             console.print(f"  {label}")

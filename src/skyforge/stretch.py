@@ -103,7 +103,12 @@ def load_masks(cfg: Config, paths: Paths) -> tuple[np.ndarray, np.ndarray] | Non
     sky, sd = load_sky_mask(cfg, paths), load_nebula_sd(cfg, paths)
     if sky is None or sd is None:
         return None
-    return sky, sd > 0
+    neb = sd > 0
+    if cfg.stretch.exclude_stars:
+        from skyforge.clean import star_exclusion
+
+        neb &= ~star_exclusion(cfg, paths, neb.shape)  # белая точка — по туманности, а не по звёздам в ней
+    return sky, neb
 
 
 def stretch_all(cfg: Config, arrays: dict[str, np.ndarray],
@@ -131,14 +136,31 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
         console.print("[yellow]  stretch.anchor: masks — масок нет (clean выключен), растяжка по всему кадру[/]")
     from skyforge.align import stats_field
 
-    stretched, stats = stretch_all(cfg, arrays, masks, stats_field(cfg, paths, list(arrays.values())))
+    field = stats_field(cfg, paths, list(arrays.values()))
+    stretched, stats = stretch_all(cfg, arrays, masks, field)
+    ss = cfg.stretch.saturated_stars
+    sinfo: list = []
+    if ss.enabled:
+        from skyforge.clean import load_saturated_stars
+        from skyforge.satstars import screen, star_layers
+
+        stars = load_saturated_stars(cfg, paths)
+        if stars:
+            lin, disp, sinfo = star_layers(arrays, {f: stats[f]["white_value"] for f in arrays}, stars, ss, cfg.bin)
+            for f, a in arrays.items():
+                # туманность без звезды, точки растяжки — по исходному кадру (не меняются)
+                neb, _ = stretch_array(a - lin[f], cfg.stretch.for_filter(f), stats_from=a, masks=masks, field=field)
+                stretched[f] = screen(neb, disp[f])
+            console.print(f"  звёзды с насыщенным ядром отдельно от туманности: {len(sinfo)}")
     for f, y in stretched.items():
         np.save(d / f"{f}.npy", y)
+    for f in stretched:
         s = cfg.stretch.for_filter(f)
         console.print(f"  {f}: фон {stats[f]['black_value']:.4g} → 0, белая точка {stats[f]['white_value']:.4g} → 1, "
                       f"{s.method} a={s.a}, по {'маскам' if stats[f]['anchor'] == 'masks' else 'кадру'}, "
                       f"выжжено {stats[f]['white_clipped_percent']}%")
-    (d / "meta.json").write_text(json.dumps({"key": stretch_key(cfg, in_key), "filters": list(stretched), "stats": stats},
+    (d / "meta.json").write_text(json.dumps({"key": stretch_key(cfg, in_key), "filters": list(stretched), "stats": stats,
+                                             "saturated_stars": sinfo},
                                             ensure_ascii=False, indent=2), encoding="utf-8")
 
     pv = cfg.preview.max_size
@@ -148,7 +170,7 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     contact_sheet(list(thumbs.values()), list(thumbs), out_dir / "stretch_sheet.png",
                   title=f"После растяжки ({cfg.stretch.method})")
     _hist_sheet(arrays, stretched, stats, out_dir / "stretch_hist.png")
-    return {"stats": stats, "previews": ["stretch_hist.png", "stretch_sheet.png"]}
+    return {"stats": stats, "saturated_stars": sinfo, "previews": ["stretch_hist.png", "stretch_sheet.png"]}
 
 
 def _hist_sheet(raw: dict[str, np.ndarray], done: dict[str, np.ndarray], stats: dict[str, dict], path: Path) -> None:
