@@ -375,3 +375,28 @@ def test_block_median_map_does_not_depend_on_frame_extension():
     b = block_median_map(big, 95, (r, c))[r:r + 500, c:c + 600]
     m = 200                                                              # вдали от края окно видит одно и то же
     assert np.allclose(a[m:-m, m:-m], b[m:-m, m:-m], atol=1e-6)
+
+
+def test_channel_rect_inset_from_coverage_edge():
+    """Отступ внутрь от границы покрытия каждой группы: крайние столбцы с неполным набором не в кадре."""
+    from skyforge.align import channel_rect
+
+    sw = np.zeros((300, 400), bool)
+    lw = np.zeros((300, 400), bool)
+    sw[10:290, 0:400] = True
+    lw[0:300, 40:380] = True
+    r0, r1, c0, c1 = channel_rect({"SW": sw, "LW": lw}, [["LW"], ["SW"]], inset_px=8)
+    assert (r0, r1, c0, c1) == (18, 282, 48, 372)
+
+
+def test_channel_rect_with_exposure_and_all_filter_groups():
+    """Края: полоса без одного фильтра сверху и полоса с малым числом экспозиций слева срезаются."""
+    from skyforge.align import channel_rect
+
+    a = np.ones((300, 400), bool)
+    b = np.ones((300, 400), bool)
+    b[270:, :] = False                                                  # у фильтра B нет полосы сверху (строки 270+)
+    nexp_ok = np.ones((300, 400), bool)
+    nexp_ok[:, :30] = False                                             # слева мало экспозиций
+    r0, r1, c0, c1 = channel_rect({"A": a, "B": b, "A:nexp": nexp_ok}, [["A", "B"], ["A"], ["B"], ["A:nexp"]])
+    assert (r0, r1, c0, c1) == (0, 270, 30, 400)

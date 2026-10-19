@@ -199,18 +199,17 @@ def sky_color_map(rgb: np.ndarray, sky: np.ndarray, block_px: int, min_sky: floa
     """Цветовая поправка неба по блокам: гладкие карты медиан R, G, B по пустому небу (продолжены под маску
     от соседних блоков) → поправка каждого канала к их среднему. Сумма поправок по каналам в каждом
     пикселе — ноль: яркость (сумма каналов) не меняется, меняется только цвет.
-    field — карта считается в поле статистики, за его краем (края union) — продолжение значений края."""
+    Карта считается по всему небу кадра (и по краям union, где набор фильтров неполный — у них свой баланс
+    цвета); field — только начало сетки блоков (начало общего поля)."""
     from skyforge.background import block_map
 
-    sub = rgb[field.rows, field.cols] if field is not None else rgb
-    free = field.mask(sky) if field is not None else sky
+    origin = field.origin if field is not None else None
     maps, measured = [], 0
     for k in range(3):
-        m, measured = block_map(sub[..., k], free & np.isfinite(sub[..., k]), block_px, min_sky)
+        m, measured = block_map(rgb[..., k], sky & np.isfinite(rgb[..., k]), block_px, min_sky, origin)
         maps.append(m)
     med = np.stack(maps, axis=-1)
-    delta = (med.mean(axis=-1, keepdims=True) - med).astype(np.float32)
-    return (field.paste(delta, rgb.shape[:2]) if field is not None else delta), measured
+    return (med.mean(axis=-1, keepdims=True) - med).astype(np.float32), measured
 
 
 def base_color(cfg: Config, layers: dict[str, np.ndarray], sky: np.ndarray | None = None,
@@ -227,8 +226,9 @@ def base_color(cfg: Config, layers: dict[str, np.ndarray], sky: np.ndarray | Non
     mode = mode or cfg.color.neutral_background
     if field is None:
         field = make_field(list(layers.values()), None)
+    sky_all = sky
     if sky is not None:
-        # цвет неба меряется в поле статистики, где есть все фильтры
+        # одна поправка на кадр (constant) — по небу поля статистики, где есть все фильтры
         sky_f = np.zeros(sky.shape, dtype=bool)
         sky_f[field.rows, field.cols] = field.mask(sky)
         sky = sky_f
@@ -240,8 +240,9 @@ def base_color(cfg: Config, layers: dict[str, np.ndarray], sky: np.ndarray | Non
             info.update(sky_medians_before=[round(v, 5) for v in before], sky_level=round(after[0], 5) if after else None)
         elif sky is not None and mode == "map" and sky.any():
             w = sky_weight(nebula_sd, cfg.color.sky_feather_px, rgb.shape)
-            delta, measured = sky_color_map(rgb, sky, cfg.color.background_map_px, cfg.color.background_map_min_sky,
-                                            field)
+            # карта цвета — по всему небу кадра: края union с неполным набором фильтров тоже приводятся к серому
+            delta, measured = sky_color_map(rgb, sky_all, cfg.color.background_map_px,
+                                            cfg.color.background_map_min_sky, field)
             # без обрезки в 0–1: обрезка поменяла бы сумму каналов; итог обрезается на следующих шагах
             rgb = rgb + w[..., None] * delta
             info.update(color_map_blocks=measured, color_map_max=round(float(np.abs(delta).max()), 5),

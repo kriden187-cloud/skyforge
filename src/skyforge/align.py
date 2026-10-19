@@ -119,17 +119,22 @@ def union_grid(grid_wcs: WCS, grid_shape: tuple[int, int], files: list[Path]) ->
     return w, (r_hi - r_lo, c_hi - c_lo)
 
 
-def channel_rect(finite: dict[str, np.ndarray], groups: list[list[str]], hole_px: int = 2000) -> tuple[int, int, int, int]:
-    """Прямоугольник, внутри которого в каждой группе фильтров есть хотя бы один: края без канала (полосы,
-    где есть только короткие или только длинные волны) срезаются. Мелкие дыры внутри (битые пиксели,
-    ядра звёзд) не в счёт — по ним прямоугольник не сжимается."""
+def _nexp_on_grid(path: Path, grid_wcs: WCS, grid_shape: tuple[int, int]) -> np.ndarray | None:
+    """Число экспозиций (слой NEXP своей сборки уровня 2) на сетке кадра; None, если слоя нет (i2d)."""
+    from astropy.io import fits
+
+    with fits.open(path, memmap=True, mode="readonly") as h:
+        if "NEXP" not in h:
+            return None
+        ne = np.asarray(h["NEXP"].data, dtype=np.float32)
+        wcs = WCS(h["SCI"].header)
+    out, _ = reproject_interp((ne, wcs), grid_wcs, shape_out=grid_shape, order="nearest-neighbor")
+    return np.nan_to_num(out, nan=0.0)
+
+
+def _fill_small_holes(ok: np.ndarray, hole_px: int) -> np.ndarray:
     from scipy import ndimage
 
-    ok = np.ones(next(iter(finite.values())).shape, dtype=bool)
-    for g in groups:
-        have = [finite[f] for f in g if f in finite]
-        if have:
-            ok &= np.logical_or.reduce(have)
     labels, n = ndimage.label(~ok)
     if n:
         sizes = ndimage.sum_labels(~ok, labels, index=np.arange(1, n + 1))
@@ -137,8 +142,28 @@ def channel_rect(finite: dict[str, np.ndarray], groups: list[list[str]], hole_px
         small = np.zeros(n + 1, dtype=bool)
         small[1:] = sizes <= hole_px
         small[border] = False
-        ok |= small[labels]
-    return inscribed_rect(ok, 1.0)
+        ok = ok | small[labels]
+    return ok
+
+
+def channel_rect(finite: dict[str, np.ndarray], groups: list[list[str]], hole_px: int = 2000,
+                 inset_px: float = 0) -> tuple[int, int, int, int]:
+    """Прямоугольник, внутри которого в каждой группе фильтров есть хотя бы один: края без канала (полосы,
+    где есть только короткие или только длинные волны) срезаются. Мелкие дыры внутри (битые пиксели,
+    ядра звёзд) не в счёт — по ним прямоугольник не сжимается. inset_px — отступ внутрь от границы
+    покрытия каждой группы: крайние столбцы и строки с неполным набором не попадают в кадр."""
+    from scipy import ndimage
+
+    ok = np.ones(next(iter(finite.values())).shape, dtype=bool)
+    for g in groups:
+        have = [finite[f] for f in g if f in finite]
+        if have:
+            gok = _fill_small_holes(np.logical_or.reduce(have), hole_px)
+            if inset_px > 0:
+                # граница кадра сетки — тоже граница покрытия
+                gok = ndimage.distance_transform_edt(np.pad(gok, 1))[1:-1, 1:-1] > inset_px
+            ok &= gok
+    return inscribed_rect(_fill_small_holes(ok, hole_px), 1.0)
 
 
 def stats_field(cfg: Config, paths: Paths, arrays: list[np.ndarray]) -> Any:
@@ -381,8 +406,12 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         out = reproject_nan_safe(data, wcs, grid_wcs, grid_shape, cfg.align.order)
         valid &= np.isfinite(out)
         count += np.isfinite(out)
-        if cfg.align.crop == "union" and cfg.align.channel_groups:
+        if cfg.align.crop == "union" and (cfg.align.channel_groups or cfg.align.require_all):
             finite[f] = np.isfinite(out)
+            if cfg.align.min_exposures_sw and wavelength_um(f, cfg.mission, cfg.instrument) < 2.5:
+                ne = _nexp_on_grid(paths.abs(prod.path), grid_wcs, grid_shape)
+                if ne is not None:
+                    finite[f"{f}:nexp"] = ne >= cfg.align.min_exposures_sw
         np.save(d / f"{f}.npy", out)
         labels = load_context(paths.abs(prod.path))
         if labels is not None:
@@ -390,11 +419,17 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         del data, out
 
     ir0, ir1, ic0, ic1 = inscribed_rect(valid, cfg.align.crop_min_coverage)
-    if cfg.align.crop == "union" and cfg.align.channel_groups:
-        r0, r1, c0, c1 = channel_rect(finite, cfg.align.channel_groups)
+    if cfg.align.crop == "union" and (cfg.align.channel_groups or cfg.align.require_all):
+        groups = [list(g) for g in cfg.align.channel_groups]
+        if cfg.align.require_all:
+            groups += [[f] for f in prods]
+        groups += [[k] for k in finite if k.endswith(":nexp")]
+        r0, r1, c0, c1 = channel_rect(finite, groups, inset_px=cfg.align.channel_inset_px / cfg.bin)
         del finite
-        console.print(f"  кадр: в каждой группе каналов есть фильтр — {c1 - c0}×{r1 - r0} px "
-                      f"(общее поле {ic1 - ic0}×{ir1 - ir0})")
+        console.print(f"  кадр: на краях все группы каналов"
+                      + (", все фильтры" if cfg.align.require_all else "")
+                      + (f", коротких волн ≥ {cfg.align.min_exposures_sw} экспозиций" if cfg.align.min_exposures_sw else "")
+                      + f" — {c1 - c0}×{r1 - r0} px (общее поле {ic1 - ic0}×{ir1 - ir0})")
     elif cfg.align.crop == "union":
         rows, cols = np.flatnonzero(count.any(axis=1)), np.flatnonzero(count.any(axis=0))
         r0, r1, c0, c1 = int(rows[0]), int(rows[-1]) + 1, int(cols[0]), int(cols[-1]) + 1

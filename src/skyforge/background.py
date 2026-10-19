@@ -421,10 +421,20 @@ def block_model(a: np.ndarray, c: BackgroundConfig, scale_arcsec: float) -> tupl
     return model, mask, c.blocks_px
 
 
-def block_map(a: np.ndarray, free: np.ndarray, b: int, min_free: float) -> tuple[np.ndarray, int]:
+def block_map(a: np.ndarray, free: np.ndarray, b: int, min_free: float,
+              origin: tuple[int, int] | None = None) -> tuple[np.ndarray, int]:
     """Гладкая карта по блокам b×b: медиана a по пикселям free в блоке, где их не меньше min_free; остальные
     блоки продолжаются от измеренных соседей (слоями, средним соседей), затем медиана 3×3 блоков и
-    бикубическая интерполяция до полного размера. Возвращает карту и число измеренных блоков."""
+    бикубическая интерполяция до полного размера. Возвращает карту и число измеренных блоков.
+    origin — сетка блоков идёт от этой точки (кадр дополняется пустыми строками и столбцами до кратного b)."""
+    if origin is not None:
+        H0, W0 = a.shape
+        pr, pc = (-origin[0]) % b, (-origin[1]) % b
+        er, ec = (-(H0 + pr)) % b, (-(W0 + pc)) % b
+        ap = np.pad(np.asarray(a, dtype=np.float32), ((pr, er), (pc, ec)), constant_values=np.nan)
+        fp = np.pad(free, ((pr, er), (pc, ec)), constant_values=False)
+        m, n = block_map(ap, fp, b, min_free)
+        return m[pr:pr + H0, pc:pc + W0], n
     H, W = a.shape
     ny, nx = (H + b - 1) // b, (W + b - 1) // b
     grid = np.full((ny, nx), np.nan)
