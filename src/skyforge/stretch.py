@@ -144,6 +144,8 @@ def stretched_dir(cfg: Config, paths: Paths) -> Path:
 
 def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
     key = {"input": in_key, "stretch": cfg.stretch.model_dump(mode="json")}
+    if cfg.clean.fill_gaps_px > 0:
+        key["fill_gaps_px"] = cfg.clean.fill_gaps_px
     if cfg.stretch.sky_poly_order > 0:
         from skyforge.skymodel import SKY_POLY_VERSION
 
@@ -185,8 +187,20 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
         raise SkyforgeError("среди совмещённых кадров нет фильтров из конфига")
     from skyforge.skymodel import apply_sky_poly, sky_poly_sheet
 
-    arrays, poly_models, poly_info = apply_sky_poly(cfg, paths, arrays)
     extra_pv = []
+    gaps_info: dict[str, int] = {}
+    if cfg.clean.fill_gaps_px > 0:  # 3б: швы чипов — в стиле, не в общем кеше clean
+        from skyforge.cosmics import fill_gaps_linear
+
+        filled_maps = {}
+        for f in list(arrays):
+            arrays[f], filled_maps[f] = fill_gaps_linear(arrays[f], cfg.clean.fill_gaps_px)
+            gaps_info[f] = int(filled_maps[f].sum())
+        console.print("  швы заполнены (полуширина ≤ " + str(cfg.clean.fill_gaps_px) + " px): "
+                      + ", ".join(f"{f} {n} px" for f, n in gaps_info.items()))
+        _gaps_sheet(arrays, filled_maps, out_dir / "gaps_filled.png")
+        extra_pv.append("gaps_filled.png")
+    arrays, poly_models, poly_info = apply_sky_poly(cfg, paths, arrays)
     if poly_models:
         sky_poly_sheet(poly_models, poly_info, out_dir / "sky_poly.png")
         extra_pv.append("sky_poly.png")
@@ -237,8 +251,21 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     contact_sheet(list(thumbs.values()), list(thumbs), out_dir / "stretch_sheet.png",
                   title=f"После растяжки ({cfg.stretch.method})")
     _hist_sheet(arrays, stretched, stats, out_dir / "stretch_hist.png")
-    return {"stats": stats, "saturated_stars": sinfo, "sky_poly": poly_info,
+    return {"stats": stats, "saturated_stars": sinfo, "sky_poly": poly_info, "gaps_filled": gaps_info,
             "previews": ["stretch_hist.png", "stretch_sheet.png"] + extra_pv}
+
+
+def _gaps_sheet(arrays: dict[str, np.ndarray], filled: dict[str, np.ndarray], path: Path) -> None:
+    """3б: карта заполненных пикселей (красные) поверх кадра опорного фильтра."""
+    from skyforge.preview import quick_norm
+
+    f0 = next(iter(arrays))
+    base = quick_norm(arrays[f0], 1.0, 99.5, 0.05)
+    any_f = np.logical_or.reduce(list(filled.values()))
+    rgb = np.stack([base] * 3, -1)
+    rgb[any_f] = [1.0, 0.1, 0.1]
+    contact_sheet([rgb], [f"заполненные швы и чёрточки (красные): {int(any_f.sum())} px"], path, cols=1, tile_inches=10,
+                  interpolation="nearest", title="Швы чипов: линейно поперёк шва, только где данные с обеих сторон")
 
 
 def _hist_sheet(raw: dict[str, np.ndarray], done: dict[str, np.ndarray], stats: dict[str, dict], path: Path) -> None:

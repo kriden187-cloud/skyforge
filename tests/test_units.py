@@ -484,3 +484,18 @@ def test_sky_poly_takes_gradient_not_excluded_bump():
     g = grad - grad[~excl].mean()
     assert np.abs(m - g)[~excl].max() < 0.02
     assert np.abs(m - g)[excl].max() < 0.05          # внутри — продолжение хода, а не горб
+
+
+def test_sky_box_rect_center_and_size():
+    """3б: прямоугольник на небе (центр, размер в ″) → пиксели сетки «север вверх»; за краем сетки — обрезан."""
+    from conftest import CENTER
+
+    from skyforge.align import sky_box_rect
+    from skyforge.config import SkyBox
+
+    w = make_wcs(0.1, (1000, 1200), 0.0, (0.0, 0.0))
+    r0, r1, c0, c1 = sky_box_rect(SkyBox(ra=CENTER[0], dec=CENTER[1], width_arcsec=40, height_arcsec=20), w, (1000, 1200))
+    assert (r1 - r0, c1 - c0) == (200, 400)
+    assert abs((r0 + r1) / 2 - 499.5) <= 1 and abs((c0 + c1) / 2 - 599.5) <= 1
+    r0, r1, c0, c1 = sky_box_rect(SkyBox(ra=CENTER[0], dec=CENTER[1], width_arcsec=400, height_arcsec=400), w, (1000, 1200))
+    assert (r0, r1, c0, c1) == (0, 1000, 0, 1200)

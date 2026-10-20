@@ -150,6 +150,26 @@ def export(rgb: np.ndarray, base: Path, meta: dict[str, Any], nodata: np.ndarray
     return {"tif": tif.name, "png": png.name}
 
 
+def nodata_mask(coverage: np.ndarray, fill_gaps_px: int) -> np.ndarray:
+    """Пиксели без единого фильтра. 3б: при заполнении швов в стиле (clean.fill_gaps_px) шов, пустой во всех фильтрах,
+    заполнен и уже не nodata — то же правило (cosmics.fill_gaps_linear) по геометрии покрытия; иначе финиш обнулял
+    заполненный шов, и в PNG он выходил прозрачной линией."""
+    nodata = coverage == 0
+    if fill_gaps_px > 0 and nodata.any():
+        from skyforge.cosmics import fill_gaps_linear
+
+        _, filled = fill_gaps_linear(np.where(nodata, np.nan, 1.0).astype(np.float32), fill_gaps_px)
+        nodata = nodata & ~filled
+    return nodata
+
+
+def fill_nodata(rgb: np.ndarray, nodata: np.ndarray, mode: str, sky_level: float) -> np.ndarray:
+    """Пиксели без единого фильтра: black — 0; sky — ровный уровень неба (0–1) во всех каналах, без шума (3б)."""
+    out = rgb.copy()
+    out[nodata] = sky_level if mode == "sky" else 0.0
+    return out
+
+
 def finish_masks(cfg: Config, paths: Paths) -> tuple[np.ndarray | None, np.ndarray | None, tuple[int, int]]:
     """Маска звёзд и знаковое расстояние до края туманности (этап clean), начало поля статистики —
     только если финиш их использует (3i); иначе None."""
@@ -235,9 +255,12 @@ def finish(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     sw, sd, origin = finish_masks(cfg, paths)
     done = finish_array(rgb, cfg.finish, sw, sd, origin)
     coverage = load_coverage(cfg, paths)
-    nodata = coverage == 0 if coverage is not None and coverage.shape == done.shape[:2] else None
-    if nodata is not None:
-        done[nodata] = 0  # без единого фильтра — чёрный (в PNG прозрачный)
+    nodata = (nodata_mask(coverage, cfg.clean.fill_gaps_px)
+              if coverage is not None and coverage.shape == done.shape[:2] else None)
+    if nodata is not None:  # без единого фильтра — чёрный или уровень неба (в PNG прозрачный)
+        if cfg.finish.nodata_fill == "sky" and cfg.stretch.sky_level is None:
+            raise SkyforgeError("finish.nodata_fill: sky требует stretch.sky_level")
+        done = fill_nodata(done, nodata, cfg.finish.nodata_fill, (cfg.stretch.sky_level or 0) / 255)
     files = export(done, output_base(cfg, out_dir), export_metadata(cfg, cmeta), nodata)
     console.print(f"  итог: {files['png']}, {files['tif']} ({done.shape[1]}×{done.shape[0]})")
 

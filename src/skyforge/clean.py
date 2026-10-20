@@ -19,12 +19,13 @@ from skyforge.align import load_aligned, load_tiles, read_aligned_meta
 from skyforge.background import (background_model, block_model, boundary_jumps, nexp_levels, nexp_regions,
                                  tile_pedestal, tile_planes)
 from skyforge.compose import compose_layers
-from skyforge.cosmics import fill_mean, find_cosmics, find_gaps, remove_cosmics
+from skyforge.cosmics import find_cosmics, quiet_sky, remove_cosmics
 from skyforge.config import Config
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
 from skyforge.preview import cache_previews, contact_sheet, quick_norm, shrink
-from skyforge.stars import StarMask, core_area_px, fill_rings, find_core_holes, star_mask, star_weight
+from skyforge.stars import (StarMask, core_area_px, fill_rings, find_core_holes, sky_stars, sky_weight, star_mask,
+                            star_weight)
 from skyforge.stretch import stretch_array
 
 # Превью фона тянется жёстче рабочей растяжки: стыки плиток — это проценты от шума,
@@ -37,7 +38,7 @@ CLEAN_VERSION = 13  # поднять, если меняется алгоритм
 
 def enabled(cfg: Config) -> bool:
     return (cfg.stars.fill_cores or cfg.background.subtract or cfg.color.star_saturation < 1
-            or cfg.color.shadows.scope == "nebula" or cfg.clean.cosmics.clean or cfg.clean.gaps.fill)
+            or cfg.color.shadows.scope == "nebula" or cfg.clean.cosmics.clean)
 
 
 def load_nebula_sd(cfg: Config, paths: Paths, required: bool = False) -> np.ndarray | None:
@@ -132,13 +133,16 @@ def input_key(cfg: Config, paths: Paths) -> dict[str, Any]:
     key: dict[str, Any] = {"align": read_aligned_meta(cfg, paths)["key"]}
     if enabled(cfg):
         key["version"] = CLEAN_VERSION
-        key["stars"] = cfg.stars.model_dump(mode="json")
+        key["stars"] = cfg.stars.clean_key()
         key["background"] = cfg.background.model_dump(mode="json")
         # 3b: в ключе только если включены — кеш clean у JWST не сбрасывается
         if cfg.clean.cosmics.clean:
-            key["cosmics"] = cfg.clean.cosmics.model_dump(mode="json")
-        if cfg.clean.gaps.fill:
-            key["gaps"] = cfg.clean.gaps.model_dump(mode="json")
+            from skyforge.cosmics import COSMICS_VERSION
+
+            key["cosmics"] = cfg.clean.cosmics.model_dump(mode="json") | {"version": COSMICS_VERSION}
+        cc = cfg.clean.cosmics
+        if (cc.clean and cc.sky_pass and cc.sky_trusted) or cfg.stars.sky_detect_filter:
+            key["sky_grow_px"] = cfg.color.sky_grow_px  # 3б: маска неба (отступ) решает «тихое небо» и звёзды неба
     return key
 
 
@@ -216,10 +220,6 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
             holes_by_f[f] = holes
             fi["core_pixels"] = int(holes.sum())
             fi["cores"] = int(ndimage.label(holes, structure=np.ones((3, 3)))[1])
-        if cfg.clean.gaps.fill:  # после ядер: иначе мелкие дыры ядер заполнились бы средним, а не кольцами
-            gaps = find_gaps(out, int(round(cfg.clean.gaps.max_width_arcsec / scale / 2)))
-            out = fill_mean(out, gaps)
-            fi["gap_pixels"] = int(gaps.sum())
         if cfg.background.subtract:
             bc = cfg.background
             model = np.zeros_like(out)
@@ -259,8 +259,6 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
         parts = []
         if "cosmic_pixels" in fi:
             parts.append(f"следы лучей {fi['cosmic_pixels']} px")
-        if "gap_pixels" in fi:
-            parts.append(f"зазоры {fi['gap_pixels']} px")
         if "cores" in fi:
             parts.append(f"ядер {fi['cores']} ({fi['core_pixels']} px)")
         if "tiles" in fi:
@@ -288,6 +286,36 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     nebula, ni = nebula_mask(after, cfg, scale, star_masks[detect][0], holes_all, smask.window_px, field)
     sd = signed_distance(nebula)
     np.save(d / "nebula_sd.npy", sd)
+    cc = cfg.clean.cosmics
+    if cc.clean and cc.sky_pass:  # 3б: второй, мягкий проход по небу вне маски туманности
+        soft = cc.model_copy(update={"sigma": cc.sky_sigma, "sharpness": cc.sky_sharpness,
+                                     "max_area_arcsec2": cc.sky_max_area_arcsec2})
+        outside = sd < 0
+        sky_now = load_sky_mask(cfg, paths) if cc.sky_trusted else None
+        if cc.sky_trusted:   # фильтры без лучей (skip_filters): пороги первого прохода, только «тихое небо»
+            strict = find_cosmics(after, cc, scale, check_trusted=True, smoothed_sigma=cc.sky_smoothed_sigma)
+        for f, m2 in find_cosmics(after, soft, scale, smoothed_sigma=cc.sky_smoothed_sigma).items():
+            if cc.sky_trusted and f in cc.skip_filters:
+                m2 = strict[f] & quiet_sky(after[f], sky_now, cc.sky_trusted_quiet_sigma)
+            m2 &= outside
+            if m2.any():
+                after[f] = remove_cosmics(after[f], m2).astype(np.float32)
+                np.save(d / f"{f}.npy", after[f])
+                cosmic_masks[f] = cosmic_masks.get(f, np.zeros(m2.shape, dtype=bool)) | m2
+            info["filters"][f]["cosmic_pixels_sky_pass"] = int(m2.sum())
+        console.print("  второй проход по небу (мягче): " + ", ".join(
+            f"{f} {info['filters'][f]['cosmic_pixels_sky_pass']} px" for f in after))
+    if cfg.stars.sky_detect_filter:  # 3б шаг 3: звёзды поля на небе — по шуму неба, к маске звёзд
+        sf = cfg.stars.sky_detect_filter.upper()
+        if sf not in after:
+            raise SkyforgeError(f"stars.sky_detect_filter {sf} нет среди фильтров {list(after)}")
+        q = quiet_sky(after[sf], load_sky_mask(cfg, paths), cfg.stars.sky_quiet_sigma)
+        st = sky_stars(after[sf], sd < 0, q, cfg.stars, scale)
+        weight = np.maximum(weight, sky_weight(st, sd, cfg.stars, scale))
+        np.save(d / "star_weight.npy", weight)
+        info["sky_stars"] = int(ndimage.label(st, structure=np.ones((3, 3)))[1])
+        info["star_mask_percent"] = round(float((weight > 0.5).mean() * 100), 2)
+        console.print(f"  звёзды неба (по {sf}, шум неба): {info['sky_stars']}; маска звёзд {info['star_mask_percent']}% кадра")
     # прежняя маска (квадрат, со звёздами) — только для сравнения в отчёте и превью
     old = nebula_mask_square(after, cfg, scale, field)
     np.save(d / "nebula_sd_prev.npy", signed_distance(old))

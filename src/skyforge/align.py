@@ -309,6 +309,18 @@ def largest_rect_with(valid: np.ndarray, ty: int, tx: int) -> tuple[int, int, in
     return r0 * f, r1 * f, c0 * f, c1 * f
 
 
+def sky_box_rect(box, grid_wcs: WCS, shape: tuple[int, int]) -> tuple[int, int, int, int]:
+    """Прямоугольник на небе (центр и размер в ″) → [r0, r1, c0, c1] сетки, в пределах сетки."""
+    x, y = (float(v) for v in grid_wcs.world_to_pixel_values(box.ra, box.dec))
+    scale = float(np.mean(proj_plane_pixel_scales(grid_wcs))) * 3600
+    hw, hh = box.width_arcsec / scale / 2, box.height_arcsec / scale / 2
+    r0, r1 = int(max(0, round(y - hh))), int(min(shape[0], round(y + hh)))
+    c0, c1 = int(max(0, round(x - hw))), int(min(shape[1], round(x + hw)))
+    if r1 <= r0 or c1 <= c0:
+        raise SkyforgeError("align.box вне сетки опорного кадра")
+    return r0, r1, c0, c1
+
+
 def reproject_nan_safe(data: np.ndarray, wcs: WCS, grid_wcs: WCS, shape: tuple[int, int], order: str) -> np.ndarray:
     """Репроекция, в которой NaN не расползаются по всему кадру.
 
@@ -368,7 +380,7 @@ def _cache_key(cfg: Config, prods: dict[str, Product], reference: str) -> dict[s
         "bin": cfg.bin,
         "north_up": cfg.finish.north_up,
         # поля 3b (Hubble) — в ключе, только если отличны от умолчаний: кеш совмещения JWST не сбрасывается
-        "align": cfg.align.model_dump(exclude={k for k, v in (("crop_mode", "trim"), ("auto_rotate", False))
+        "align": cfg.align.model_dump(exclude={k for k, v in (("crop_mode", "trim"), ("auto_rotate", False), ("box", None))
                                                if getattr(cfg.align, k) == v}),
         "destripe": cfg.clean.destripe.model_dump(),
         "stars": cfg.stars.mask_key(),              # маски для destripe
@@ -464,6 +476,8 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
               "север вверх" if cfg.finish.north_up else "ориентация опорного кадра")
     console.print(f"align: сетка {reference}, {grid_shape[1]}×{grid_shape[0]} px, bin {cfg.bin}, {orient}")
 
+    if cfg.align.crop == "box" and cfg.align.box is None:
+        raise SkyforgeError("align.crop: box — задай align.box (ra, dec, width_arcsec, height_arcsec)")
     if cfg.align.crop == "union":
         grid_wcs, grid_shape = union_grid(grid_wcs, grid_shape, [paths.abs(p.path) for p in prods.values()])
         console.print(f"  объединение покрытий: сетка расширена до {grid_shape[1]}×{grid_shape[0]} px")
@@ -509,6 +523,10 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
                       + (", все фильтры" if cfg.align.require_all else "")
                       + (f", коротких волн ≥ {cfg.align.min_exposures_sw} экспозиций" if cfg.align.min_exposures_sw else "")
                       + f" — {c1 - c0}×{r1 - r0} px (общее поле {ic1 - ic0}×{ir1 - ir0})")
+    elif cfg.align.crop == "box":
+        r0, r1, c0, c1 = sky_box_rect(cfg.align.box, grid_wcs, grid_shape)
+        console.print(f"  кадр — прямоугольник на небе: {c1 - c0}×{r1 - r0} px, пусто (нет данных) "
+                      f"{(1 - valid[r0:r1, c0:c1].mean()) * 100:.1f}%")
     elif cfg.align.crop == "union":
         rows, cols = np.flatnonzero(count.any(axis=1)), np.flatnonzero(count.any(axis=0))
         r0, r1, c0, c1 = int(rows[0]), int(rows[-1]) + 1, int(cols[0]), int(cols[-1]) + 1
@@ -533,8 +551,10 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         "shape": [r1 - r0, c1 - c0],
         "crop": [r0, r1, c0, c1],
         "mode": cfg.align.crop,
-        # общее поле (все фильтры) в координатах кадра: в union — граница прежнего кадра
-        "intersection": [int(max(ir0, r0) - r0), int(min(ir1, r1) - r0), int(max(ic0, c0) - c0), int(min(ic1, c1) - c0)],
+        # общее поле (все фильтры) в координатах кадра: в union — граница прежнего кадра; в box — весь кадр
+        # (статистика по всем пикселям, где есть все фильтры, а не по вписанной в L-образное поле полосе)
+        "intersection": ([0, r1 - r0, 0, c1 - c0] if cfg.align.crop == "box" else
+                         [int(max(ir0, r0) - r0), int(min(ir1, r1) - r0), int(max(ic0, c0) - c0), int(min(ic1, c1) - c0)]),
         "pixel_scale_arcsec": round(float(np.mean(proj_plane_pixel_scales(crop_wcs))) * 3600, 5),
         "destripe": stripes,
         # Заголовок построчно, чтобы читать обратно через Header.fromstring(sep="\n").
