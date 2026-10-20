@@ -23,7 +23,7 @@ from skimage.registration import phase_cross_correlation
 from skyforge.config import Config
 from skyforge.fetch import Product, require_products
 from skyforge.filters import wavelength_um
-from skyforge.fitsio import load_context, load_sci
+from skyforge.fitsio import load_context, load_sci, target_coords
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
 from skyforge.preview import (PREVIEW_A, PREVIEW_BLACK, PREVIEW_VERSION, PREVIEW_WHITE, cache_previews, checkerboard,
@@ -77,7 +77,54 @@ def bin_image(data: np.ndarray, wcs: WCS, factor: int) -> tuple[np.ndarray, WCS]
     return out, binned_wcs(wcs, factor, data.shape)
 
 
-def target_grid(ref_wcs: WCS, ref_shape: tuple[int, int], north_up: bool) -> tuple[WCS, tuple[int, int]]:
+def footprint_angle(valid: np.ndarray, step_deg: float = 0.25) -> float:
+    """Угол (градусы), при повороте на который рамка вокруг непустых пикселей наименьшая."""
+    f = max(1, int(np.ceil(max(valid.shape) / 400)))
+    pts = np.argwhere(valid[::f, ::f]).astype(np.float64) * f
+    if len(pts) < 3:
+        return 0.0
+    pts -= pts.mean(axis=0)
+    best, best_area = 0.0, np.inf
+    for t in np.arange(0.0, 90.0, step_deg):
+        c, s = np.cos(np.radians(t)), np.sin(np.radians(t))
+        y = c * pts[:, 0] - s * pts[:, 1]
+        x = s * pts[:, 0] + c * pts[:, 1]
+        area = np.ptp(y) * np.ptp(x)
+        if area < best_area:
+            best, best_area = float(t), area
+    return best
+
+
+def rotated_grid(ref_wcs: WCS, valid: np.ndarray, angle_deg: float) -> tuple[WCS, tuple[int, int]]:
+    """Сетка того же масштаба, повёрнутая на angle_deg, по размеру реальных данных.
+
+    Старый пиксель p (с нуля) и новый p' связаны как p − c = R·(p' − c'); отсюда
+    CD' = CD·R и CRPIX' − 1 = c' + Rᵀ·(CRPIX − 1 − c)."""
+    t = np.radians(angle_deg)
+    rot = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])  # в осях (x, y)
+    yy, xx = np.nonzero(valid)
+    pts = np.stack([xx, yy]).astype(np.float64)  # (x, y)
+    c = pts.mean(axis=1)
+    q = rot.T @ (pts - c[:, None])
+    lo, hi = q.min(axis=1), q.max(axis=1)
+    shape = (int(np.ceil(hi[1] - lo[1])) + 2, int(np.ceil(hi[0] - lo[0])) + 2)
+    c_new = -lo + 1
+    w = WCS(naxis=2)
+    w.wcs.ctype = list(ref_wcs.wcs.ctype)[:2] if "SIP" not in ref_wcs.wcs.ctype[0] else ["RA---TAN", "DEC--TAN"]
+    w.wcs.crval = ref_wcs.wcs.crval
+    w.wcs.cd = ref_wcs.pixel_scale_matrix @ rot
+    w.wcs.crpix = c_new + rot.T @ (np.asarray(ref_wcs.wcs.crpix) - 1 - c) + 1
+    w.pixel_shape = (shape[1], shape[0])
+    w.wcs.set()
+    return w, shape
+
+
+def target_grid(ref_wcs: WCS, ref_shape: tuple[int, int], north_up: bool,
+                ref_valid: np.ndarray | None = None, auto_rotate: bool = False) -> tuple[WCS, tuple[int, int]]:
+    if auto_rotate and ref_valid is not None:  # 3b: поле Hubble повёрнуто — сетка вдоль его формы
+        angle = footprint_angle(ref_valid)
+        console.print(f"  поворот сетки по форме поля: {angle:.2f}°")
+        return rotated_grid(ref_wcs, ref_valid, angle)
     if not north_up:
         return ref_wcs, ref_shape
     scale = float(np.mean(proj_plane_pixel_scales(ref_wcs))) * u.deg
@@ -234,6 +281,46 @@ def inscribed_rect(mask: np.ndarray, min_coverage: float) -> tuple[int, int, int
     return int(r0), int(r1), int(c0), int(c1)
 
 
+def largest_rect_with(valid: np.ndarray, ty: int, tx: int) -> tuple[int, int, int, int] | None:
+    """Наибольший прямоугольник без пустот, содержащий пиксель (ty, tx). Ищется на уменьшенной
+    маске, где блок считается заполненным, только если заполнен целиком, — поэтому на полной
+    сетке прямоугольник гарантированно без NaN. (r0, r1, c0, c1), полуоткрытые."""
+    f = max(1, int(np.ceil(max(valid.shape) / 300)))
+    h, w = valid.shape[0] // f, valid.shape[1] // f
+    small = valid[:h * f, :w * f].reshape(h, f, w, f).all(axis=(1, 3))
+    sy, sx = ty // f, tx // f
+    if not (0 <= sy < h and 0 <= sx < w) or not small[sy, sx]:
+        return None
+    bad = np.vstack([np.zeros((1, w), dtype=np.int32), np.cumsum(~small, axis=0, dtype=np.int32)])
+    best, best_area = None, 0
+    for r0 in range(sy, -1, -1):
+        if bad[sy + 1, sx] - bad[r0, sx]:
+            break
+        for r1 in range(sy, h):
+            ok = (bad[r1 + 1] - bad[r0]) == 0
+            if not ok[sx]:
+                break
+            left = sx - int(np.argmax(~ok[sx::-1])) + 1 if (~ok[:sx + 1]).any() else 0
+            right = sx + int(np.argmax(~ok[sx:])) if (~ok[sx:]).any() else w
+            area = (r1 - r0 + 1) * (right - left)
+            if area > best_area:
+                best, best_area = (r0, r1 + 1, left, right), area
+    r0, r1, c0, c1 = best
+    return r0 * f, r1 * f, c0 * f, c1 * f
+
+
+def sky_box_rect(box, grid_wcs: WCS, shape: tuple[int, int]) -> tuple[int, int, int, int]:
+    """Прямоугольник на небе (центр и размер в ″) → [r0, r1, c0, c1] сетки, в пределах сетки."""
+    x, y = (float(v) for v in grid_wcs.world_to_pixel_values(box.ra, box.dec))
+    scale = float(np.mean(proj_plane_pixel_scales(grid_wcs))) * 3600
+    hw, hh = box.width_arcsec / scale / 2, box.height_arcsec / scale / 2
+    r0, r1 = int(max(0, round(y - hh))), int(min(shape[0], round(y + hh)))
+    c0, c1 = int(max(0, round(x - hw))), int(min(shape[1], round(x + hw)))
+    if r1 <= r0 or c1 <= c0:
+        raise SkyforgeError("align.box вне сетки опорного кадра")
+    return r0, r1, c0, c1
+
+
 def reproject_nan_safe(data: np.ndarray, wcs: WCS, grid_wcs: WCS, shape: tuple[int, int], order: str) -> np.ndarray:
     """Репроекция, в которой NaN не расползаются по всему кадру.
 
@@ -292,7 +379,9 @@ def _cache_key(cfg: Config, prods: dict[str, Product], reference: str) -> dict[s
         "reference": reference,
         "bin": cfg.bin,
         "north_up": cfg.finish.north_up,
-        "align": cfg.align.model_dump(),
+        # поля 3b (Hubble) — в ключе, только если отличны от умолчаний: кеш совмещения JWST не сбрасывается
+        "align": cfg.align.model_dump(exclude={k for k, v in (("crop_mode", "trim"), ("auto_rotate", False), ("box", None))
+                                               if getattr(cfg.align, k) == v}),
         "destripe": cfg.clean.destripe.model_dump(),
         "stars": cfg.stars.mask_key(),              # маски для destripe
         "background": cfg.background.model_dump(),
@@ -380,11 +469,15 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
 
     ref_data, ref_wcs = load_sci(paths.abs(prods[reference].path))
     ref_data, ref_wcs = bin_image(ref_data, ref_wcs, cfg.bin)
-    grid_wcs, grid_shape = target_grid(ref_wcs, ref_data.shape, cfg.finish.north_up)
+    grid_wcs, grid_shape = target_grid(ref_wcs, ref_data.shape, cfg.finish.north_up,
+                                       np.isfinite(ref_data), cfg.align.auto_rotate)
     del ref_data
-    console.print(f"align: сетка {reference}, {grid_shape[1]}×{grid_shape[0]} px, bin {cfg.bin}, "
-                  f"{'север вверх' if cfg.finish.north_up else 'ориентация опорного кадра'}")
+    orient = ("по форме поля" if cfg.align.auto_rotate else
+              "север вверх" if cfg.finish.north_up else "ориентация опорного кадра")
+    console.print(f"align: сетка {reference}, {grid_shape[1]}×{grid_shape[0]} px, bin {cfg.bin}, {orient}")
 
+    if cfg.align.crop == "box" and cfg.align.box is None:
+        raise SkyforgeError("align.crop: box — задай align.box (ra, dec, width_arcsec, height_arcsec)")
     if cfg.align.crop == "union":
         grid_wcs, grid_shape = union_grid(grid_wcs, grid_shape, [paths.abs(p.path) for p in prods.values()])
         console.print(f"  объединение покрытий: сетка расширена до {grid_shape[1]}×{grid_shape[0]} px")
@@ -430,12 +523,17 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
                       + (", все фильтры" if cfg.align.require_all else "")
                       + (f", коротких волн ≥ {cfg.align.min_exposures_sw} экспозиций" if cfg.align.min_exposures_sw else "")
                       + f" — {c1 - c0}×{r1 - r0} px (общее поле {ic1 - ic0}×{ir1 - ir0})")
+    elif cfg.align.crop == "box":
+        r0, r1, c0, c1 = sky_box_rect(cfg.align.box, grid_wcs, grid_shape)
+        console.print(f"  кадр — прямоугольник на небе: {c1 - c0}×{r1 - r0} px, пусто (нет данных) "
+                      f"{(1 - valid[r0:r1, c0:c1].mean()) * 100:.1f}%")
     elif cfg.align.crop == "union":
         rows, cols = np.flatnonzero(count.any(axis=1)), np.flatnonzero(count.any(axis=0))
         r0, r1, c0, c1 = int(rows[0]), int(rows[-1]) + 1, int(cols[0]), int(cols[-1]) + 1
         console.print(f"  кадр по объединению покрытий: {c1 - c0}×{r1 - r0} px (общее поле {ic1 - ic0}×{ir1 - ir0})")
     else:
-        r0, r1, c0, c1 = ir0, ir1, ic0, ic1
+        rect = _target_rect(cfg, paths, prods[reference], grid_wcs, valid) if cfg.align.crop_mode == "target" else None
+        r0, r1, c0, c1 = rect or (ir0, ir1, ic0, ic1)
         console.print(f"  обрезка до общего поля: {c1 - c0}×{r1 - r0} px из {grid_shape[1]}×{grid_shape[0]}")
     np.save(d / "coverage.npy", count[r0:r1, c0:c1].copy())
     for f in prods:
@@ -453,8 +551,10 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         "shape": [r1 - r0, c1 - c0],
         "crop": [r0, r1, c0, c1],
         "mode": cfg.align.crop,
-        # общее поле (все фильтры) в координатах кадра: в union — граница прежнего кадра
-        "intersection": [int(max(ir0, r0) - r0), int(min(ir1, r1) - r0), int(max(ic0, c0) - c0), int(min(ic1, c1) - c0)],
+        # общее поле (все фильтры) в координатах кадра: в union — граница прежнего кадра; в box — весь кадр
+        # (статистика по всем пикселям, где есть все фильтры, а не по вписанной в L-образное поле полосе)
+        "intersection": ([0, r1 - r0, 0, c1 - c0] if cfg.align.crop == "box" else
+                         [int(max(ir0, r0) - r0), int(min(ir1, r1) - r0), int(max(ic0, c0) - c0), int(min(ic1, c1) - c0)]),
         "pixel_scale_arcsec": round(float(np.mean(proj_plane_pixel_scales(crop_wcs))) * 3600, 5),
         "destripe": stripes,
         # Заголовок построчно, чтобы читать обратно через Header.fromstring(sep="\n").
@@ -533,6 +633,25 @@ def _display_to_grid(crop: Any, shape: tuple[int, int], bin_: int) -> tuple[slic
     from skyforge.preview import display_crop
 
     return display_crop(shape, crop.x, crop.y, crop.size, bin_)
+
+
+def _target_rect(cfg: Config, paths: Paths, ref: Product, grid_wcs: WCS,
+                 valid: np.ndarray) -> tuple[int, int, int, int] | None:
+    if cfg.coords:
+        ra, dec = (float(v) for v in cfg.coords.replace(",", " ").split()[:2])
+    else:
+        tc = target_coords(paths.abs(ref.path))
+        if tc is None:
+            console.print("[yellow]  crop_mode: target — нет координат цели (coords или заголовок), режу по краям[/]")
+            return None
+        ra, dec = tc
+    x, y = grid_wcs.world_to_pixel_values(ra, dec)
+    rect = largest_rect_with(valid, int(round(float(y))), int(round(float(x))))
+    if rect is None:
+        console.print("[yellow]  crop_mode: target — цель вне общего поля, режу по краям[/]")
+    else:
+        console.print(f"  обрезка вокруг цели ({ra:.4f}, {dec:.4f})")
+    return rect
 
 
 def _previews(cfg: Config, arrays: dict[str, np.ndarray], reference: str, meta: dict[str, Any],

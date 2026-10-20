@@ -172,13 +172,17 @@ def desaturate_stars(rgb: np.ndarray, mask: Any, s: float, det_layer: np.ndarray
     return np.clip(rgb + w * (grey - rgb), 0, 1)
 
 
-def saturate(rgb: np.ndarray, s: float, gamut: str = "clip") -> np.ndarray:
+def saturate(rgb: np.ndarray, s: float, gamut: str = "clip", level: float = 0.0, ramp: float = 0.0) -> np.ndarray:
     """Насыщенность вокруг яркости пикселя. gamut limit — самый яркий канал пикселя остаётся прежним, остальные
     расходятся от него (пиксель масштабируется обратно к исходному максимуму): канал не выходит за 1 и не
-    прижимается к общему потолку — в яркой цветной области рисунок сохраняется (обрезка его стирает)."""
+    прижимается к общему потолку — в яркой цветной области рисунок сохраняется (обрезка его стирает).
+    ramp > 0 (3б) — насыщенность только над уровнем неба: от 1 при яркости level до s при level + ramp (0–1);
+    шум неба не раздвигается за 0 (синий канал Hubble: 1,24% нулей неба от насыщенности 1,2)."""
     if s == 1.0:
         return rgb
     luma = (rgb @ LUMA)[..., None]
+    if ramp > 0:
+        s = 1 + (s - 1) * np.clip((luma - level) / ramp, 0, 1)
     out = luma + s * (rgb - luma)
     if gamut == "limit":
         m0 = rgb.max(axis=-1, keepdims=True)
@@ -339,6 +343,28 @@ def star_chroma(rgb: np.ndarray, stars: list, c: Any) -> np.ndarray:
     return np.clip(out, 0, 1)
 
 
+def scope_to_sky(mask: Any, nebula_sd: np.ndarray) -> Any:
+    """Маска звёзд только со звёздами неба (3б, color.star_saturation_scope: sky). Решение — по каждой звезде: ядро
+    веса (> 0,5), центр масс ядра вне маски туманности (nebula_sd < 0); пиксель ореола относится к ближайшему ядру —
+    звезда у края маски не режется пополам, а слившиеся ореолы звезды на туманности и звезды неба решаются порознь
+    (ревью шага 4: по всей слившейся области решал один пиксель плато, исход зависел от порядка строк)."""
+    from scipy import ndimage
+
+    from skyforge.stars import StarMask
+
+    w = mask.weight
+    cores, n = ndimage.label(w > 0.5, structure=np.ones((3, 3)))
+    if n == 0:
+        return StarMask(np.zeros_like(w), mask.window_px, mask.detect, mask.origin)
+    com = ndimage.center_of_mass(np.ones_like(w), cores, np.arange(1, n + 1))
+    keep = np.zeros(n + 1, dtype=bool)
+    keep[1:] = [nebula_sd[int(round(y)), int(round(x))] < 0 for y, x in com]
+    iy, ix = ndimage.distance_transform_edt(cores == 0, return_distances=False, return_indices=True)
+    nearest = cores[iy, ix]
+    return StarMask(np.where(keep[nearest] & (w > 0.01), w, 0).astype(np.float32), mask.window_px, mask.detect,
+                    mask.origin)
+
+
 def tail_color(cfg: Config, rgb: np.ndarray, layers: dict[str, np.ndarray], star_mask: Any = None,
                nebula_sd: np.ndarray | None = None, sat_stars: list | None = None,
                star_w: np.ndarray | None = None) -> np.ndarray:
@@ -354,8 +380,16 @@ def tail_color(cfg: Config, rgb: np.ndarray, layers: dict[str, np.ndarray], star
         level = cfg.stretch.sky_level / 255
     rgb = apply_shadows(rgb, cfg.color.shadows, nebula_sd, star_mask.weight if star_mask is not None else star_w,
                         level=level)
-    rgb = saturate(rgb, cfg.color.saturation, cfg.color.saturation_gamut)
+    ramp = cfg.color.saturation_above_sky / 255
+    if ramp > 0 and cfg.stretch.sky_level is None:
+        raise SkyforgeError("color.saturation_above_sky требует stretch.sky_level — уровень неба, от которого насыщать")
+    rgb = saturate(rgb, cfg.color.saturation, cfg.color.saturation_gamut,
+                   level=(cfg.stretch.sky_level or 0) / 255, ramp=ramp)
     det_layer = layers.get(star_mask.detect) if star_mask is not None else None
+    if cfg.color.star_saturation_scope == "sky" and star_mask is not None and cfg.color.star_saturation < 1:
+        if nebula_sd is None:
+            raise SkyforgeError("color.star_saturation_scope: sky требует маску туманности: запусти skyforge clean")
+        star_mask, det_layer = scope_to_sky(star_mask, nebula_sd), None   # на небе доля звезды — по итоговой яркости
     rgb = desaturate_stars(rgb, star_mask, cfg.color.star_saturation, det_layer, cfg.stars.nebula_level).astype(np.float32)
     if cfg.color.star_chroma.enabled and sat_stars:
         sc = cfg.color.star_chroma
@@ -376,7 +410,10 @@ def composite_path(cfg: Config, paths: Paths) -> Path:
 
 
 def compose_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
-    return {**stretch_key(cfg, in_key), "filters": cfg.filters, "color": cfg.color.model_dump(mode="json")}
+    skip = ({"star_saturation_scope"} if cfg.color.star_saturation_scope == "all" else set()) | (
+        {"saturation_above_sky"} if cfg.color.saturation_above_sky == 0 else set())   # 3б: ключ JWST прежний
+    color = cfg.color.model_dump(mode="json", exclude=skip)
+    return {**stretch_key(cfg, in_key), "filters": cfg.filters, "color": color}
 
 
 def load_stretched(cfg: Config, paths: Paths) -> tuple[dict[str, np.ndarray], dict[str, Any]]:

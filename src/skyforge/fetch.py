@@ -34,10 +34,16 @@ INSTRUMENTS = {
         "wfc3_uvis": "WFC3/UVIS", "wfc3/uvis": "WFC3/UVIS", "uvis": "WFC3/UVIS",
         "wfc3_ir": "WFC3/IR", "wfc3/ir": "WFC3/IR", "ir": "WFC3/IR",
         "acs": "ACS/WFC", "acs_wfc": "ACS/WFC", "acs/wfc": "ACS/WFC",
+        # В MAST продукты HAP для WFPC2 записаны как WFPC2/PC, хотя это мозаика всех четырёх чипов.
+        "wfpc2": "WFPC2/PC", "wfpc2/pc": "WFPC2/PC",
     },
 }
 # Подгруппа продукта уровня 3 в порядке предпочтения.
-SUBGROUPS = {"jwst": ["I2D"], "hst": ["DRC", "DRZ"]}
+SUBGROUPS = {"jwst": ["I2D"], "hst": ["DRC", "DRZ", "DRW"]}
+# У Hubble одно наблюдение бывает в нескольких обработках. HAP-SVM — один визит, все чипы в одной
+# мозаике, астрометрия по Gaia (фильтры разных лет совпадают); старые CAL* — без общей привязки;
+# HAP-MVM — огромные плитки неба из многих программ.
+PROVENANCE_RANK = {"HAP-SVM": 2, "HAP-MVM": 0}
 
 
 @dataclass
@@ -94,7 +100,8 @@ def _mjd_to_date(mjd: Any) -> str | None:
 
 
 def choose_observations(rows: list[dict[str, Any]]) -> dict[str, Available]:
-    """Одно наблюдение на фильтр: публичное важнее закрытого, затем самая длинная экспозиция."""
+    """Одно наблюдение на фильтр: публичное важнее закрытого, затем лучшая обработка (для Hubble),
+    затем самая длинная экспозиция."""
     best: dict[str, tuple[tuple, Available]] = {}
     for r in rows:
         f = effective_filter(r.get("filters") or "")
@@ -111,7 +118,9 @@ def choose_observations(rows: list[dict[str, Any]]) -> dict[str, Available]:
             release=_mjd_to_date(r.get("t_obs_release")),
             proposal_id=str(r["proposal_id"]) if r.get("proposal_id") is not None else None,
         )
-        key = (public, exptime or 0.0, item.obs_id)
+        prov = str(r.get("provenance_name") or "").upper()
+        rank = PROVENANCE_RANK.get(prov, 1)
+        key = (public, rank, exptime or 0.0, item.obs_id)
         if f not in best or key > best[f][0]:
             best[f] = (key, item)
     return {f: v[1] for f, v in best.items()}

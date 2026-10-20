@@ -23,11 +23,22 @@ class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class SkyBox(_Strict):
+    # Прямоугольник на небе: центр (градусы) и размер (″) вдоль осей сетки.
+    ra: float
+    dec: float
+    width_arcsec: float = Field(gt=0)
+    height_arcsec: float = Field(gt=0)
+
+
 class AlignConfig(_Strict):
     order: Literal["nearest-neighbor", "bilinear", "biquadratic", "bicubic"] = "bilinear"
     # intersection — кадр обрезается до поля, где есть все фильтры; union — объединение покрытий: сетка
     # опорного кадра расширяется на целое число пикселей, где фильтра нет — NaN, цвет из имеющихся.
-    crop: Literal["intersection", "union"] = "intersection"
+    # box (3б) — прямоугольник на небе align.box; где данных нет — честно пусто (NaN); статистика — по всем
+    # пикселям кадра, где есть все фильтры (поле поворачивается к сетке — L-образное поле WFPC2).
+    crop: Literal["intersection", "union", "box"] = "intersection"
+    box: SkyBox | None = None
     # union: группы фильтров (обычно по каналам R, G, B) — кадр обрезается до прямоугольника, где в каждой
     # группе есть хотя бы один фильтр; пусто — до рамки вокруг всех данных.
     channel_groups: list[list[str]] = []
@@ -39,6 +50,11 @@ class AlignConfig(_Strict):
     min_exposures_sw: int = Field(0, ge=0)
     # Доля непустых пикселей на краю обрезки: 1.0 — ни одного NaN на границе.
     crop_min_coverage: float = Field(0.99, gt=0, le=1)
+    # 3b (Hubble): trim — обрезка как выше; target — наибольший прямоугольник без пустот, внутри которого лежит сам
+    # объект (L-образное поле WFPC2, мозаики с вырезами); координаты — coords или заголовок файла.
+    crop_mode: Literal["trim", "target"] = "trim"
+    # Повернуть сетку так, чтобы рамка вокруг реальных данных была наименьшей. Важнее finish.north_up.
+    auto_rotate: bool = False
 
 
 class DestripeConfig(_Strict):
@@ -63,8 +79,51 @@ class DestripeConfig(_Strict):
     preview_filter: str | None = None  # для destripe_check.png; по умолчанию — самый полосатый фильтр
 
 
+class CosmicsConfig(_Strict):
+    # 3б: следы космических лучей в одиночной экспозиции. След — связное пятно над местным фоном (медиана 9×9),
+    # которого нет ни в одном другом фильтре на том же месте, не больше max_area и острее размытой структуры
+    # (узел туманности, яркий только в одной линии, — плавный, его не трогаем). Звёзды есть во всех фильтрах.
+    clean: bool = False
+    sigma: float = Field(5.0, gt=0, description="затравка следа: превышение над местным фоном, в σ шума")
+    grow_sigma: float = Field(2.5, gt=0, description="след растёт по пикселям выше этого порога, в σ")
+    sharpness: float = Field(2.0, gt=0, description="пик / среднее 5×5 вокруг пика: меньше — плавная структура, не луч")
+    max_area_arcsec2: float = Field(2.5, gt=0, description="больше — не луч (протяжённая структура)")
+    others_sigma: float = Field(5.0, gt=0, description="«источник есть» в другом фильтре: сглаженное 3×3 превышение, в σ")
+    # допуск совмещения при сверке фильтров: звёзды между фильтрами совпадают до 0,02″ (3б); 0,15″ (2 px при bin 2)
+    # давали лишние случайные совпадения лучей разных фильтров
+    protect_arcsec: float = Field(0.05, ge=0, description="допуск совмещения при сверке с остальными фильтрами")
+    grow_px: int = Field(1, ge=0, description="расширить след на столько пикселей")
+    # фильтры, где лучи уже убраны сложением нескольких экспозиций: их не чистим (иначе режутся детали туманности,
+    # которых нет в других линиях), но в сверке как «другой фильтр» они участвуют
+    skip_filters: list[str] = []
+    # второй, более мягкий проход — только по небу вне маски туманности (там нет деталей, которые можно задеть;
+    # звёзды защищает сверка фильтров). Решение Дениса 3б: остатки на небе ×5.
+    sky_pass: bool = False
+    sky_sigma: float = Field(3.5, gt=0, description="затравка во втором проходе, в σ")
+    sky_sharpness: float = Field(1.5, gt=0, description="острота во втором проходе")
+    sky_max_area_arcsec2: float = Field(6.0, gt=0, description="наибольшая площадь следа во втором проходе")
+    # 3б шаг 3: во втором проходе по небу чистить и skip_filters — в двух экспозициях без сдвига остаются лучи и
+    # тёплые пиксели, совпавшие в обеих (F658N: 26 точек на небе). Пятно в нём — луч, если его нет ни в одном из
+    # остальных фильтров; в туманности такие фильтры по-прежнему не чистятся.
+    sky_trusted: bool = False
+    # 3б шаг 4: во втором проходе σ для «источник есть» мерится по самой карте средних 3×3 — шум drizzle-кадров
+    # коррелирован, σ/3 занижала её (0,33 против 0,45σ пикселя), порог 5σ был 3,7σ; шум F658N случайно защищал ~2,4%
+    # точек неба — на небе итога оставалось 65 одноцветных следов. Первый проход (туманность) — как принят на шаге 2.
+    sky_smoothed_sigma: bool = False
+    # F658N чистится на небе с порогами первого прохода (sigma, sharpness, max_area) и только на «тихом небе»: местный
+    # фон (медиана 25 px) не выше нижней четверти неба + k·σ шума. Маска туманности не покрывает слабую внешнюю
+    # оболочку, а в ней [N II] ярче Hα — мягкий проход срезал её фактуру (7505 px в 853 пятнах, 3б шаг 3). Пики
+    # оболочки за маской лежат на фоне 8–50σ; при k 1 оставались след (130,618) и точка (109,635) на фоне 3,5 и 2σ.
+    sky_trusted_quiet_sigma: float = Field(4.0, gt=0, description="«тихое небо» для skip_filters: фон ≤ уровень + k·σ")
+
+
 class CleanConfig(_Strict):
     destripe: DestripeConfig = DestripeConfig()
+    cosmics: CosmicsConfig = CosmicsConfig()
+    # 3б: швы чипов WFPC2 и отбракованные чёрточки — линейная интерполяция поперёк шва от обеих сторон, если
+    # полуширина не больше fill_gaps_px (px сетки) и с обеих сторон есть данные (решение Дениса: только showcase).
+    # Применяется перед растяжкой стиля, не в общем кеше clean: в measured швы остаются пустыми. 0 — выкл.
+    fill_gaps_px: int = Field(0, ge=0, le=12)
 
 
 class ReportCrop(_Strict):
@@ -169,11 +228,22 @@ class StarsConfig(_Strict):
     # фильтрах. Для NGC 3132 — центральная звезда, звезда внизу справа и звезда в оболочке слева.
     saturated_min_core_px: int = Field(50, ge=1)
     saturated_min_filters: int = Field(2, ge=1)
+    # 3б шаг 3: звёзды поля на небе — по местному фону и шуму неба в этом фильтре (stars.sky_stars), добавляются
+    # к маске звёзд вне маски туманности. В тесной рамке Hubble σ кадра раздута туманностью в 8–17 раз: по ней
+    # из 8 звёзд неба находилась одна. None — выкл. Только пики на «тихом небе» (cosmics.quiet_sky, k ниже).
+    sky_detect_filter: str | None = None
+    sky_quiet_sigma: float = Field(4.0, gt=0)
+
+    _SKY_FIELDS = ("sky_detect_filter", "sky_quiet_sigma")
 
     def mask_key(self) -> dict:
         """Поля, от которых зависят маски для destripe и сборки уровня 2 (без поиска звёзд с насыщенным ядром —
-        он на этапе clean и в ключи build/align не входит)."""
-        return self.model_dump(exclude={"saturated_min_core_px", "saturated_min_filters"})
+        он на этапе clean и в ключи build/align не входит; звёзды неба 3б — тоже только clean)."""
+        return self.model_dump(exclude={"saturated_min_core_px", "saturated_min_filters", *self._SKY_FIELDS})
+
+    def clean_key(self) -> dict:
+        """Ключ clean: поля звёзд неба 3б — только когда поиск включён (кеш clean у JWST не сбрасывается)."""
+        return self.model_dump(mode="json", exclude=set(self._SKY_FIELDS) if self.sky_detect_filter is None else set())
 
 
 class BackgroundConfig(_Strict):
@@ -275,6 +345,7 @@ class StretchConfig(_Strict):
     white: float = Field(99.8, gt=0, le=100, description="процентиль ярких деталей → 1")
     a: float = Field(0.02, gt=0, description="сила растяжки: меньше — сильнее")
     # Переопределения для отдельных фильтров: {F187N: {white: 99.9}}; неуказанное берётся из общих полей.
+    # black_k — пьедестал одного фильтра (3б: F502N — одна экспозиция, хвост шума неба уходил в 0).
     per_filter: dict[str, dict[str, float]] = {}
     # 3i: в выборку для белой точки по туманности не идут звёзды — маска звёзд clean и диски exclude_radius_px
     # вокруг звёзд с насыщенным ядром (их крылья в синих фильтрах в сотни раз ярче туманности рядом).
@@ -300,7 +371,7 @@ class StretchConfig(_Strict):
     def _check(self) -> StretchConfig:
         if self.black >= self.white:
             raise ValueError(f"stretch.black ({self.black}) должен быть меньше white ({self.white})")
-        allowed = {"black", "white", "a"}
+        allowed = {"black", "white", "a", "black_k"}
         for f, params in self.per_filter.items():
             extra = set(params) - allowed
             if extra:
@@ -362,11 +433,17 @@ class ColorConfig(_Strict):
     # clip — прирост цветности и обрезка в 0–1; limit — прирост ограничивается в пикселе так, чтобы ни один
     # канал не вышел за 0–1 (оттенок и рисунок в ярких цветных областях сохраняются, 3i).
     saturation_gamut: Literal["clip", "limit"] = "clip"
+    # 3б: насыщенность только над уровнем неба (stretch.sky_level): от 1 на уровне неба до saturation на уровне неба +
+    # этот разгон (уровни из 255); 0 — выкл. Шумный канал неба иначе раздвигается от яркости пикселя за 0.
+    saturation_above_sky: float = Field(0.0, ge=0)
     star_chroma: StarChromaConfig = StarChromaConfig()
     # Подъём теней: число (= value) или {value, scope, feather_px}.
     shadows: ShadowsConfig = ShadowsConfig()
     # Насыщенность звёзд поля внутри маски звёзд (stars.*): 1 — как есть, 0 — серые с той же яркостью.
     star_saturation: float = Field(1.0, ge=0, le=1)
+    # 3б шаг 3: all — все звёзды маски; sky — только звёзды с центром вне маски туманности (цвет звёзд поля у Hubble —
+    # следствие растяжки по туманности, а не физика; звёзды на туманности не трогаем).
+    star_saturation_scope: Literal["all", "sky"] = "all"
     overrides: dict[str, str] = {}
     weights: dict[str, float] = {}
     # Нейтральный фон: чёрная точка по самым тёмным пикселям, затем цвет пустого неба (не туманность и не
@@ -448,6 +525,9 @@ class FinishConfig(_Strict):
     local_contrast: LocalContrastConfig = LocalContrastConfig()
     # Применяется на этапе align: поворот на север делается одной интерполяцией вместе с совмещением.
     north_up: bool = True
+    # 3б: пиксели без единого фильтра (углы вне поля): black — чёрные; sky — ровный уровень неба stretch.sky_level без
+    # шума (в PNG по-прежнему прозрачные по альфе, в TIFF — уровень неба вместо чёрного).
+    nodata_fill: Literal["black", "sky"] = "black"
 
 
 class PreviewConfig(_Strict):

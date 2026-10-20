@@ -19,11 +19,13 @@ from skyforge.align import load_aligned, load_tiles, read_aligned_meta
 from skyforge.background import (background_model, block_model, boundary_jumps, nexp_levels, nexp_regions,
                                  tile_pedestal, tile_planes)
 from skyforge.compose import compose_layers
+from skyforge.cosmics import find_cosmics, quiet_sky, remove_cosmics
 from skyforge.config import Config
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
 from skyforge.preview import cache_previews, contact_sheet, quick_norm, shrink
-from skyforge.stars import StarMask, core_area_px, fill_rings, find_core_holes, star_mask, star_weight
+from skyforge.stars import (StarMask, core_area_px, fill_rings, find_core_holes, sky_stars, sky_weight, star_mask,
+                            star_weight)
 from skyforge.stretch import stretch_array
 
 # Превью фона тянется жёстче рабочей растяжки: стыки плиток — это проценты от шума,
@@ -36,7 +38,7 @@ CLEAN_VERSION = 13  # поднять, если меняется алгоритм
 
 def enabled(cfg: Config) -> bool:
     return (cfg.stars.fill_cores or cfg.background.subtract or cfg.color.star_saturation < 1
-            or cfg.color.shadows.scope == "nebula")
+            or cfg.color.shadows.scope == "nebula" or cfg.clean.cosmics.clean)
 
 
 def load_nebula_sd(cfg: Config, paths: Paths, required: bool = False) -> np.ndarray | None:
@@ -131,8 +133,16 @@ def input_key(cfg: Config, paths: Paths) -> dict[str, Any]:
     key: dict[str, Any] = {"align": read_aligned_meta(cfg, paths)["key"]}
     if enabled(cfg):
         key["version"] = CLEAN_VERSION
-        key["stars"] = cfg.stars.model_dump(mode="json")
+        key["stars"] = cfg.stars.clean_key()
         key["background"] = cfg.background.model_dump(mode="json")
+        # 3b: в ключе только если включены — кеш clean у JWST не сбрасывается
+        if cfg.clean.cosmics.clean:
+            from skyforge.cosmics import COSMICS_VERSION
+
+            key["cosmics"] = cfg.clean.cosmics.model_dump(mode="json") | {"version": COSMICS_VERSION}
+        cc = cfg.clean.cosmics
+        if (cc.clean and cc.sky_pass and cc.sky_trusted) or cfg.stars.sky_detect_filter:
+            key["sky_grow_px"] = cfg.color.sky_grow_px  # 3б: маска неба (отступ) решает «тихое небо» и звёзды неба
     return key
 
 
@@ -186,6 +196,9 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
         old.unlink()
 
     before = {f: np.asarray(a, dtype=np.float32) for f, a in arrays.items()}
+    cosmic_masks: dict[str, np.ndarray] = {}
+    if cfg.clean.cosmics.clean:
+        cosmic_masks = find_cosmics(before, cfg.clean.cosmics, scale)
     after: dict[str, np.ndarray] = {}
     holes_all = np.zeros(next(iter(before.values())).shape, dtype=bool)
     holes_by_f: dict[str, np.ndarray] = {}
@@ -197,6 +210,9 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     for f, a in before.items():
         out = a
         fi: dict[str, Any] = {}
+        if f in cosmic_masks:
+            out = remove_cosmics(out, cosmic_masks[f])
+            fi["cosmic_pixels"] = int(cosmic_masks[f].sum())
         if cfg.stars.fill_cores:
             holes = find_core_holes(out, core_area_px(cfg.stars.max_core_arcsec, scale))
             out = fill_rings(out, holes)
@@ -241,6 +257,8 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
         star_masks[f] = star_mask(after[f], cfg.stars, scale, field)
         info["filters"][f] = fi
         parts = []
+        if "cosmic_pixels" in fi:
+            parts.append(f"следы лучей {fi['cosmic_pixels']} px")
         if "cores" in fi:
             parts.append(f"ядер {fi['cores']} ({fi['core_pixels']} px)")
         if "tiles" in fi:
@@ -268,6 +286,36 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     nebula, ni = nebula_mask(after, cfg, scale, star_masks[detect][0], holes_all, smask.window_px, field)
     sd = signed_distance(nebula)
     np.save(d / "nebula_sd.npy", sd)
+    cc = cfg.clean.cosmics
+    if cc.clean and cc.sky_pass:  # 3б: второй, мягкий проход по небу вне маски туманности
+        soft = cc.model_copy(update={"sigma": cc.sky_sigma, "sharpness": cc.sky_sharpness,
+                                     "max_area_arcsec2": cc.sky_max_area_arcsec2})
+        outside = sd < 0
+        sky_now = load_sky_mask(cfg, paths) if cc.sky_trusted else None
+        if cc.sky_trusted:   # фильтры без лучей (skip_filters): пороги первого прохода, только «тихое небо»
+            strict = find_cosmics(after, cc, scale, check_trusted=True, smoothed_sigma=cc.sky_smoothed_sigma)
+        for f, m2 in find_cosmics(after, soft, scale, smoothed_sigma=cc.sky_smoothed_sigma).items():
+            if cc.sky_trusted and f in cc.skip_filters:
+                m2 = strict[f] & quiet_sky(after[f], sky_now, cc.sky_trusted_quiet_sigma)
+            m2 &= outside
+            if m2.any():
+                after[f] = remove_cosmics(after[f], m2).astype(np.float32)
+                np.save(d / f"{f}.npy", after[f])
+                cosmic_masks[f] = cosmic_masks.get(f, np.zeros(m2.shape, dtype=bool)) | m2
+            info["filters"][f]["cosmic_pixels_sky_pass"] = int(m2.sum())
+        console.print("  второй проход по небу (мягче): " + ", ".join(
+            f"{f} {info['filters'][f]['cosmic_pixels_sky_pass']} px" for f in after))
+    if cfg.stars.sky_detect_filter:  # 3б шаг 3: звёзды поля на небе — по шуму неба, к маске звёзд
+        sf = cfg.stars.sky_detect_filter.upper()
+        if sf not in after:
+            raise SkyforgeError(f"stars.sky_detect_filter {sf} нет среди фильтров {list(after)}")
+        q = quiet_sky(after[sf], load_sky_mask(cfg, paths), cfg.stars.sky_quiet_sigma)
+        st = sky_stars(after[sf], sd < 0, q, cfg.stars, scale)
+        weight = np.maximum(weight, sky_weight(st, sd, cfg.stars, scale))
+        np.save(d / "star_weight.npy", weight)
+        info["sky_stars"] = int(ndimage.label(st, structure=np.ones((3, 3)))[1])
+        info["star_mask_percent"] = round(float((weight > 0.5).mean() * 100), 2)
+        console.print(f"  звёзды неба (по {sf}, шум неба): {info['sky_stars']}; маска звёзд {info['star_mask_percent']}% кадра")
     # прежняя маска (квадрат, со звёздами) — только для сравнения в отчёте и превью
     old = nebula_mask_square(after, cfg, scale, field)
     np.save(d / "nebula_sd_prev.npy", signed_distance(old))
@@ -303,6 +351,9 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
         _background_sheet(cfg, before, after, models, masks, out_dir / "background_model.png")
         previews.append("background_model.png")
     _star_mask_preview(cfg, after, weight, out_dir / "star_mask.png")
+    if cosmic_masks:
+        _cosmics_sheet(cfg, before, after, cosmic_masks, out_dir / "cosmics.png")
+        previews.append("cosmics.png")
     previews.append("star_mask.png")
     _nebula_mask_preview(cfg, after, old, nebula, out_dir / "nebula_mask.png")
     previews.append("nebula_mask.png")
@@ -507,6 +558,25 @@ def _background_sheet(cfg: Config, before: dict, after: dict, models: dict, mask
     n_crops = len([c for c in cfg.report.crops if c.name.startswith("sky")][:2])
     contact_sheet(images, labels, path, cols=4 + 2 * n_crops, tile_inches=3.0,
                   title="Фон: стыки плиток и градиенты должны уйти в «модель», туманность — остаться")
+
+
+def _cosmics_sheet(cfg: Config, before: dict, after: dict, masks: dict, path: Path) -> None:
+    """Кроп 100% там, где следов больше всего: до и после по каждому фильтру."""
+    total = sum(m.astype(np.float32) for m in masks.values())
+    z = cfg.preview.zoom
+    dens = ndimage.uniform_filter(total, z)
+    cy, cx = np.unravel_index(np.argmax(dens), dens.shape)
+    h, w = total.shape
+    y0, x0 = int(np.clip(cy - z // 2, 0, max(h - z, 0))), int(np.clip(cx - z // 2, 0, max(w - z, 0)))
+    sl = (slice(y0, y0 + z), slice(x0, x0 + z))
+    images, labels = [], []
+    for f in masks:
+        s = cfg.stretch.for_filter(f)
+        lo_hi = (s.black, s.white, s.a)
+        images += [quick_norm(before[f][sl], *lo_hi), quick_norm(after[f][sl], *lo_hi)]
+        labels += [f"{f}: до", f"после ({int(masks[f].sum())} px следов во всём кадре)"]
+    contact_sheet(images, labels, path, cols=2, tile_inches=4, interpolation="nearest",
+                  title="Следы космических лучей: звёзды и туманность должны остаться")
 
 
 def _detect_filter(cfg: Config, filters: list[str]) -> str:

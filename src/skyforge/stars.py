@@ -121,6 +121,51 @@ def star_mask(a: np.ndarray, s: StarsConfig, scale_arcsec: float, field: object 
     return stars, is_nebula[labels]
 
 
+SKY_STAR_WINDOW = 25  # окно медианы местного фона для звёзд неба, px сетки
+
+
+def sky_stars(a: np.ndarray, outside: np.ndarray, quiet: np.ndarray, s: StarsConfig, scale_arcsec: float) -> np.ndarray:
+    """3б: звёзды поля на небе — по местному фону и шуму неба, а не по σ всего кадра.
+
+    В тесной рамке вокруг туманности (Hubble) σ кадра раздута туманностью в 8–17 раз — star_mask находил одну
+    звезду неба из восьми. Здесь фон — медиана SKY_STAR_WINDOW, σ — MAD превышения на тихом небе; звезда — связная
+    область выше mask_sigma·σ с пиком ≥ peak_sigma·σ, не больше max_star_area_arcsec2, пик вне маски туманности
+    (outside) на тихом небе (quiet: пики на слабой оболочке за маской — её фактура). С ореолом halo_arcsec."""
+    fin = np.isfinite(a)
+    sel = outside & quiet & fin
+    if not sel.any():
+        return np.zeros(a.shape, dtype=bool)
+    f = np.where(fin, a, float(np.median(a[sel]))).astype(np.float32)
+    exc = f - ndimage.median_filter(f, SKY_STAR_WINDOW)
+    r = exc[sel]
+    sig = float(1.4826 * np.median(np.abs(r - np.median(r))))
+    labels, n = ndimage.label((exc > s.mask_sigma * sig) & fin, structure=_EIGHT)
+    if n == 0:
+        return np.zeros(a.shape, dtype=bool)
+    idx = np.arange(1, n + 1)
+    area = np.bincount(labels.ravel(), minlength=n + 1)[1:]
+    peak = np.asarray(ndimage.maximum(exc, labels, idx))
+    pos = ndimage.maximum_position(exc, labels, idx)
+    on_sky = np.array([bool(outside[p] and quiet[p]) for p in pos], dtype=bool)
+    keep = np.zeros(n + 1, dtype=bool)
+    keep[1:] = (area <= s.max_star_area_arcsec2 / scale_arcsec**2) & (peak >= s.peak_sigma * sig) & on_sky
+    stars = keep[labels]
+    rad = int(round(s.halo_arcsec / scale_arcsec))
+    if rad > 0 and stars.any():
+        stars = ndimage.distance_transform_edt(~stars) <= rad
+    return stars & outside
+
+
+def sky_weight(stars: np.ndarray, nebula_sd: np.ndarray, s: StarsConfig, scale_arcsec: float) -> np.ndarray:
+    """Вес звёзд неба (0–1): растушёвка как у star_weight, на туманность не заходит."""
+    w = stars.astype(np.float32)
+    feather = s.halo_arcsec / scale_arcsec / 3
+    if feather > 0:
+        w = ndimage.gaussian_filter(w, feather)
+    w[nebula_sd >= 0] = 0
+    return w
+
+
 def star_weight(masks: dict[str, tuple[np.ndarray, np.ndarray]], detect: str, s: StarsConfig,
                 scale_arcsec: float) -> StarMask:
     """Звёзды из фильтра detect, плотная туманность — объединение по всем фильтрам; край растушёван."""

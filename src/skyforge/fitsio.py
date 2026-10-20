@@ -77,6 +77,16 @@ def read_info(path: Path) -> FitsInfo:
     )
 
 
+def target_coords(path: Path) -> tuple[float, float] | None:
+    """Координаты цели наблюдения из заголовка: TARG_RA/TARG_DEC (JWST) или RA_TARG/DEC_TARG (Hubble)."""
+    with fits.open(path, memmap=True, mode="readonly") as hdul:
+        h = hdul[0].header
+        for ra_k, dec_k in (("TARG_RA", "TARG_DEC"), ("RA_TARG", "DEC_TARG")):
+            if h.get(ra_k) is not None and h.get(dec_k) is not None:
+                return float(h[ra_k]), float(h[dec_k])
+    return None
+
+
 def load_context(path: Path) -> np.ndarray | None:
     """Карта областей с одинаковым набором экспозиций (слой CON у JWST, CTX у Hubble).
 
