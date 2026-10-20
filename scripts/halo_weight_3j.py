@@ -1,6 +1,7 @@
 """3j: карта веса ореола (целиком и кроп sky3), небо ×5 рядом с phase-3i, совпадение с phase-3i там, где вес 0.
 
-Запуск: uv run python scripts/halo_weight_3j.py <папка> <png варианта> "<параметры варианта>"
+Запуск: uv run python scripts/halo_weight_3j.py <папка> <png варианта> "<параметры варианта>" [<png сравнения> <метка>]
+По умолчанию сравнение — baseline phase-3i (3j); в 3k — принятое состояние п.3.
 """
 
 from __future__ import annotations
@@ -30,11 +31,20 @@ def main() -> None:
     field = stats_field(cfg, P, list(layers.values()))
     sd, sky, sm = load_nebula_sd(cfg, P), load_sky_mask(cfg, P), load_star_weight(cfg, P)
     b, _ = base_color(cfg, layers, sky, sd, field=field)
-    hw = halo_weight(np.clip(b, 0, 1), sd, cfg.color.shadows, sm.weight)
+    if sm is not None:
+        sw = sm.weight
+    else:  # star_saturation 1 (обесцвечивание выкл.) — маска звёзд та же, из clean
+        from skyforge.clean import clean_dir
+
+        p_ = clean_dir(cfg, P) / "star_weight.npy"
+        sw = np.load(p_) if p_.exists() else None
+    hw = halo_weight(np.clip(b, 0, 1), sd, cfg.color.shadows, sw)
     w_neb = np.clip(0.5 + sd / cfg.color.shadows.feather_px, 0, 1)
     lift = np.maximum(w_neb, (1 - w_neb) * hw)[::-1]                        # картинка: строка 0 — верх
     var = np.asarray(Image.open(png).convert("RGB")).astype(np.float32) / 255
-    base = np.asarray(Image.open("data/baselines/ngc3132/phase-3i/showcase_bin1.png").convert("RGB")).astype(np.float32) / 255
+    ref_png = sys.argv[4] if len(sys.argv) > 4 else "data/baselines/ngc3132/phase-3i/showcase_bin1.png"
+    ref_lab = sys.argv[5] if len(sys.argv) > 5 else "phase-3i"
+    base = np.asarray(Image.open(ref_png).convert("RGB")).astype(np.float32) / 255
     crops = {c.name: c for c in with_resolved_crops(cfg, P).report.crops}
     H, W = var.shape[:2]
 
@@ -48,10 +58,11 @@ def main() -> None:
     for n in ("sky", "sky2", "sky3", "sky4"):
         c = crops[n]
         tiles += [np.clip(cut(base, c) * 5, 0, 1), np.clip(cut(var, c) * 5, 0, 1)]
-        labels += [f"{n} · phase-3i · ×5", f"{n} · вариант · ×5"]
+        labels += [f"{n} · {ref_lab} · ×5", f"{n} · вариант · ×5"]
         zero = cut(lift, c) <= 1e-6
         d = np.abs(cut(var, c) - cut(base, c)).max(-1) * 255
-        print(f"{n}: вес 0 у {zero.mean() * 100:.1f}% кропа; там пикселей ≠ phase-3i: {((d[zero] > 0.5).mean() * 100 if zero.any() else 0):.2f}%, "
+        dm = (np.median(cut(var, c) @ np.array([0.2126, 0.7152, 0.0722])) - np.median(cut(base, c) @ np.array([0.2126, 0.7152, 0.0722]))) * 255
+        print(f"{n}: небо (медиана яркости) {dm:+.2f} ур.; вес 0 у {zero.mean() * 100:.1f}% кропа; там пикселей ≠ {ref_lab}: {((d[zero] > 0.5).mean() * 100 if zero.any() else 0):.2f}%, "
               f"макс {(d[zero].max() if zero.any() else 0):.0f}; вес > 0,5 у {(cut(hw_img, c) > 0.5).mean() * 100:.1f}%")
     tiles.append(cut(var, crops["sky3"]))
     labels.append("sky3 · вариант · 100%")

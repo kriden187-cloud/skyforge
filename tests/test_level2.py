@@ -278,3 +278,76 @@ def test_fwhm_check_tolerance_by_filter_fwhm():
     r = fwhm_check(big, c)
     assert r["tol_percent"] == 5 and r["passed"] == 2 and r["total"] == 3
     assert CHECK_ONLY <= set(Level2Config.model_fields)   # допуски не входят в ключ сборки
+
+
+def test_match_curves_y_recovers_exposure_waves():
+    """3k: волны фона вдоль y детектора (своя у каждой экспозиции) снимаются одним МНК по перекрытиям вместе с
+    константами усилителей: экспозиции в одной точке неба перестают расходиться. Узор, привязанный к небу, данные
+    не определяют — его выбирает стягивание, и он не мерится."""
+    from skyforge.config import Level2Config
+    from skyforge.level2 import match_curves_y
+
+    rng = np.random.default_rng(5)
+    H, W, h, w = 900, 900, 600, 600
+    offs = [(0, 0), (150, 90), (60, 240), (240, 30), (120, 160), (280, 270)]
+    exps, truth = [], []
+    for dy, dx in offs:
+        ydet = np.arange(h, dtype=np.float32)[:, None].repeat(w, 1)
+        wave = (0.8 * np.sin(2 * np.pi * ydet / 300 + rng.uniform(0, 6.28))).astype(np.float32)
+        amp = np.minimum(np.arange(w) // (w // 4), 3)[None, :].repeat(h, 0).astype(np.int8)
+        data = (wave + rng.normal(0, 0.5, 4)[amp] + rng.normal(0, 0.05, (h, w))).astype(np.float32)
+        exps.append({"box": (dy, dy + h, dx, dx + w), "data": data, "amp": amp, "ydet": ydet, "ny": h})
+        truth.append(wave[:, 0].astype(float))
+    curves, knots, info = match_curves_y(exps, np.ones((H, W), dtype=bool),
+                                         Level2Config(curve_knot_rows=50, curve_prior=1e6, curve_bin_px=10), 0.05, 0.05)
+    assert info["rows"] > 0
+
+    def spread_on_sky(vals):
+        # постоянная каждой экспозиции — у констант усилителей: подбирается МНК вместе с общим профилем неба
+        vals = [np.asarray(v, dtype=float) for v in vals]
+        delta = np.zeros(len(vals))
+        for _ in range(50):
+            acc, cnt = np.zeros(H), np.zeros(H)
+            for v, d_, (dy, _) in zip(vals, delta, offs):
+                acc[dy:dy + h] += v - d_
+                cnt[dy:dy + h] += 1
+            sky = acc / np.maximum(cnt, 1)
+            delta = np.array([np.mean(v - sky[dy:dy + h]) for v, (dy, _) in zip(vals, offs)])
+        res = [[] for _ in range(H)]
+        for v, d_, (dy, _) in zip(vals, delta, offs):
+            for yy in range(h):
+                res[dy + yy].append(v[yy] - d_)
+        return float(np.sqrt(np.mean([np.var(a) for a in res if len(a) >= 2])))
+
+    y = np.arange(h)
+    after = [t - np.interp(y, knots, g) for t, g in zip(truth, curves)]
+    assert spread_on_sky(truth) > 0.4
+    assert spread_on_sky(after) < 0.06
+
+
+def test_match_curves_y_keeps_common_sky_halo():
+    """3k: общий для неба горб (ореол) кривые не снимают — он одинаков у всех экспозиций в точке неба."""
+    from skyforge.config import Level2Config
+    from skyforge.level2 import match_curves_y
+
+    rng = np.random.default_rng(5)
+    H, W, h, w = 900, 900, 600, 600
+    offs = [(0, 0), (150, 90), (60, 240), (240, 30), (120, 160), (280, 270)]
+    halo = 2.0 * np.exp(-((np.arange(H) - 450) / 150.0) ** 2)
+    exps = []
+    for dy, dx in offs:
+        ydet = np.arange(h, dtype=np.float32)[:, None].repeat(w, 1)
+        wave = 0.8 * np.sin(2 * np.pi * ydet / 300 + rng.uniform(0, 6.28))
+        amp = np.minimum(np.arange(w) // (w // 4), 3)[None, :].repeat(h, 0).astype(np.int8)
+        data = (wave + halo[dy:dy + h, None] + rng.normal(0, 0.5, 4)[amp] + rng.normal(0, 0.05, (h, w))).astype(np.float32)
+        exps.append({"box": (dy, dy + h, dx, dx + w), "data": data, "amp": amp, "ydet": ydet, "ny": h})
+    curves, knots, _ = match_curves_y(exps, np.ones((H, W), dtype=bool),
+                                      Level2Config(curve_knot_rows=50, curve_prior=1e6, curve_bin_px=10), 0.05, 0.05)
+    acc, cnt = np.zeros(H), np.zeros(H)
+    for g, (dy, _) in zip(curves, offs):
+        acc[dy:dy + h] += np.interp(np.arange(h), knots, g)
+        cnt[dy:dy + h] += 1
+    m = cnt >= 2
+    corr = acc[m] / cnt[m] - (acc[m] / cnt[m]).mean()
+    hh = halo[m] - halo[m].mean()
+    assert abs(float(corr @ hh / (hh @ hh))) < 0.1

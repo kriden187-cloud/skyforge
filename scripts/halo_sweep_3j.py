@@ -15,7 +15,8 @@ import numpy as np
 from PIL import Image
 
 from skyforge.align import read_aligned_meta, stats_field, with_resolved_crops
-from skyforge.clean import load_input, load_nebula_sd, load_sky_mask, load_star_weight
+from skyforge.clean import (load_input, load_nebula_sd, load_saturated_stars, load_sky_mask, load_star_weight,
+                            load_star_weight_map)
 from skyforge.compose import base_color, tail_color
 from skyforge.config import Config
 from skyforge.finish import finish_array, finish_masks
@@ -44,6 +45,9 @@ def main() -> None:
     P = Paths(pathlib.Path(".").resolve())
     base = Config.load("configs/ngc3132/showcase.yaml", "showcase").model_copy(update={"bin": 1})
     arrays, _ = load_input(base, P)
+    from skyforge.skymodel import apply_sky_poly
+
+    arrays, _, _ = apply_sky_poly(base, P, arrays)   # 3k п.3: полином неба, как в этапе растяжки (если включён)
     sd, sky, sm = load_nebula_sd(base, P), load_sky_mask(base, P), load_star_weight(base, P)
     sw_, sd_, origin = finish_masks(base, P)
     field = stats_field(base, P, list(arrays.values()))
@@ -54,7 +58,8 @@ def main() -> None:
         masks = load_masks(c, P)
         layers = {f: stretch_array(a, c.stretch.for_filter(f), masks=masks, field=field)[0] for f, a in arrays.items()}
         b, _ = base_color(c, layers, sky, sd, field=field)
-        done = finish_array(tail_color(c, b, layers, sm, sd), c.finish, sw_, sd_, origin)
+        star_w = load_star_weight_map(c, P) if sm is None else None
+        done = finish_array(tail_color(c, b, layers, sm, sd, load_saturated_stars(c, P), star_w), c.finish, sw_, sd_, origin)
         img = to_display(to_uint8(done)).astype(np.float32) / 255           # картинка: строка 0 — верх
         Image.fromarray((img * 255 + 0.5).astype(np.uint8)).save(out / name / f"{(spec or 'yaml').replace(';', '_')}.png")
         results.append((spec or "как в YAML", img))

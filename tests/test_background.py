@@ -420,3 +420,49 @@ def test_sky_color_map_keeps_brightness_and_nebula():
 def test_neutral_background_bool_compat():
     assert Config.model_validate({"target": "t", "color": {"neutral_background": True}}).color.neutral_background == "constant"
     assert Config.model_validate({"target": "t", "color": {"neutral_background": False}}).color.neutral_background == "off"
+
+
+def test_nexp_levels_removes_region_steps_keeps_gradient():
+    """3k: ступеньки уровня между областями NEXP снимаются константой на область, плавный ход фона остаётся,
+    опорная (самая большая) область не меняется."""
+    from skyforge.background import nexp_levels, nexp_regions
+    from skyforge.config import BackgroundConfig
+
+    rng = np.random.default_rng(3)
+    h, w = 300, 400
+    ne = np.full((h, w), 8, dtype=np.int16)
+    ne[:, :60] = 2          # полоса дизеринга слева
+    ne[200:, 150:260] = 4   # прямоугольник снизу
+    ne[:40, 300:] = 1       # угол
+    yy, xx = np.mgrid[0:h, 0:w]
+    grad = (0.002 * xx + 0.001 * yy).astype(np.float32)
+    step = {8: 0.0, 2: 0.3, 4: -0.2, 1: 0.5}
+    a = grad + rng.normal(0, 0.05, (h, w)).astype(np.float32)
+    for k, v in step.items():
+        a[ne == k] += v
+    speck = rng.random((h, w)) < 0.01                 # отбраковка отдельных пикселей: крапины NEXP − 1
+    ne_raw = np.where(speck, ne - 1, ne).astype(np.int16)
+    ped, info = nexp_levels(a, nexp_regions(ne_raw, np.isfinite(a), 15, 2000), BackgroundConfig(nexp_band_px=30))
+    assert info["regions"] == 4 and info["matched"] == 4
+    for k, v in step.items():
+        assert float(np.median(ped[ne == k])) == pytest.approx(v, abs=0.02)
+    assert np.all(ped[ne == 8] == 0)
+
+
+def test_nexp_levels_ignores_steps_under_nebula():
+    """3k: область целиком под яркой туманностью (пересечение полос дизеринга в центре) не получает
+    поправку по структуре туманности — берёт поправку ближайшей измеренной области."""
+    from skyforge.background import nexp_levels, nexp_regions
+    from skyforge.config import BackgroundConfig
+
+    rng = np.random.default_rng(4)
+    h, w = 400, 400
+    ne = np.full((h, w), 8, dtype=np.int16)
+    ne[180:220, 180:220] = 6                       # квадрат в центре туманности
+    yy, xx = np.mgrid[0:h, 0:w]
+    r = np.hypot(yy - 200, xx - 210)
+    a = (50 * np.exp(-(r / 60) ** 2) * (1 + 0.3 * np.sin(xx / 3.0))).astype(np.float32)  # яркая волокнистая
+    a += rng.normal(0, 0.05, (h, w)).astype(np.float32)
+    ped, info = nexp_levels(a, nexp_regions(ne, np.isfinite(a), 1, 100), BackgroundConfig(nexp_band_px=30),
+                            scale_arcsec=0.031)
+    assert abs(float(np.median(ped[ne == 6]))) < 0.05

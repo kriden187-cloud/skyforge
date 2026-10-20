@@ -487,6 +487,140 @@ def match_levels_per_amp(exps: list[dict[str, Any]], free_grid: np.ndarray) -> t
     return np.asarray(c), pairs
 
 
+def reproject_mask(path: Path, grid_wcs: WCS, shape: tuple[int, int]) -> np.ndarray:
+    """Маска-файл (FITS с WCS, 1 — исключено) на сетке сборки; за пределами файла — не исключено."""
+    with fits.open(path, memmap=False) as h:
+        m = np.asarray(h[0].data, dtype=np.float32)
+        w = _wcs(h[0].header)
+    g, _ = reproject_interp((m, w), grid_wcs, shape_out=shape, order="nearest-neighbor")
+    return np.nan_to_num(g) > 0.5
+
+
+CURVE_GROUP_MIN = 200  # пикселей в полосе пары перекрытия для строки МНК
+CURVE_RIDGE = 1e-6     # нижняя граница стягивания кривых — доля медианного веса данных
+CURVE_MAX_PAIR_PX = 300_000  # пикселей перекрытия пары для медиан полос (детерминированное прореживание)
+
+
+def _hat_index(y: np.ndarray, knots: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Ломаная по узлам: значение в y = (1 − t)·g[k] + t·g[k + 1]. Возвращает (k, t)."""
+    h = float(knots[1] - knots[0])
+    yc = np.clip(y, knots[0], knots[-1])
+    k = np.minimum((yc - knots[0]) // h, len(knots) - 2).astype(np.int64)
+    return k, (yc - knots[k]) / h
+
+
+def match_curves_y(exps: list[dict[str, Any]], free: np.ndarray, c: Level2Config,
+                   sigma_pix: float, sigma_stack: float) -> tuple[list[np.ndarray], np.ndarray, dict[str, Any]]:
+    """Кривая фона вдоль оси y детектора на экспозицию (ломаная, узлы через curve_knot_rows строк), один МНК без
+    итераций вместе с константами на экспозицию и усилитель. Строки — медианы разности «экспозиция i − экспозиция j»
+    в перекрытии по полосам curve_bin_px строк сетки и парам усилителей: c_ia − c_jb + g_i(y_i) − g_j(y_j) = медиана.
+    Кривые стянуты к нулю (строки g/τ, τ = curve_prior·σ стека); средняя кривая экспозиции — ноль; средняя по фильтру
+    Σ констант — ноль; решение перпендикулярно узорам, привязанным к небу (их данные не определяют, см. ниже):
+    сведение убирает только расхождение экспозиций между собой и не вносит в мозаику своего узора.
+    Нормальные уравнения копятся по строкам (в строке ≤ 6 ненулевых).
+    Возвращает (узлы-значения кривой каждой экспозиции, узлы, сведения). Данные не меняет."""
+    n = len(exps)
+    na = max(int(max(int(e["amp"].max()) for e in exps)) + 1, 1)
+    knots = [np.arange(0, e["ny"] - 1 + c.curve_knot_rows, c.curve_knot_rows, dtype=np.float64) for e in exps]
+    off = np.cumsum([n * na] + [len(k) for k in knots])     # начало кривой экспозиции i в векторе неизвестных
+    nu = int(off[-1])
+    sig_d = math.sqrt(2) * max(sigma_pix, 1e-12)
+    ATA = np.zeros((nu, nu))
+    ATb = np.zeros(nu)
+    rows = used = 0
+
+    def add(idx: np.ndarray, val: np.ndarray, rhs: np.ndarray, w: np.ndarray) -> None:
+        # idx, val: (r, m) — индексы и коэффициенты строк; накопление AᵀA и Aᵀb
+        vw = val * w[:, None]
+        for p in range(idx.shape[1]):
+            for q in range(idx.shape[1]):
+                np.add.at(ATA, (idx[:, p], idx[:, q]), vw[:, p] * vw[:, q])
+            np.add.at(ATb, idx[:, p], vw[:, p] * rhs * w)
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            a, b = exps[i]["box"], exps[j]["box"]
+            y0, y1, x0, x1 = max(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), min(a[3], b[3])
+            if y1 <= y0 or x1 <= x0:
+                continue
+            si = (slice(y0 - a[0], y1 - a[0]), slice(x0 - a[2], x1 - a[2]))
+            sj = (slice(y0 - b[0], y1 - b[0]), slice(x0 - b[2], x1 - b[2]))
+            ei, ej = exps[i]["data"][si], exps[j]["data"][sj]
+            ai, aj = exps[i]["amp"][si], exps[j]["amp"][sj]
+            yi, yj = exps[i]["ydet"][si], exps[j]["ydet"][sj]
+            ok = (np.isfinite(ei) & np.isfinite(ej) & free[y0:y1, x0:x1] & (ai >= 0) & (aj >= 0)
+                  & np.isfinite(yi) & np.isfinite(yj))
+            if ok.sum() < PAIR_MIN_PIXELS:
+                continue
+            ys, xs = np.nonzero(ok)
+            step = max(1, ys.size // CURVE_MAX_PAIR_PX)
+            ys, xs = ys[::step], xs[::step]
+            key = (ai[ys, xs].astype(np.int64) * na + aj[ys, xs]) * 100000 + (ys + y0) // c.curve_bin_px
+            d = (ei[ys, xs] - ej[ys, xs]).astype(np.float64)
+            vi, vj = yi[ys, xs].astype(np.float64), yj[ys, xs].astype(np.float64)
+            order = np.argsort(key, kind="stable")
+            key, d, vi, vj = key[order], d[order], vi[order], vj[order]
+            uniq, start, cnt = np.unique(key, return_index=True, return_counts=True)
+            good = cnt >= CURVE_GROUP_MIN
+            if not good.any():
+                continue
+            uniq, start, cnt = uniq[good], start[good], cnt[good]
+            med = np.array([np.median(d[s0:s0 + m]) for s0, m in zip(start, cnt)])
+            mi = np.add.reduceat(vi, start) / cnt if good.all() else np.array([vi[s0:s0 + m].mean() for s0, m in zip(start, cnt)])
+            mj = np.add.reduceat(vj, start) / cnt if good.all() else np.array([vj[s0:s0 + m].mean() for s0, m in zip(start, cnt)])
+            pa, pb = np.divmod(uniq // 100000, na)
+            ki, ti = _hat_index(mi, knots[i])
+            kj, tj = _hat_index(mj, knots[j])
+            idx = np.column_stack([i * na + pa, j * na + pb, off[i] + ki, off[i] + ki + 1, off[j] + kj, off[j] + kj + 1])
+            val = np.column_stack([np.ones(cnt.size), -np.ones(cnt.size), 1 - ti, ti, -(1 - tj), -tj])
+            add(idx, val, med, np.sqrt(cnt) / (1.2533 * sig_d))
+            rows += cnt.size
+            used += int(cnt.sum()) * step
+    info: dict[str, Any] = {"rows": rows, "pixels": used}
+    if not rows:
+        return [np.zeros(len(k)) for k in knots], knots[0], info
+    big = 30 * float(np.sqrt(np.max(np.diag(ATA))))
+    tau = max(c.curve_prior * sigma_stack, 1e-12)
+    # Кривые стянуты к нулю. Узор, привязанный к небу (у каждой экспозиции — в её координатах детектора), в разностях
+    # соседей сокращается: эти направления данные не определяют вовсе, их выбирает только стягивание (наименьшие
+    # кривые — небо и ореол не трогаются). Поэтому стягивание не слабее CURVE_RIDGE доли веса данных: иначе система
+    # вырождена численно и решение в этих направлениях произвольно.
+    dc = np.diag(ATA)[n * na:].copy()
+    ridge = max(1.0 / tau ** 2, CURVE_RIDGE * float(np.median(dc[dc > 0])) if (dc > 0).any() else 0.0)
+    ATA[n * na:, n * na:] += np.eye(nu - n * na) * ridge
+    ATA[:n * na, :n * na] += np.eye(n * na) * 1e-9 * float(np.mean(np.diag(ATA)))  # усилитель без перекрытий
+    r = np.zeros(nu); r[:n * na] = big                               # Σ констант = 0
+    ATA += np.outer(r, r)
+    # Узор, привязанный к небу: p(Y) даёт экспозиции i кривую p(y + oy_i) (оси детектора вдоль сетки, oy_i — строка
+    # сетки детекторной строки 0). Такие кривые в разностях соседей сокращаются — данные их не определяют. Решение
+    # делается перпендикулярным им: для каждой «шапки» φ_m по строкам сетки (шаг узлов) Σ_i Σ_k φ_m(t_k + oy_i)·g_ik = 0.
+    # Это выбор наименьших кривых в этих направлениях, но явно: со стягиванием 1e-6 численно не держалось, и кривые
+    # вносили в мозаику полосы по строкам (F187N: размах профиля неба 0,95 → 3,45σ).
+    H = free.shape[0]
+    oy = []
+    for e in exps:
+        y0 = e["box"][0]
+        okp = np.isfinite(e["ydet"])
+        rr = np.nonzero(okp)[0]
+        oy.append(float(np.median(rr + y0 - e["ydet"][okp])) if rr.size else 0.0)
+    step_k = float(c.curve_knot_rows)
+    centers = np.arange(-step_k, H + step_k, step_k)
+    for m in centers:
+        r = np.zeros(nu)
+        for i in range(n):
+            Y = knots[i] + oy[i]
+            r[off[i]:off[i + 1]] = np.clip(1 - np.abs(Y - m) / step_k, 0, None)
+        nr = float(np.linalg.norm(r))
+        if nr > 0:
+            r *= big / nr
+            ATA += np.outer(r, r)
+    info["sky_patterns"] = int(len(centers))
+    sol = np.linalg.solve(ATA, ATb)
+    curves = [sol[off[i]:off[i + 1]] for i in range(n)]
+    info["ridge_to_data"] = float(ridge / float(np.median(dc[dc > 0]))) if (dc > 0).any() else None
+    return curves, knots[0], info
+
+
 def stack(exps: list[dict[str, Any]], shape: tuple[int, int], c: Level2Config) -> dict[str, np.ndarray]:
     """Взвешенное среднее с отбрасыванием выбросов по стеку, кусками строк сетки."""
     H, W = shape
@@ -548,7 +682,10 @@ def stack(exps: list[dict[str, Any]], shape: tuple[int, int], c: Level2Config) -
 
 
 # поля level2, которые только оценивают результат — сборку из-за них не пересобирать
-CHECK_ONLY = {"star_fwhm_small_px", "star_fwhm_tol_small_percent", "star_fwhm_tol_percent"}
+# 3k: поля кривой по y; пока кривая выключена, в ключ не входят — сборка и её ключ как до 3k
+CURVE_FIELDS = {"match_curve_y", "curve_knot_rows", "curve_prior", "curve_bin_px"}
+CHECK_ONLY = {"star_fwhm_small_px", "star_fwhm_tol_small_percent", "star_fwhm_tol_percent",
+              "workers"}  # не влияют на сборку: проверки и число процессов
 
 
 def fwhm_check(rows: list[dict[str, Any]], c: Level2Config) -> dict[str, Any]:
@@ -568,7 +705,8 @@ def build_dir(cfg: Config, paths: Paths) -> Path:
 
 def _key(cfg: Config, files: list[Path], i2d: Path) -> dict[str, Any]:
     return {"version": BUILD_VERSION, "files": [[p.name, p.stat().st_size] for p in files],
-            "i2d": [i2d.name, i2d.stat().st_size], "level2": cfg.level2.model_dump(exclude=CHECK_ONLY),
+            "i2d": [i2d.name, i2d.stat().st_size], "level2": cfg.level2.model_dump(exclude=CHECK_ONLY | (
+                set() if cfg.level2.match_curve_y else CURVE_FIELDS)),
             # только то, от чего зависят маски источников (иначе любое переключение в background пересобирает мозаику)
             "masks": {k: getattr(cfg.background, k) for k in ("mask_sigma", "mask_smooth_arcsec", "tile_mask_dilate_arcsec")}
             | {"stars": cfg.stars.mask_key()}}
@@ -598,19 +736,36 @@ def build(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     meta_path = d / "meta.json"
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {"filters": {}}
     info: dict[str, Any] = {"filters": {}}
-    previews: dict[str, list] = {"destripe": [], "overlaps": [], "stars": [], "astrometry": []}
+    previews: dict[str, list] = {"destripe": [], "overlaps": [], "stars": [], "astrometry": [], "curves": []}
+    todo: dict[str, tuple[Path, str]] = {}
     for f, prod in l3.items():
         i2d_path = paths.abs(prod.path)
         key = _key(cfg, l2[f], i2d_path)
         digest = hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:10]
         old = meta["filters"].get(f)
         if old and old.get("digest") == digest and (d / old["file"]).exists():
-            console.print(f"  {f}: сборка из кеша ({old['file']})")
-            info["filters"][f] = {**old, "cached": True, "fwhm_check": fwhm_check(old.get("star_rows", []), cfg.level2)}
             continue
         if old and (d / old["file"]).exists():
             (d / old["file"]).unlink()
-        fi, pv = _build_filter(cfg, f, i2d_path, l2[f], d / f"{f}_l2_{digest}.fits")
+        todo[f] = (i2d_path, digest)
+    results: dict[str, tuple[dict, dict]] = {}
+    if len(todo) > 1 and cfg.level2.workers > 1:
+        from concurrent.futures import ProcessPoolExecutor
+
+        # короткие и длинные волны вперемешку: в памяти одновременно меньше больших сеток
+        order = sorted(todo, key=lambda f: (list(l3).index(f) % 3, list(l3).index(f)))
+        console.print(f"  сборка {len(todo)} фильтров в {min(cfg.level2.workers, len(todo))} процессах")
+        with ProcessPoolExecutor(max_workers=min(cfg.level2.workers, len(todo))) as ex:
+            futs = {f: ex.submit(_build_filter, cfg, f, todo[f][0], l2[f], d / f"{f}_l2_{todo[f][1]}.fits") for f in order}
+            results = {f: fut.result() for f, fut in futs.items()}
+    for f, prod in l3.items():
+        old = meta["filters"].get(f)
+        if f not in todo:
+            console.print(f"  {f}: сборка из кеша ({old['file']})")
+            info["filters"][f] = {**old, "cached": True, "fwhm_check": fwhm_check(old.get("star_rows", []), cfg.level2)}
+            continue
+        i2d_path, digest = todo[f]
+        fi, pv = results[f] if f in results else _build_filter(cfg, f, i2d_path, l2[f], d / f"{f}_l2_{digest}.fits")
         fi.update(digest=digest, file=f"{f}_l2_{digest}.fits")
         meta["filters"][f] = fi
         meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
@@ -638,9 +793,11 @@ def build(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
         if imgs:
             contact_sheet(imgs, labels, d / "previews" / "l2_stars.png", cols=5, tile_inches=2.0, interpolation="nearest",
                           title="Изолированные звёзды: i2d STScI (верх) и наша сборка (низ) — FWHM и поток")
+    if any(previews["curves"]):
+        _curves_sheet([x for x in previews["curves"] if x], d / "previews" / "l2_curves.png")
     if any(a for _, a in previews["astrometry"]):
         _astrometry_sheet(previews["astrometry"], d / "previews" / "l2_astrometry.png")
-    for n in ("l2_destripe.png", "l2_overlaps.png", "l2_stars.png", "l2_astrometry.png"):
+    for n in ("l2_destripe.png", "l2_overlaps.png", "l2_stars.png", "l2_astrometry.png", "l2_curves.png"):
         if (d / "previews" / n).exists():
             names.append(n)
     cache_previews(names, d / "previews", out_dir)
@@ -690,14 +847,52 @@ def _build_filter(cfg: Config, f: str, i2d_path: Path, files: list[Path], dest: 
         if box is None:
             continue
         e = {"name": p.name, "box": box, "data": project(clean, fw, grid_wcs, box), "err": project(err, fw, grid_wcs, box)}
-        if c.match_per_amp:
+        if c.match_per_amp or c.match_curve_y:
             aw = sci.shape[1] // max(1, c.amplifiers)
             amp_img = np.minimum(np.arange(sci.shape[1]) // aw, c.amplifiers - 1)[None, :].repeat(sci.shape[0], 0)
             y0, y1, x0, x1 = box
             ai, _ = reproject_interp((amp_img.astype(np.float32), fw), grid_wcs.slice((slice(y0, y1), slice(x0, x1))),
                                      shape_out=(y1 - y0, x1 - x0), order="nearest-neighbor")
             e["amp"] = np.where(np.isfinite(ai), ai, -1).astype(np.int8)
+        if c.match_curve_y:  # строка детектора на сетке
+            yd = np.arange(sci.shape[0], dtype=np.float32)[:, None].repeat(sci.shape[1], 1)
+            y0, y1, x0, x1 = box
+            e["ydet"], _ = reproject_interp((yd, fw), grid_wcs.slice((slice(y0, y1), slice(x0, x1))),
+                                            shape_out=(y1 - y0, x1 - x0), order="bilinear")
+            e["ydet"] = e["ydet"].astype(np.float32)
+            e["ny"] = sci.shape[0]
         exps.append(e)
+    curves_info: dict[str, Any] = {}
+    curve_pv = None
+    if c.match_curve_y and len(exps) > 1:
+        from skyforge.background import pixel_noise
+
+        sig1 = float(np.median([pixel_noise(e["data"], free_grid[e["box"][0]:e["box"][1], e["box"][2]:e["box"][3]]
+                                            & np.isfinite(e["data"])) for e in exps]))
+        cover = np.zeros(shape, dtype=np.int16)
+        for e in exps:
+            y0, y1, x0, x1 = e["box"]
+            cover[y0:y1, x0:x1] += np.isfinite(e["data"])
+        n_med = float(np.median(cover[free_grid & (cover > 0)])) if (free_grid & (cover > 0)).any() else 1.0
+        sig_stack = sig1 / math.sqrt(max(n_med, 1.0))
+        curves, knots, curves_info = match_curves_y(exps, free_grid, c, sig1, sig_stack)
+        corr_sum = np.zeros(shape, dtype=np.float32)
+        for e, g in zip(exps, curves):
+            y0, y1, x0, x1 = e["box"]
+            corr = np.interp(np.nan_to_num(e["ydet"], nan=0.0), knots, g).astype(np.float32)
+            fin = np.isfinite(e["data"])
+            e["data"] = np.where(fin, e["data"] - corr, e["data"]).astype(np.float32)
+            corr_sum[y0:y1, x0:x1] += np.where(fin, corr, 0)
+            del e["ydet"]
+        corr_map = np.where(cover > 0, corr_sum / np.maximum(cover, 1), np.nan) / sig_stack
+        amp_curves = [float(np.max(np.abs(g))) / sig_stack for g in curves]
+        curves_info.update(sigma_stack=round(sig_stack, 6), knots=knots.tolist(),
+                           curves=[[round(float(v) / sig_stack, 4) for v in g] for g in curves],   # σ стека
+                           max_abs=round(max(amp_curves), 4), median_max_abs=round(float(np.median(amp_curves)), 4))
+        curve_pv = (f, shrink(np.nan_to_num(corr_map), 600), curves_info["curves"], knots.tolist(),
+                    [e["name"] for e in exps])
+        console.print(f"    кривая по y: строк МНК {curves_info['rows']}, |кривая| макс по экспозиции медиана "
+                      f"{curves_info['median_max_abs']:.3f}, макс {curves_info['max_abs']:.3f} σ стека")
     levels, pairs = (np.zeros(len(exps)), [])
     if c.match_levels and len(exps) > 1:
         if c.match_per_amp:
@@ -722,6 +917,7 @@ def _build_filter(cfg: Config, f: str, i2d_path: Path, files: list[Path], dest: 
     fi = {"exposures": len(exps), "rows_before": round(rb, 6), "rows_after": round(ra, 6),
           "pairs": len(pairs), "level_residual_sigma": round(ov_metric, 4), "sigma_single": round(sigma1, 6),
           "rejected_pixels": res["rejected"], "nexp_median": float(np.median(res["nexp"][res["nexp"] > 0])),
+          "curves_y": curves_info,
           "stars": stars["summary"], "star_rows": stars["rows"],
           "astrometry": [_astro_row(p.name, a) for p, a in zip(files, astro)]}
     if astro:
@@ -741,6 +937,7 @@ def _build_filter(cfg: Config, f: str, i2d_path: Path, files: list[Path], dest: 
                   f"остаток уровней {fi['level_residual_sigma']}σ; выбросов отброшено {res['rejected']}; "
                   f"звёзды: FWHM {stars['summary'].get('fwhm_ratio')}, поток {stars['summary'].get('flux_ratio')}")
     pv = {"destripe": _demo_images(f, demo), "overlaps": _overlap_images(f, res["nexp"], ov_map, ov_metric),
+          "curves": curve_pv,
           "stars": stars["images"], "astrometry": (f, astro)}
     return fi, pv
 
@@ -754,6 +951,26 @@ def _astro_row(name: str, a: dict[str, Any]) -> dict[str, Any]:
             "точность": r(a.get("precision")),
             "применено_dx": r(ap[0]) if ap else None, "применено_dy": r(ap[1]) if ap else None,
             "применён_поворот_град": r(math.degrees(ap[2]), 5) if ap else None, "исключена": a.get("exclude", False)}
+
+
+def _curves_sheet(items: list, path: Path) -> None:
+    """3k: поправка кривыми по y — средняя по экспозициям карта на сетке (σ стека) и кривые всех экспозиций."""
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(len(items), 2, figsize=(14, 5.5 * len(items)), squeeze=False)
+    for r, (f, m, curves, knots, names) in enumerate(items):
+        lim = max(0.3, float(np.nanpercentile(np.abs(m), 99)))
+        im = ax[r, 0].imshow(m[::-1], cmap="RdBu_r", vmin=-lim, vmax=lim)
+        ax[r, 0].set_title(f"{f}: средняя поправка на сетке, σ стека"); ax[r, 0].axis("off")
+        fig.colorbar(im, ax=ax[r, 0], fraction=0.04)
+        for g, nm in zip(curves, names):
+            det = nm.split("_")[-1].replace("_cal.fits", "")
+            ax[r, 1].plot(knots, g, "-", lw=0.8, alpha=0.8, label=det)
+        ax[r, 1].axhline(0, color="k", lw=0.5); ax[r, 1].grid(alpha=0.3)
+        ax[r, 1].set_xlabel("строка детектора"); ax[r, 1].set_ylabel("кривая, σ стека")
+        ax[r, 1].set_title(f"{f}: кривые экспозиций ({len(curves)})")
+    fig.suptitle("Кривые фона по y детектора (3k): на карте не должно быть формы ореола")
+    fig.tight_layout(); fig.savefig(path, dpi=60); plt.close(fig)
 
 
 def _astrometry_sheet(items: list, path: Path) -> None:

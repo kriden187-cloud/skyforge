@@ -123,6 +123,63 @@ def tile_pedestal(a: np.ndarray, tiles: np.ndarray, c: BackgroundConfig,
     return ped, {"tiles": int(ids.size), "measured": int(good.size), "matched": n_matched}
 
 
+def nexp_regions(nexp: np.ndarray, finite: np.ndarray, smooth_px: int = 1, min_area_px: int = 0) -> np.ndarray:
+    """Связные области одинакового числа экспозиций: метки 0…n−1, вне данных и в клочках −1.
+    smooth_px — медиана по NEXP до разметки: отбраковка отдельных пикселей в стеке дробит NEXP на крапины;
+    клочки меньше min_area_px областью не считаются (поправку берут от ближайшей)."""
+    if smooth_px > 1:
+        nexp = ndimage.median_filter(nexp, size=smooth_px)
+    out = np.full(nexp.shape, -1, dtype=np.int32)
+    n = 0
+    for v in np.unique(nexp[finite]):
+        lab, k = ndimage.label(finite & (nexp == v))
+        if not k:
+            continue
+        sizes = np.bincount(lab.ravel(), minlength=k + 1)
+        keep = np.flatnonzero(sizes[1:] >= max(1, min_area_px)) + 1
+        remap = np.full(k + 1, -1, dtype=np.int32)
+        remap[keep] = np.arange(n, n + keep.size, dtype=np.int32)
+        m = lab > 0
+        out[m] = remap[lab[m]]
+        n += keep.size
+    return out
+
+
+def nexp_levels(a: np.ndarray, regions: np.ndarray, c: BackgroundConfig,
+                scale_arcsec: float | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+    """Поправка уровня на каждую область NEXP (3k): скачки на общих границах (boundary_steps, полоса
+    nexp_band_px) и распространение от самой большой области (поправка 0) к соседям (propagate).
+    В скачок не идут яркие пиксели (лучи, звёзды, волокна — как в сшивке 3d) и, при scale_arcsec, маска
+    источников с отступом (туманность: скачок по её структуре и по крапинам отбраковки в ней — не уровень);
+    плавный ход фона и ореол снимает продолжение к границе. Область без измеренной границы по небу —
+    поправка ближайшей измеренной."""
+    finite = np.isfinite(a) & (regions >= 0)
+    if not finite.any():
+        return np.zeros_like(a), {"regions": 0, "matched": 0}
+    data = np.isfinite(a)
+    n = int(regions.max()) + 1
+    area = np.bincount(regions[finite].ravel(), minlength=n)
+    filled = np.where(np.isfinite(a), a, np.float32(np.nanmedian(a[finite]))).astype(np.float32)
+    hp = filled - ndimage.median_filter(filled, size=9)
+    _, _, std = sigma_clipped_stats(hp[finite][:: max(1, int(finite.sum()) // 2_000_000)], sigma=CLIP_SIGMA)
+    bright = ndimage.binary_dilation(hp > c.tile_pixel_sigma * std, iterations=2) | ~np.isfinite(a)
+    if scale_arcsec is not None:
+        bright |= source_mask(a, c, scale_arcsec, for_tiles=True)
+    known = np.full(n, np.nan, dtype=np.float32)
+    known[int(np.argmax(area))] = 0.0
+    steps = boundary_steps(a, np.where(finite, regions, -1), bright, c.nexp_band_px)
+    off = propagate(known, steps, area)
+    ped = np.where(regions >= 0, off[np.clip(regions, 0, None)], np.nan).astype(np.float32)
+    unknown = data & ~np.isfinite(ped)   # клочки и области без измеренной границы
+    if unknown.any() and np.isfinite(ped).any():
+        idx = ndimage.distance_transform_edt(~np.isfinite(ped), return_distances=False, return_indices=True)
+        ped = ped[tuple(idx)]
+    ped[~data] = np.nan
+    meas = np.isfinite(off)
+    return ped, {"regions": n, "matched": int(meas.sum()), "boundaries": len(steps),
+                 "max_abs": round(float(np.nanmax(np.abs(off))) if meas.any() else 0.0, 6)}
+
+
 def boundary_steps(a: np.ndarray, regions: np.ndarray, excluded: np.ndarray, band_px: int,
                    min_pairs: int = 100) -> dict[tuple[int, int], tuple[float, int]]:
     """Ступеньки на общих границах областей: {(i, j): (o_i − o_j, число пар)}.

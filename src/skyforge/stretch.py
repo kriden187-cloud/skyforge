@@ -40,11 +40,52 @@ def curve(x: np.ndarray, method: str, a: float) -> np.ndarray:
     return x
 
 
+def curve_inv(y: float, method: str, a: float) -> float:
+    """Обратная к curve: какое значение до растяжки даёт y после."""
+    if method == "asinh":
+        return float(a * math.sinh(y * math.asinh(1 / a)))
+    if method == "log":
+        return float(a * math.expm1(y * math.log1p(1 / a)))
+    if method == "sqrt":
+        return float(y * y)
+    return float(y)
+
+
+def sky_toe(x: np.ndarray, u_sky: float, u_target: float) -> tuple[np.ndarray, float]:
+    """Носок до растяжки (x в 0–1): u_sky → u_target. Выше u_sky — прямая через (u_sky, u_target) и (1, 1),
+    то есть линейно по данным, как чёрная точка; ниже — u_target·(x/u_sky)^p, p подобрано так, что наклон
+    в u_sky совпадает с прямой: кривая гладкая, монотонная, 0 → 0, без обрезки. Возвращает (x, p)."""
+    if not u_sky > u_target > 0:
+        return x, 1.0
+    q = (1 - u_target) / (1 - u_sky)
+    p = q * u_sky / u_target
+    low = u_target * np.power(np.maximum(x, 0) / np.float32(u_sky), np.float32(p))
+    out = np.where(x >= u_sky, u_target + (x - u_sky) * np.float32(q), low)
+    return out.astype(np.float32), float(p)
+
+
 def masked_sample(a: np.ndarray, mask: np.ndarray) -> np.ndarray:
     # Выборка на той же решётке, что и sample(): шаг зависит от размера кадра, а не от числа пикселей маски —
     # иначе изменение маски на краю сдвигало бы всю выборку и процентили по всему кадру (3h, п.4).
     v = sample(a)[sample(np.asarray(mask, dtype=np.float32)) > 0.5]
     return v[np.isfinite(v)]
+
+
+def noisy_sigma(a: np.ndarray, sky: np.ndarray, block: int) -> float:
+    """σ неба самых шумных мест: робастный шум (MAD) в блоках block×block, где неба не меньше половины;
+    98-й процентиль по блокам."""
+    h, w = a.shape
+    sig = []
+    for y in range(0, h - block + 1, block):
+        for x in range(0, w - block + 1, block):
+            m = sky[y:y + block, x:x + block]
+            if m.mean() < 0.5:
+                continue
+            v = a[y:y + block, x:x + block][m]
+            v = v[np.isfinite(v)]
+            if v.size > 100:
+                sig.append(1.4826 * float(np.median(np.abs(v - np.median(v)))))
+    return float(np.percentile(sig, 98)) if sig else 0.0
 
 
 def stretch_array(arr: np.ndarray, s: StretchConfig, stats_from: np.ndarray | None = None,
@@ -68,12 +109,22 @@ def stretch_array(arr: np.ndarray, s: StretchConfig, stats_from: np.ndarray | No
             lo = float(np.percentile(sky_v, s.black))
             hi = float(np.percentile(neb_v, s.white))
             anchor = "masks"
+            sky_med = float(np.median(sky_v))
+            if s.black_mode == "pedestal":
+                lo = sky_med - s.black_k * noisy_sigma(src, masks[0], s.noise_block_px)
+                anchor = "masks, пьедестал"
     if anchor == "frame":
         lo, hi = (float(v) for v in np.nanpercentile(smp, [s.black, s.white]))
     if not hi > lo:
         raise SkyforgeError(f"процентили black={s.black} и white={s.white} дают одно значение {lo}: кадр пустой?")
     x = (np.asarray(arr, dtype=np.float32) - np.float32(lo)) / np.float32(hi - lo)
     np.clip(x, 0, 1, out=x)  # NaN остаются NaN
+    toe = None
+    if s.sky_level is not None and anchor != "frame":
+        u_sky = (sky_med - lo) / (hi - lo)
+        u_t = curve_inv(s.sky_level / 255, s.method, s.a)
+        x, p = sky_toe(x, u_sky, u_t)
+        toe = {"u_sky": round(u_sky, 6), "u_target": round(u_t, 6), "p": round(p, 3)}
     y = curve(x, s.method, s.a).astype(np.float32)
     stats = {
         "black_value": lo,
@@ -82,6 +133,8 @@ def stretch_array(arr: np.ndarray, s: StretchConfig, stats_from: np.ndarray | No
         "median_after": round(float(np.nanmedian(sample(y))), 4),
         "anchor": anchor,
     }
+    if toe is not None:
+        stats["sky_toe"] = toe
     return y, stats
 
 
@@ -91,6 +144,10 @@ def stretched_dir(cfg: Config, paths: Paths) -> Path:
 
 def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
     key = {"input": in_key, "stretch": cfg.stretch.model_dump(mode="json")}
+    if cfg.stretch.sky_poly_order > 0:
+        from skyforge.skymodel import SKY_POLY_VERSION
+
+        key["sky_poly_version"] = SKY_POLY_VERSION
     if cfg.stretch.anchor == "masks":
         key["sky_grow_px"] = cfg.color.sky_grow_px  # маска неба зависит от отступа
     return key
@@ -126,6 +183,16 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     arrays, in_key = load_input(cfg, paths)
     if not arrays:
         raise SkyforgeError("среди совмещённых кадров нет фильтров из конфига")
+    from skyforge.skymodel import apply_sky_poly, sky_poly_sheet
+
+    arrays, poly_models, poly_info = apply_sky_poly(cfg, paths, arrays)
+    extra_pv = []
+    if poly_models:
+        sky_poly_sheet(poly_models, poly_info, out_dir / "sky_poly.png")
+        extra_pv.append("sky_poly.png")
+        for f in arrays:
+            console.print(f"  {f}: полином неба {cfg.stretch.sky_poly_order}-го порядка — размах {poly_info[f]['range_sigma']}σ, "
+                          f"в зоне исключения {poly_info[f]['in_excluded_range_sigma']}σ")
     d = stretched_dir(cfg, paths)
     d.mkdir(parents=True, exist_ok=True)
     for old in d.glob("*.npy"):
@@ -157,7 +224,7 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     for f in stretched:
         s = cfg.stretch.for_filter(f)
         console.print(f"  {f}: фон {stats[f]['black_value']:.4g} → 0, белая точка {stats[f]['white_value']:.4g} → 1, "
-                      f"{s.method} a={s.a}, по {'маскам' if stats[f]['anchor'] == 'masks' else 'кадру'}, "
+                      f"{s.method} a={s.a}, по {'маскам' if stats[f]['anchor'].startswith('masks') else 'кадру'}, "
                       f"выжжено {stats[f]['white_clipped_percent']}%")
     (d / "meta.json").write_text(json.dumps({"key": stretch_key(cfg, in_key), "filters": list(stretched), "stats": stats,
                                              "saturated_stars": sinfo},
@@ -170,7 +237,8 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     contact_sheet(list(thumbs.values()), list(thumbs), out_dir / "stretch_sheet.png",
                   title=f"После растяжки ({cfg.stretch.method})")
     _hist_sheet(arrays, stretched, stats, out_dir / "stretch_hist.png")
-    return {"stats": stats, "saturated_stars": sinfo, "previews": ["stretch_hist.png", "stretch_sheet.png"]}
+    return {"stats": stats, "saturated_stars": sinfo, "sky_poly": poly_info,
+            "previews": ["stretch_hist.png", "stretch_sheet.png"] + extra_pv}
 
 
 def _hist_sheet(raw: dict[str, np.ndarray], done: dict[str, np.ndarray], stats: dict[str, dict], path: Path) -> None:

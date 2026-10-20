@@ -16,7 +16,8 @@ import numpy as np
 from scipy import ndimage
 
 from skyforge.align import load_aligned, load_tiles, read_aligned_meta
-from skyforge.background import background_model, block_model, boundary_jumps, tile_pedestal, tile_planes
+from skyforge.background import (background_model, block_model, boundary_jumps, nexp_levels, nexp_regions,
+                                 tile_pedestal, tile_planes)
 from skyforge.compose import compose_layers
 from skyforge.config import Config
 from skyforge.log import SkyforgeError, console
@@ -30,7 +31,7 @@ from skyforge.stretch import stretch_array
 REVEAL_BLACK, REVEAL_WHITE, REVEAL_A = 1.0, 90.0, 0.02
 
 
-CLEAN_VERSION = 12  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
+CLEAN_VERSION = 13  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
 
 
 def enabled(cfg: Config) -> bool:
@@ -60,6 +61,13 @@ def load_star_weight(cfg: Config, paths: Paths) -> StarMask | None:
     meta_data = json.loads(meta.read_text(encoding="utf-8"))
     rect = read_aligned_meta(cfg, paths).get("intersection")
     return StarMask(np.load(p), window, meta_data["star_detect_filter"], (rect[0], rect[2]) if rect else (0, 0))
+
+
+def load_star_weight_map(cfg: Config, paths: Paths) -> np.ndarray | None:
+    """Вес звёзд с этапа clean без условия на star_saturation — для веса подъёма за маской (halo_k): звёзды в нём
+    заменяются уровнем неба, иначе вокруг каждой звезды вес поднимается. None — нет файла."""
+    p = clean_dir(cfg, paths) / "star_weight.npy"
+    return np.load(p) if p.exists() else None
 
 
 def load_sky_mask(cfg: Config, paths: Paths, nebula: str = "nebula_sd.npy") -> np.ndarray | None:
@@ -169,7 +177,7 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     from skyforge.align import with_resolved_crops
     from skyforge.field import make_field
 
-    arrays, _, meta = load_aligned(cfg, paths)
+    arrays, grid_wcs, meta = load_aligned(cfg, paths)
     cfg = with_resolved_crops(cfg, paths)
     scale = meta["pixel_scale_arcsec"]
     field = make_field(list(arrays.values()), meta.get("intersection"))
@@ -185,6 +193,7 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     models, masks = {}, {}
     star_masks = {}
     tile_maps: dict[str, np.ndarray] = {}
+    nexp_maps: dict[str, tuple[np.ndarray, np.ndarray]] = {}
     for f, a in before.items():
         out = a
         fi: dict[str, Any] = {}
@@ -209,6 +218,16 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
                 fi.update(tiles=ti["tiles"], tiles_measured=ti["measured"], tiles_matched=ti["matched"],
                           tiles_continued=ti.get("continued", 0))
                 tile_maps[f] = np.nan_to_num(ped)
+            if bc.nexp_levels:
+                ne = nexp_on_grid(cfg, paths, f, grid_wcs, out.shape)
+                if ne is None:
+                    console.print(f"  [yellow]{f}: нет слоя NEXP (не своя сборка) — уровни областей не свожу[/]")
+                else:
+                    ped, ni_ = nexp_levels(out, nexp_regions(ne, np.isfinite(out), bc.nexp_smooth_px, bc.nexp_min_area_px), bc, scale)
+                    out = out - np.nan_to_num(ped)
+                    model += np.nan_to_num(ped)
+                    fi["nexp"] = ni_
+                    nexp_maps[f] = (ne, np.nan_to_num(ped))
             mask = np.zeros(out.shape, dtype=bool)
             if bc.smooth:
                 smooth, mask, box = (block_model if bc.model == "blocks" else background_model)(out, bc, scale)
@@ -226,6 +245,9 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
             parts.append(f"ядер {fi['cores']} ({fi['core_pixels']} px)")
         if "tiles" in fi:
             parts.append(f"плиток {fi['tiles']}, измерено {fi['tiles_measured']}")
+        if "nexp" in fi:
+            parts.append(f"области NEXP {fi['nexp']['regions']}, сведено {fi['nexp']['matched']}, "
+                         f"наибольшая поправка {fi['nexp']['max_abs']:.3g}")
         if "box_px" in fi:
             parts.append(f"гладкий фон: блок {fi['box_px']} px, маска {fi['masked_percent']}%")
         console.print(f"  {f}: " + ", ".join(parts))
@@ -274,6 +296,9 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
             _tile_planes_sheet(cfg, before, after, tile_maps, out_dir / "tile_planes.png")
             info["extra_previews"] = ["tile_planes.png"]
     previews = []
+    if nexp_maps:
+        _nexp_levels_sheet(nexp_maps, out_dir / "nexp_levels.png")
+        previews.append("nexp_levels.png")
     if cfg.background.subtract:
         _background_sheet(cfg, before, after, models, masks, out_dir / "background_model.png")
         previews.append("background_model.png")
@@ -286,6 +311,39 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
         previews.append("star_cores.png")
     info["previews"] = previews + info.pop("extra_previews", [])
     return info
+
+
+def nexp_on_grid(cfg: Config, paths: Paths, f: str, grid_wcs: Any, shape: tuple[int, int]) -> np.ndarray | None:
+    """Слой NEXP своей сборки фильтра f на сетке кадра (ближайший сосед); None — у продукта слоя нет."""
+    from astropy.io import fits
+    from astropy.wcs import WCS
+    from reproject import reproject_interp
+
+    from skyforge.fetch import require_products
+
+    path = paths.abs(require_products(cfg, paths)[f].path)
+    with fits.open(path, memmap=True, mode="readonly") as h:
+        if "NEXP" not in h:
+            return None
+        ne = np.asarray(h["NEXP"].data, dtype=np.float32)
+        w = WCS(h["SCI"].header)
+    if cfg.bin > 1:
+        from skyforge.align import bin_image
+
+        ne, w = bin_image(ne, w, cfg.bin)
+    g, _ = reproject_interp((ne, w), grid_wcs, shape_out=shape, order="nearest-neighbor")
+    return np.rint(np.nan_to_num(g)).astype(np.int16)
+
+
+def _nexp_levels_sheet(maps: dict[str, tuple[np.ndarray, np.ndarray]], path: Path) -> None:
+    imgs, labels = [], []
+    for f, (ne, ped) in maps.items():
+        imgs.append(shrink(ne.astype(np.float32) / max(1, int(ne.max())), 500))
+        labels.append(f"{f}: число экспозиций")
+        lim = float(np.percentile(np.abs(ped), 99.5)) or 1.0
+        imgs.append(shrink(np.clip(0.5 + ped / (2 * lim), 0, 1), 500))
+        labels.append(f"{f}: поправка уровня по областям NEXP (серое 0, ±{lim:.3g})")
+    contact_sheet(imgs, labels, path, cols=4, tile_inches=3.6, title="3k: уровни областей числа экспозиций")
 
 
 def _tile_planes_sheet(cfg: Config, before: dict, after: dict, maps: dict, path: Path) -> None:

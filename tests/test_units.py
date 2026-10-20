@@ -400,3 +400,75 @@ def test_channel_rect_with_exposure_and_all_filter_groups():
     nexp_ok[:, :30] = False                                             # слева мало экспозиций
     r0, r1, c0, c1 = channel_rect({"A": a, "B": b, "A:nexp": nexp_ok}, [["A", "B"], ["A"], ["B"], ["A:nexp"]])
     assert (r0, r1, c0, c1) == (0, 270, 30, 400)
+
+
+# --- 3k: пьедестал неба, носок, подъём над небом ---
+
+def _sky_and_nebula(noise_left: float = 1.0, noise_right: float = 3.0, seed: int = 0):
+    """Небо с разным шумом слева и справа (как области NEXP 8 и 1) и туманность в середине."""
+    rng = np.random.default_rng(seed)
+    a = np.full((256, 512), 10.0, dtype=np.float32)
+    a[:, :256] += rng.normal(0, noise_left, (256, 256))
+    a[:, 256:] += rng.normal(0, noise_right, (256, 256))
+    neb = np.zeros(a.shape, dtype=bool)
+    neb[96:160, 200:312] = True
+    a[neb] = np.linspace(20, 400, neb.sum(), dtype=np.float32)
+    return a, (~neb, neb)
+
+
+def test_sky_toe_puts_sky_median_on_level_without_clipping():
+    a, masks = _sky_and_nebula()
+    s = StretchConfig(black_mode="pedestal", black_k=3, sky_level=6, a=0.1, white=99.9, noise_block_px=32)
+    y, st = stretch_array(a, s, masks=masks)
+    sky = masks[0]
+    for half in (slice(0, 256), slice(256, 512)):   # тихое и шумное небо: медиана одна, 6 уровней
+        assert abs(np.median(y[:, half][sky[:, half]]) * 255 - 6) < 0.3
+    assert (y[sky] <= 0).mean() < 0.001             # обрезки в 0 нет и в шумной половине
+    assert st["sky_toe"]["p"] > 1
+
+
+def test_sky_toe_is_monotone_and_linear_above_sky():
+    from skyforge.stretch import sky_toe
+
+    x = np.linspace(0, 1, 20001, dtype=np.float32)
+    t, _ = sky_toe(x, 0.05, 0.01)
+    assert t[0] == 0 and abs(t[-1] - 1) < 1e-6
+    assert np.all(np.diff(t) >= 0)
+    i = np.searchsorted(x, 0.05)
+    assert abs(t[i] - 0.01) < 1e-4
+    above = x >= 0.05
+    slope = np.diff(t[above]) / np.diff(x[above])
+    assert np.allclose(slope, slope[0], rtol=1e-3)  # выше неба — прямая по данным
+    below = np.diff(t[:i]) / np.diff(x[:i])
+    assert below[-1] == pytest.approx(slope[0], rel=0.01)  # гладко: наклон носка в небе = наклон прямой
+
+
+def test_shadows_above_sky_keeps_sky_level_and_lifts_signal():
+    from skyforge.compose import shadows
+
+    lvl = 6 / 255
+    rng = np.random.default_rng(1)
+    sky = np.clip(lvl + rng.normal(0, 2 / 255, (200, 200, 3)), 0, 1).astype(np.float32)
+    out = shadows(sky, 4, "max", lvl)
+    assert abs(np.median(out) - np.median(sky)) * 255 < 0.5     # небо не поднимается: контур маски не проступает
+    sig = np.full((1, 1, 3), lvl + 0.1, dtype=np.float32)
+    assert shadows(sig, 4, "max", lvl)[0, 0, 0] > lvl + 0.1      # сигнал над небом поднимается
+    top = np.ones((1, 1, 3), dtype=np.float32)
+    assert shadows(top, 4, "max", lvl)[0, 0, 0] == pytest.approx(1, abs=1e-6)
+
+
+def test_sky_poly_takes_gradient_not_excluded_bump():
+    """3k п.3: полином неба берёт крупный ход по небу вне исключения и не подстраивается под яркое внутри него."""
+    from skyforge.skymodel import fit_poly
+
+    rng = np.random.default_rng(2)
+    H, W = 300, 400
+    yy, xx = np.mgrid[0:H, 0:W]
+    grad = 0.002 * xx - 0.001 * yy + 3e-6 * (xx - 200) ** 2
+    bump = 5.0 * np.exp(-(((xx - 200) / 40.0) ** 2 + ((yy - 150) / 40.0) ** 2))
+    a = (grad + bump + rng.normal(0, 0.05, (H, W))).astype(np.float32)
+    excl = np.hypot(xx - 200, yy - 150) < 100
+    m, info = fit_poly(a, ~excl, 2)
+    g = grad - grad[~excl].mean()
+    assert np.abs(m - g)[~excl].max() < 0.02
+    assert np.abs(m - g)[excl].max() < 0.05          # внутри — продолжение хода, а не горб

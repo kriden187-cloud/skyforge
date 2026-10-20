@@ -75,7 +75,7 @@ def blend(layers: dict[str, np.ndarray], colors: dict[str, tuple[float, float, f
     return rgb
 
 
-def neutralize(rgb: np.ndarray, pct: float, field: Any = None) -> tuple[np.ndarray, list[float]]:
+def neutralize(rgb: np.ndarray, pct: float, field: Any = None, keep_level: bool = False) -> tuple[np.ndarray, list[float]]:
     """Фон каждого канала в ноль: по самым тёмным пикселям, чтобы небо было серым, а не зелёным.
     field — поле статистики (skyforge.field): пустые и неполные края кадра в статистику не идут."""
     luma = rgb @ LUMA
@@ -87,11 +87,13 @@ def neutralize(rgb: np.ndarray, pct: float, field: Any = None) -> tuple[np.ndarr
         ch = sample(field.values(rgb[..., k]) if field is not None else rgb[..., k])
         bg.append(float(np.nanmedian(ch[dark])))
     bgv = np.asarray(bg, dtype=np.float32)
+    if keep_level:  # только цветовой сдвиг фона между каналами; уровень неба (пьедестал) остаётся
+        return np.clip(rgb - (bgv - bgv.mean()), 0, 1), bg
     out = (rgb - bgv) / np.where(bgv < 1, 1 - bgv, 1)
     return np.clip(out, 0, 1), bg
 
 
-def shadows(rgb: np.ndarray, k: float, by: str = "luma") -> np.ndarray:
+def shadows(rgb: np.ndarray, k: float, by: str = "luma", level: float = 0.0) -> np.ndarray:
     """Подъём теней после смешивания: asinh(k·яркость)/asinh(k), оттенок не меняется.
 
     average делит каждый канал на число вкладов, и деталь, яркая лишь в паре фильтров
@@ -103,6 +105,16 @@ def shadows(rgb: np.ndarray, k: float, by: str = "luma") -> np.ndarray:
     """
     if k <= 0:
         return rgb
+    if level > 0:  # 3k: поднимается сигнал над небом; кривая нечётная — шум ниже неба опускается так же, как выше поднят
+        d = rgb - np.float32(level)
+        span = 1 - level
+        m = d.max(axis=-1) if by == "max" else d @ LUMA
+        y = np.arcsinh(k * m / span) / np.arcsinh(k) * span
+        gain = np.where(np.abs(m) > 1e-9, y / np.where(np.abs(m) > 1e-9, m, 1), k / np.arcsinh(k))
+        out = d * gain[..., None]
+        if by != "max":
+            out = out / np.maximum(out.max(axis=-1, keepdims=True) / span, 1)
+        return np.clip(level + out, 0, 1).astype(np.float32)
     if by == "max":
         m = rgb.max(axis=-1)
         y = np.arcsinh(k * m) / np.arcsinh(k)
@@ -195,11 +207,12 @@ def halo_weight(rgb: np.ndarray, nebula_sd: np.ndarray, sc: Any, star_w: np.ndar
 
 
 def apply_shadows(rgb: np.ndarray, sc: Any, nebula_sd: np.ndarray | None, star_w: np.ndarray | None = None,
-                  halo_w: np.ndarray | None = None) -> np.ndarray:
-    """Подъём теней по всему кадру или только в маске туманности с мягким краем feather_px."""
+                  halo_w: np.ndarray | None = None, level: float = 0.0) -> np.ndarray:
+    """Подъём теней по всему кадру или только в маске туманности с мягким краем feather_px.
+    level — уровень неба (above_sky): поднимается только сигнал над ним."""
     if sc.value <= 0:
         return rgb
-    lifted = shadows(rgb, sc.value, sc.by)
+    lifted = shadows(rgb, sc.value, sc.by, level)
     if sc.scope == "all":
         return lifted
     if nebula_sd is None:
@@ -212,7 +225,7 @@ def apply_shadows(rgb: np.ndarray, sc: Any, nebula_sd: np.ndarray | None, star_w
             w_out = (1 - w) * hw[..., None]
         else:
             w_out = 1 - w
-        out = out + w_out * (shadows(rgb, sc.outside, sc.by) - rgb)
+        out = out + w_out * (shadows(rgb, sc.outside, sc.by, level) - rgb)
     return out
 
 
@@ -276,7 +289,7 @@ def base_color(cfg: Config, layers: dict[str, np.ndarray], sky: np.ndarray | Non
         sky_f[field.rows, field.cols] = field.mask(sky)
         sky = sky_f
     if mode != "off":
-        rgb, bg = neutralize(rgb, cfg.color.background_percentile, field)
+        rgb, bg = neutralize(rgb, cfg.color.background_percentile, field, cfg.color.background_keep_level)
         if sky is not None and mode == "constant":
             w = sky_weight(nebula_sd, cfg.color.sky_feather_px, rgb.shape)
             rgb, before, after = equalize_sky(rgb, sky, w)
@@ -327,12 +340,20 @@ def star_chroma(rgb: np.ndarray, stars: list, c: Any) -> np.ndarray:
 
 
 def tail_color(cfg: Config, rgb: np.ndarray, layers: dict[str, np.ndarray], star_mask: Any = None,
-               nebula_sd: np.ndarray | None = None, sat_stars: list | None = None) -> np.ndarray:
-    """Тени, насыщенность, обесцвечивание звёзд."""
+               nebula_sd: np.ndarray | None = None, sat_stars: list | None = None,
+               star_w: np.ndarray | None = None) -> np.ndarray:
+    """Тени, насыщенность, обесцвечивание звёзд. star_w — вес звёзд для подъёма за маской, если star_mask нет
+    (обесцвечивание звёзд выключено)."""
     # Цветовая карта фона не обрезает значения (сумма каналов должна сохраниться точно); отрицательный канал
     # здесь — шум неба ниже нуля. Без обрезки shadows обнулил бы весь пиксель с отрицательной яркостью.
     rgb = np.clip(rgb, 0, 1)
-    rgb = apply_shadows(rgb, cfg.color.shadows, nebula_sd, star_mask.weight if star_mask is not None else None)
+    level = 0.0
+    if cfg.color.shadows.above_sky:
+        if cfg.stretch.sky_level is None:
+            raise SkyforgeError("color.shadows.above_sky требует stretch.sky_level — уровень неба, от которого поднимать")
+        level = cfg.stretch.sky_level / 255
+    rgb = apply_shadows(rgb, cfg.color.shadows, nebula_sd, star_mask.weight if star_mask is not None else star_w,
+                        level=level)
     rgb = saturate(rgb, cfg.color.saturation, cfg.color.saturation_gamut)
     det_layer = layers.get(star_mask.detect) if star_mask is not None else None
     rgb = desaturate_stars(rgb, star_mask, cfg.color.star_saturation, det_layer, cfg.stars.nebula_level).astype(np.float32)
@@ -386,7 +407,13 @@ def compose(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     base, info = base_color(cfg, layers, sky, sd if sd is not None else load_nebula_sd(cfg, paths), field=field)
     from skyforge.clean import load_saturated_stars
 
-    rgb = tail_color(cfg, base, layers, stars, sd, load_saturated_stars(cfg, paths))
+    sc = cfg.color.shadows
+    star_w = None
+    if stars is None and sc.outside > 0 and sc.halo_k > 0:  # вес ореола — без звёзд и при выкл. обесцвечивании
+        from skyforge.clean import load_star_weight_map
+
+        star_w = load_star_weight_map(cfg, paths)
+    rgb = tail_color(cfg, base, layers, stars, sd, load_saturated_stars(cfg, paths), star_w)
     composite_path(cfg, paths).parent.mkdir(parents=True, exist_ok=True)
     np.save(composite_path(cfg, paths), rgb)
     composite_path(cfg, paths).with_suffix(".json").write_text(
