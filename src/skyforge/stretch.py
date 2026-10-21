@@ -51,14 +51,19 @@ def curve_inv(y: float, method: str, a: float) -> float:
     return float(y)
 
 
-def sky_toe(x: np.ndarray, u_sky: float, u_target: float) -> tuple[np.ndarray, float]:
+def sky_toe(x: np.ndarray, u_sky: float, u_target: float, max_p: float | None = None) -> tuple[np.ndarray, float]:
     """Носок до растяжки (x в 0–1): u_sky → u_target. Выше u_sky — прямая через (u_sky, u_target) и (1, 1),
     то есть линейно по данным, как чёрная точка; ниже — u_target·(x/u_sky)^p, p подобрано так, что наклон
-    в u_sky совпадает с прямой: кривая гладкая, монотонная, 0 → 0, без обрезки. Возвращает (x, p)."""
+    в u_sky совпадает с прямой: кривая гладкая, монотонная, 0 → 0, без обрезки. Возвращает (x, p).
+    max_p (фаза 4, stretch.sky_toe_max_p): при сильной растяжке и небе высоко по шкале p ~ 100–340 — «стенка»: шум
+    чуть ниже неба уходит в 0. С ограничением значение у неба то же, ниже неба кривая положе (излом наклона на уровне
+    неба); совпадение и значения, и наклона при крутом наклоне всё равно дало бы ноль в u_target/q ниже неба."""
     if not u_sky > u_target > 0:
         return x, 1.0
     q = (1 - u_target) / (1 - u_sky)
     p = q * u_sky / u_target
+    if max_p is not None:
+        p = min(p, max_p)
     low = u_target * np.power(np.maximum(x, 0) / np.float32(u_sky), np.float32(p))
     out = np.where(x >= u_sky, u_target + (x - u_sky) * np.float32(q), low)
     return out.astype(np.float32), float(p)
@@ -123,7 +128,7 @@ def stretch_array(arr: np.ndarray, s: StretchConfig, stats_from: np.ndarray | No
     if s.sky_level is not None and anchor != "frame":
         u_sky = (sky_med - lo) / (hi - lo)
         u_t = curve_inv(s.sky_level / 255, s.method, s.a)
-        x, p = sky_toe(x, u_sky, u_t)
+        x, p = sky_toe(x, u_sky, u_t, s.sky_toe_max_p)
         toe = {"u_sky": round(u_sky, 6), "u_target": round(u_t, 6), "p": round(p, 3)}
     y = curve(x, s.method, s.a).astype(np.float32)
     stats = {
@@ -143,7 +148,8 @@ def stretched_dir(cfg: Config, paths: Paths) -> Path:
 
 
 def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
-    key = {"input": in_key, "stretch": cfg.stretch.model_dump(mode="json")}
+    st = cfg.stretch.model_dump(mode="json", exclude={"sky_toe_max_p"} if cfg.stretch.sky_toe_max_p is None else set())
+    key = {"input": in_key, "stretch": st}   # фаза 4: sky_toe_max_p в ключе только когда задан — кеши прежних объектов те же
     if cfg.clean.fill_gaps_px > 0:
         key["fill_gaps_px"] = cfg.clean.fill_gaps_px
     if cfg.stretch.sky_poly_order > 0:

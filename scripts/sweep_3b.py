@@ -35,7 +35,8 @@ LUMA = np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
 
 def render(c: Config, P: Paths, arrays: dict, ctx: dict, gains: dict | None = None) -> np.ndarray:
     """gains {фильтр: w} — только превью вкуса (лист «вес F658N»): слой над уровнем неба × w, небо на месте.
-    color.weights при смешивании average с чистыми основными цветами сокращается (в канале один фильтр)."""
+    color.weights при смешивании average сокращается, если в канале один фильтр (Heritage); у фильтра, который
+    входит в канал вместе с другим (жёлтый F360M у Sh2-305 — в R и G), вес меняет канал."""
     a = {f: fill_gaps_linear(v, c.clean.fill_gaps_px)[0] for f, v in arrays.items()} if c.clean.fill_gaps_px else dict(arrays)
     a, _, _ = apply_sky_poly(c, P, a)
     masks = load_masks(c, P)

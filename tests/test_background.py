@@ -387,6 +387,39 @@ def test_nebula_mask_drops_stars_keeps_nebula_and_uses_disk():
     assert info["dropped_saturated"] >= 1 or info["dropped_star_components"] >= 1
 
 
+def test_nebula_mask_exclude_ignores_noisy_filter():
+    """Фаза 4, шаг 7: фильтр из background.nebula_mask_exclude маску туманности не строит — маска с шумным
+    полосатым фильтром в списке исключений та же, что без этого фильтра; без исключения он маску расширяет."""
+    from skyforge.clean import nebula_mask
+
+    rng = np.random.default_rng(7)
+    n = 700
+    yy, xx = np.indices((n, n))
+    disk = 8.0 * (np.hypot(yy - 350, xx - 350) < 120)
+    clean = {f: (rng.normal(0, 1.0, (n, n)) + disk).astype(np.float32) for f in ("F300M", "F444W")}
+    noisy = rng.normal(0, 1.0, (n, n)) + 0.5 * disk
+    for x0 in range(0, n, 60):                                           # полосы 1/f: столбцы со своим уровнем
+        noisy[:, x0:x0 + 25] += rng.uniform(0.5, 1.0)
+    noisy[560:660, 60:640] += 12.0                                       # ступенька плитки — ложная «туманность»
+    layers = {"F182M": noisy.astype(np.float32), **clean}
+    base = {"target": "t", "background": {"nebula_dilate_arcsec": 3.0, "mask_sigma": 5.0}}
+    cfg = Config.model_validate(base)
+    excl = Config.model_validate({**base, "background": {**base["background"], "nebula_mask_exclude": ["F182M"]}})
+    without, _ = nebula_mask(clean, cfg, 0.063)
+    excluded, _ = nebula_mask(layers, excl, 0.063)
+    widened, _ = nebula_mask(layers, cfg, 0.063)
+    assert np.array_equal(excluded, without)
+    assert widened.sum() > 1.2 * without.sum(), (widened.sum(), without.sum())
+
+
+def test_nebula_mask_exclude_keeps_cache_keys():
+    """Пустой список исключений не входит в ключи align и clean — кеш NGC 3132 и Hubble не сбрасывается."""
+    cfg = Config.model_validate({"target": "t"})
+    assert "nebula_mask_exclude" not in cfg.background.key()
+    on = Config.model_validate({"target": "t", "background": {"nebula_mask_exclude": ["F182M"]}})
+    assert on.background.key()["nebula_mask_exclude"] == ["F182M"]
+
+
 def test_sky_color_map_keeps_brightness_and_nebula():
     """3h: цветовая карта убирает плавный цветной градиент неба, сумма каналов в каждом пикселе та же
     (до 1e-6), туманность не трогается."""

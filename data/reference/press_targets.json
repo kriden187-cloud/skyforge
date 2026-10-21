@@ -1,0 +1,7053 @@
+{
+ "built": "2026-10-20",
+ "sources": {
+  "esawebb": "https://esawebb.org/images/",
+  "webbtelescope/nasa": "https://science.nasa.gov/mission/webb/multimedia/images/ (sitemap stma, asset/webb)"
+ },
+ "pages_seen": {
+  "esawebb": 696,
+  "webbtelescope/nasa": 984
+ },
+ "targets": [
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/CEERS1/",
+   "title": "Cosmic Evolution Early Release Science (CEERS) survey (NIRCam image)",
+   "names": [],
+   "ra": 214.91495833333335,
+   "dec": 52.87162222222222,
+   "release": "6 July 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/CEERS11/",
+   "title": "CEERS crop (NIRCam image)",
+   "names": [],
+   "ra": 214.96770833333332,
+   "dec": 52.857625,
+   "release": "26 August 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/EIGER1/",
+   "title": "Quasar J0100+2802 (NIRCam Image)",
+   "names": [],
+   "ra": 15.053249999999998,
+   "dec": 28.040733333333336,
+   "release": "12 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/FS-Tau/",
+   "title": "FS Tau (Webb NIRCam image)",
+   "names": [
+    "FS Tau"
+   ],
+   "ra": 65.50637499999999,
+   "dec": 26.956958333333333,
+   "release": "2 July 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/JADES2/",
+   "title": "GOODS-S field (NIRCam image)",
+   "names": [],
+   "ra": 53.16479166666666,
+   "dec": -27.785111111111114,
+   "release": "5 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/L1527-1/",
+   "title": "L1527 (MIRI image)",
+   "names": [
+    "L1527"
+   ],
+   "ra": 69.97416666666668,
+   "dec": 26.05335277777778,
+   "release": "2 July 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/LeoP/",
+   "title": "Leo P (NIRCam image)",
+   "names": [
+    "Leo P"
+   ],
+   "ra": 155.44241666666667,
+   "dec": 18.091780555555555,
+   "release": "16 January 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/SN1987a-1/",
+   "title": "SN 1987A (NIRCam image)",
+   "names": [
+    "SN 1987A"
+   ],
+   "ra": 83.86733333333332,
+   "dec": -69.27101944444445,
+   "release": "31 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/VV191a/",
+   "title": "Galaxy Pair VV 191 (Webb and Hubble Composite Image)",
+   "names": [],
+   "ra": 207.09170833333334,
+   "dec": 25.677116666666667,
+   "release": "5 October 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/WLMb/",
+   "title": "Dwarf Galaxy WLM",
+   "names": [
+    "[PGU2007] cep35"
+   ],
+   "ra": 0.49320833333333325,
+   "dec": -15.505047222222222,
+   "release": "9 November 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/WR140a/",
+   "title": "Webb Finds Star Duo Forms ‘Fingerprint’ in Space",
+   "names": [],
+   "ra": 305.10887499999995,
+   "dec": 43.85545555555556,
+   "release": "12 October 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/arp220a/",
+   "title": "Webb captures the spectacular galactic merger Arp 220",
+   "names": [
+    "Arp 220"
+   ],
+   "ra": 233.73858333333334,
+   "dec": 23.502902777777777,
+   "release": "17 April 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/aspire3/",
+   "title": "Webb identifies the earliest strands of the cosmic web (clean)",
+   "names": [],
+   "ra": 46.32241666666667,
+   "dec": -31.841677777777775,
+   "release": "29 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/bullet-cluster/",
+   "title": "Bullet Cluster (NIRCam Image)",
+   "names": [],
+   "ra": 104.61441666666667,
+   "dec": -55.94835,
+   "release": "30 June 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/carinanebula3/",
+   "title": "Carina Nebula Jets (NIRCam Narrowband Filters)",
+   "names": [
+    "Carina Nebula",
+    "NGC 3324"
+   ],
+   "ra": 159.21304166666664,
+   "dec": -58.620219444444444,
+   "release": "15 December 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/elgordo1/",
+   "title": "Webb spotlights gravitational arcs in ‘El Gordo’ galaxy cluster (NIRCam image)",
+   "names": [],
+   "ra": 15.730666666666668,
+   "dec": -49.26039166666666,
+   "release": "2 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/heic0604a/",
+   "title": "Messier 82 (Hubble 2006 image)",
+   "names": [
+    "M82"
+   ],
+   "ra": 148.97916666666666,
+   "dec": 69.6817138888889,
+   "release": "23 June 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/jades5/",
+   "title": "Webb finds most distant known galaxy (JADES-GS-z14-0 environment NIRCam image)",
+   "names": [],
+   "ra": 53.089875,
+   "dec": -27.86456111111111,
+   "release": "30 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/pillarsofcreation_composite/",
+   "title": "Pillars of Creation (NIRCam and MIRI Composite Image)",
+   "names": [
+    "Eagle Nebula",
+    "M16",
+    "NGC 6611"
+   ],
+   "ra": 274.7262083333334,
+   "dec": -13.843236111111112,
+   "release": "30 November 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2207a/",
+   "title": "Stephan’s Quintet (MIRI Imaging)",
+   "names": [
+    "NGC 7317",
+    "NGC 7318",
+    "NGC 7319",
+    "NGC 7320"
+   ],
+   "ra": 339.006125,
+   "dec": 33.95968611111111,
+   "release": "12 July 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2208a/",
+   "title": "Webb Inspects the Heart of the Phantom Galaxy",
+   "names": [
+    "M 74",
+    "Messier 74",
+    "NGC 628"
+   ],
+   "ra": 24.1735,
+   "dec": 15.78273888888889,
+   "release": "29 August 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2208b/",
+   "title": "The Phantom Galaxy Across the Spectrum",
+   "names": [
+    "M 74",
+    "Messier 74",
+    "NGC 628"
+   ],
+   "ra": 24.174375,
+   "dec": 15.780430555555556,
+   "release": "29 August 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2209a/",
+   "title": "Webb Reveals Complex Galactic Structures",
+   "names": [],
+   "ra": 353.61425,
+   "dec": -36.09986388888889,
+   "release": "27 September 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2209b/",
+   "title": "Hubble Sees the Big Picture of a Complex Galaxy",
+   "names": [],
+   "ra": 353.61287500000003,
+   "dec": -36.1011,
+   "release": "27 September 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2209c/",
+   "title": "Webb Reveals IC 5332 (scaled)",
+   "names": [],
+   "ra": 353.61287500000003,
+   "dec": -36.1011,
+   "release": "27 September 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2210a/",
+   "title": "Webb Explores a Pair of Merging Galaxies",
+   "names": [
+    "IC 1623"
+   ],
+   "ra": 16.946583333333333,
+   "dec": -17.505466666666667,
+   "release": "25 October 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2210c/",
+   "title": "Exploring a Pair of Merging Galaxies (Hubble Image)",
+   "names": [
+    "IC 1623"
+   ],
+   "ra": 16.94675,
+   "dec": -17.50595,
+   "release": "25 October 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2210d/",
+   "title": "Webb Explores a Pair of Merging Galaxies (scaled)",
+   "names": [
+    "IC 1623"
+   ],
+   "ra": 16.946791666666666,
+   "dec": -17.505955555555555,
+   "release": "25 October 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2211a/",
+   "title": "Galactic Get-Together",
+   "names": [
+    "II ZW 96"
+   ],
+   "ra": 314.3509583333333,
+   "dec": 17.12831388888889,
+   "release": "30 November 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2211b/",
+   "title": "Galactic Get-Together",
+   "names": [
+    "II ZW 96"
+   ],
+   "ra": 314.3519166666667,
+   "dec": 17.12805277777778,
+   "release": "30 November 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2211c/",
+   "title": "Galactic Get-Together",
+   "names": [
+    "II ZW 96"
+   ],
+   "ra": 314.3519166666667,
+   "dec": 17.12807777777778,
+   "release": "30 November 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2212a/",
+   "title": "A Wreath of Star Formation in NGC 7469",
+   "names": [
+    "NGC 7469"
+   ],
+   "ra": 345.81304166666666,
+   "dec": 8.874708333333334,
+   "release": "21 December 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2301a/",
+   "title": "A Spiral Amongst Thousands",
+   "names": [
+    "LEDA 2046648"
+   ],
+   "ra": 254.63716666666664,
+   "dec": 34.275875,
+   "release": "31 January 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2301b/",
+   "title": "A Spiral Amongst Thousands",
+   "names": [
+    "LEDA 2046648"
+   ],
+   "ra": 254.6294583333333,
+   "dec": 34.277025,
+   "release": "31 January 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2302a/",
+   "title": "Seeing Triple",
+   "names": [
+    "RX J2129.6+0005"
+   ],
+   "ra": 322.40795833333334,
+   "dec": 0.09204166666666666,
+   "release": "28 February 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2303a/",
+   "title": "Cosmic seahorse",
+   "names": [
+    "Cosmic Seahorse",
+    "DES J122648.50+214958.3",
+    "SDSS J122651.11+214952.3"
+   ],
+   "ra": 186.70370833333334,
+   "dec": 21.833122222222222,
+   "release": "28 March 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2305a/",
+   "title": "Webb peers behind bars",
+   "names": [
+    "NGC 5068"
+   ],
+   "ra": 199.71016666666668,
+   "dec": -21.033833333333334,
+   "release": "2 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2305b/",
+   "title": "Webb&#39;s MIRI peers behind bars",
+   "names": [
+    "NGC 5068"
+   ],
+   "ra": 199.71004166666668,
+   "dec": -21.03467777777778,
+   "release": "2 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2305c/",
+   "title": "Webb&#39;s NIRCam peers behind bars",
+   "names": [
+    "NGC 5068"
+   ],
+   "ra": 199.71391666666668,
+   "dec": -21.03648888888889,
+   "release": "2 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2305d/",
+   "title": "NGC 5068 (NIRCam image)",
+   "names": [
+    "NGC 5068"
+   ],
+   "ra": 199.71050000000002,
+   "dec": -21.03406388888889,
+   "release": "2 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2305e/",
+   "title": "NGC 5068 (MIRI image)",
+   "names": [
+    "NGC 5068"
+   ],
+   "ra": 199.71050000000002,
+   "dec": -21.03406388888889,
+   "release": "2 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2306a/",
+   "title": "Clash of the Titans",
+   "names": [
+    "NGC 3256"
+   ],
+   "ra": 156.96566666666666,
+   "dec": -43.90290833333333,
+   "release": "3 July 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2306b/",
+   "title": "NGC 3256 (HST)",
+   "names": [],
+   "ra": 156.96566666666666,
+   "dec": -43.90290833333333,
+   "release": "3 July 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2307a/",
+   "title": "The life and times of dust",
+   "names": [],
+   "ra": 296.24266666666665,
+   "dec": -14.800972222222223,
+   "release": "31 July 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2307b/",
+   "title": "NGC 6822 (MIRI image)",
+   "names": [],
+   "ra": 296.24237500000004,
+   "dec": -14.805744444444445,
+   "release": "31 July 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2307c/",
+   "title": "NGC 6822 (NIRCam image)",
+   "names": [],
+   "ra": 296.2427916666667,
+   "dec": -14.798183333333332,
+   "release": "31 July 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2307d/",
+   "title": "NGC 6822 (MIRI image)",
+   "names": [],
+   "ra": 296.2427916666667,
+   "dec": -14.798183333333332,
+   "release": "31 July 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2308a/",
+   "title": "A FEAST for the eyes",
+   "names": [],
+   "ra": 202.46591666666666,
+   "dec": 47.198855555555554,
+   "release": "29 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2308b/",
+   "title": "M51 (NIRCam image)",
+   "names": [],
+   "ra": 202.4674583333333,
+   "dec": 47.20007777777778,
+   "release": "29 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2308c/",
+   "title": "M51 (MIRI image)",
+   "names": [],
+   "ra": 202.46541666666664,
+   "dec": 47.20005277777778,
+   "release": "29 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2308d/",
+   "title": "M51 (MIRI image - cropped)",
+   "names": [],
+   "ra": 202.4674583333333,
+   "dec": 47.20007777777778,
+   "release": "29 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2309a/",
+   "title": "NIRCam’s view of NGC 6822",
+   "names": [],
+   "ra": 296.23429166666665,
+   "dec": -14.797816666666666,
+   "release": "27 September 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2310a/",
+   "title": "No tricks, just treats",
+   "names": [
+    "M83"
+   ],
+   "ra": 204.25695833333336,
+   "dec": -29.86809722222222,
+   "release": "31 October 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2310b/",
+   "title": "No tricks, just treats (M83 NIRCam image)",
+   "names": [
+    "M83"
+   ],
+   "ra": 204.25741666666667,
+   "dec": -29.866844444444446,
+   "release": "31 October 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2310c/",
+   "title": "M83 (MIRI image, scaled)",
+   "names": [
+    "M83"
+   ],
+   "ra": 204.25770833333334,
+   "dec": -29.86658611111111,
+   "release": "31 October 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2310d/",
+   "title": "M83 (NIRCam image, scaled)",
+   "names": [
+    "M83"
+   ],
+   "ra": 204.25770833333334,
+   "dec": -29.86658611111111,
+   "release": "31 October 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2311a/",
+   "title": "A prominent protostar in Perseus",
+   "names": [
+    "HH 797"
+   ],
+   "ra": 55.977125,
+   "dec": 32.05571944444444,
+   "release": "28 November 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2312a/",
+   "title": "Galactic gathering",
+   "names": [],
+   "ra": 186.71766666666664,
+   "dec": 21.872991666666667,
+   "release": "19 December 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2401a/",
+   "title": "A massive cluster is born",
+   "names": [
+    "LMC N79"
+   ],
+   "ra": 72.99008333333332,
+   "dec": -69.39472777777779,
+   "release": "23 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2401b/",
+   "title": "S1 LMC N79 (cropped)",
+   "names": [
+    "LMC N79"
+   ],
+   "ra": 72.97475,
+   "dec": -69.37766666666666,
+   "release": "23 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2402a/",
+   "title": "A galactic treasury",
+   "names": [
+    "NGC 1559"
+   ],
+   "ra": 64.39908333333332,
+   "dec": -62.784841666666665,
+   "release": "27 February 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2403a/",
+   "title": "A duo of starbursts in I Zwicky 18",
+   "names": [
+    "I Zw 18"
+   ],
+   "ra": 143.50979166666664,
+   "dec": 55.24095555555556,
+   "release": "26 March 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2403b/",
+   "title": "I Zwicky 18 (wide-field view)",
+   "names": [
+    "I Zw 18"
+   ],
+   "ra": 143.51000000000002,
+   "dec": 55.24091111111111,
+   "release": "26 March 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2404a/",
+   "title": "Star-studded cluster",
+   "names": [
+    "NGC 6440"
+   ],
+   "ra": 267.21770833333335,
+   "dec": -20.359494444444447,
+   "release": "1 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2404b/",
+   "title": "Star-studded cluster (NGC 6440 NIRCam wide-field image)",
+   "names": [
+    "NGC 6440"
+   ],
+   "ra": 267.2085,
+   "dec": -20.355944444444447,
+   "release": "1 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2404c/",
+   "title": "Hubble’s view of NGC 6440",
+   "names": [
+    "NGC 6440"
+   ],
+   "ra": 267.220125,
+   "dec": -20.360775,
+   "release": "1 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2404d/",
+   "title": "Webb’s view of NGC 6440 (cropped)",
+   "names": [
+    "NGC 6440"
+   ],
+   "ra": 267.220125,
+   "dec": -20.360766666666667,
+   "release": "1 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2405a/",
+   "title": "Fireworks of stellar starbursts",
+   "names": [
+    "NGC 4449"
+   ],
+   "ra": 187.04525,
+   "dec": 44.095800000000004,
+   "release": "29 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2405b/",
+   "title": "NGC 4449 (NIRCam)",
+   "names": [],
+   "ra": 187.04458333333335,
+   "dec": 44.09419444444445,
+   "release": "29 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2405c/",
+   "title": "NGC 4449 (MIRI)",
+   "names": [
+    "NGC 4449"
+   ],
+   "ra": 187.044625,
+   "dec": 44.09538888888889,
+   "release": "29 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2405d/",
+   "title": "NGC 4449 (NIRCam image - cropped)",
+   "names": [],
+   "ra": 187.044625,
+   "dec": 44.09538888888889,
+   "release": "29 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2405e/",
+   "title": "NGC 4449 (Hubble image)",
+   "names": [
+    "NGC 4449"
+   ],
+   "ra": 187.04525,
+   "dec": 44.095800000000004,
+   "release": "29 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2406a/",
+   "title": "Jewelled ring",
+   "names": [
+    "QSO J1131-1231",
+    "[SSC2003] A"
+   ],
+   "ra": 172.96425000000002,
+   "dec": -12.533055555555556,
+   "release": "5 July 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2407a/",
+   "title": "The hidden intricacies of Messier 106",
+   "names": [
+    "Messier 106",
+    "NGC 4258"
+   ],
+   "ra": 184.71970833333336,
+   "dec": 47.30727777777778,
+   "release": "9 August 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2408a/",
+   "title": "Peeking into Perseus",
+   "names": [
+    "NGC 1333"
+   ],
+   "ra": 52.249,
+   "dec": 31.3264,
+   "release": "27 August 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2408b/",
+   "title": "Peeking into Perseus (wide field view)",
+   "names": [
+    "NGC 1333"
+   ],
+   "ra": 52.25295833333334,
+   "dec": 31.324324999999998,
+   "release": "27 August 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2409a/",
+   "title": "The exotic stellar population of Westerlund 1",
+   "names": [
+    "Westerlund 1"
+   ],
+   "ra": 251.7662083333334,
+   "dec": -45.851333333333336,
+   "release": "4 October 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2409b/",
+   "title": "Westerlund 1 (wide-field view)",
+   "names": [
+    "Westerlund 1"
+   ],
+   "ra": 251.76625000000004,
+   "dec": -45.85136388888889,
+   "release": "4 October 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2410a/",
+   "title": "Catching the edge of the Phantom Galaxy",
+   "names": [
+    "M 74"
+   ],
+   "ra": 24.174125000000004,
+   "dec": 15.783438888888888,
+   "release": "29 October 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2410b/",
+   "title": "Catching the edge of the Phantom Galaxy (NIRCam image)",
+   "names": [
+    "M 74"
+   ],
+   "ra": 24.174083333333336,
+   "dec": 15.783380555555555,
+   "release": "29 October 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2411a/",
+   "title": "Tracing spiral arms in infrared",
+   "names": [
+    "NGC 2090"
+   ],
+   "ra": 86.757,
+   "dec": -34.24933888888889,
+   "release": "27 November 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2411b/",
+   "title": "Viewing a flaky disc",
+   "names": [
+    "NGC 2090"
+   ],
+   "ra": 86.757,
+   "dec": -34.24935833333333,
+   "release": "27 November 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2412a/",
+   "title": "Close look at a local galaxy",
+   "names": [
+    "NGC 2566"
+   ],
+   "ra": 124.69133333333335,
+   "dec": -25.499858333333336,
+   "release": "18 December 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2412b/",
+   "title": "NGC 2566 (MIRI image)",
+   "names": [
+    "NGC 2566"
+   ],
+   "ra": 124.68962500000002,
+   "dec": -25.499200000000002,
+   "release": "18 December 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2412c/",
+   "title": "NGC 2566 (HST image)",
+   "names": [
+    "NGC 2566"
+   ],
+   "ra": 124.69133333333335,
+   "dec": -25.499858333333336,
+   "release": "18 December 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2501a/",
+   "title": "Webb investigates a dusty and dynamic disc",
+   "names": [
+    "HH 30"
+   ],
+   "ra": 67.90620833333332,
+   "dec": 18.206675,
+   "release": "4 February 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2502a/",
+   "title": "Webb visits a star-forming spiral",
+   "names": [
+    "NGC 2283"
+   ],
+   "ra": 101.468625,
+   "dec": -18.209647222222223,
+   "release": "28 February 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2503a/",
+   "title": "Spying a spiral through a cosmic lens",
+   "names": [],
+   "ra": 6.971208333333334,
+   "dec": -75.62486388888888,
+   "release": "27 March 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2504a/",
+   "title": "A visual feast of galaxies",
+   "names": [],
+   "ra": 149.928125,
+   "dec": 2.531111111111111,
+   "release": "29 April 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2504b/",
+   "title": "A visual feast of galaxies, from infrared to X-ray",
+   "names": [],
+   "ra": 149.928125,
+   "dec": 2.531111111111111,
+   "release": "29 April 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2505a/",
+   "title": "A glimpse of the distant past",
+   "names": [
+    "Abell S1063"
+   ],
+   "ra": 342.183625,
+   "dec": -44.53014722222222,
+   "release": "27 May 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2506a/",
+   "title": "A starburst shines in infrared",
+   "names": [
+    "M82"
+   ],
+   "ra": 148.96495833333333,
+   "dec": 69.67969444444445,
+   "release": "30 June 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2506b/",
+   "title": "A starburst shines in infrared",
+   "names": [
+    "M82"
+   ],
+   "ra": 148.96216666666666,
+   "dec": 69.68178888888889,
+   "release": "30 June 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2507a/",
+   "title": "A fresh look at a classic deep field",
+   "names": [],
+   "ra": 53.15991666666667,
+   "dec": -27.783569444444446,
+   "release": "1 August 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2507b/",
+   "title": "Portion of the Hubble eXtreme Deep Field",
+   "names": [],
+   "ra": 53.15991666666667,
+   "dec": -27.783569444444446,
+   "release": "1 August 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2508a/",
+   "title": "Dusty wisps round a dusty disc",
+   "names": [],
+   "ra": 68.32445833333333,
+   "dec": 22.891302777777778,
+   "release": "29 August 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2508b/",
+   "title": "Zoom in on a dusty disc",
+   "names": [],
+   "ra": 68.31916666666666,
+   "dec": 22.88943888888889,
+   "release": "29 August 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2509b/",
+   "title": "Gravitational lens COSJ100024+021749",
+   "names": [],
+   "ra": 150.10016666666667,
+   "dec": 2.2971138888888887,
+   "release": "30 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2509c/",
+   "title": "Gravitational lens COSJ100018+022138",
+   "names": [],
+   "ra": 150.07695833333332,
+   "dec": 2.36075,
+   "release": "30 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2509d/",
+   "title": "Gravitational lens COSJ100024+015334",
+   "names": [],
+   "ra": 150.1005,
+   "dec": 1.8930222222222222,
+   "release": "30 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2509e/",
+   "title": "Gravitational lens COSJ100013+023424",
+   "names": [],
+   "ra": 150.05579166666666,
+   "dec": 2.573319444444444,
+   "release": "30 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2509f/",
+   "title": "Gravitational lens COSJ095593+023319",
+   "names": [],
+   "ra": 149.9747083333333,
+   "dec": 2.555397222222222,
+   "release": "30 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2509g/",
+   "title": "Gravitational lens COSJ095914+021219",
+   "names": [],
+   "ra": 149.81141666666664,
+   "dec": 2.2054333333333336,
+   "release": "30 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2509h/",
+   "title": "Gravitational lens COSJ100025+015245",
+   "names": [],
+   "ra": 150.10675,
+   "dec": 1.8793027777777778,
+   "release": "30 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2509i/",
+   "title": "Gravitational lens COSJ095921+020638",
+   "names": [],
+   "ra": 149.8405833333333,
+   "dec": 2.110213888888889,
+   "release": "30 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2510a/",
+   "title": "The Red Spider Nebula, caught by Webb",
+   "names": [
+    "NGC 6537"
+   ],
+   "ra": 271.3060416666666,
+   "dec": -19.84177222222222,
+   "release": "28 October 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2510c/",
+   "title": "Red Spider Nebula NGC 6537 (Hubble’s view)",
+   "names": [
+    "NGC 6537"
+   ],
+   "ra": 271.30516666666665,
+   "dec": -19.84195833333333,
+   "release": "28 October 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2510d/",
+   "title": "Webb zooms in on the Red Spider Nebula, NGC 6537",
+   "names": [
+    "NGC 6537"
+   ],
+   "ra": 271.30516666666665,
+   "dec": -19.84195833333333,
+   "release": "28 October 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2511a/",
+   "title": "A dance of dwarf galaxies",
+   "names": [
+    "NGC 4485",
+    "NGC 4490"
+   ],
+   "ra": 187.639125,
+   "dec": 41.66208611111111,
+   "release": "2 December 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2512a/",
+   "title": "Dwarf stars in a glittering sky",
+   "names": [
+    "Westerlund 2"
+   ],
+   "ra": 155.99416666666664,
+   "dec": -57.744616666666666,
+   "release": "19 December 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2512b/",
+   "title": "Westerlund 2 (HST image)",
+   "names": [
+    "Westerlund 2"
+   ],
+   "ra": 155.99416666666664,
+   "dec": -57.744616666666666,
+   "release": "19 December 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2601a/",
+   "title": "A celebrity cluster in the spotlight",
+   "names": [
+    "MACS J1149.5+2223"
+   ],
+   "ra": 177.40075,
+   "dec": 22.39847222222222,
+   "release": "22 January 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2601b/",
+   "title": "Ready for its closeup: MACS J1149.5+2223 (crop)",
+   "names": [],
+   "ra": 177.4,
+   "dec": 22.39778888888889,
+   "release": "22 January 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2602a/",
+   "title": "The stellar lifecycle in a nearby spiral",
+   "names": [
+    "NGC 5134"
+   ],
+   "ra": 201.32779166666666,
+   "dec": -21.133888888888887,
+   "release": "20 February 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2603b/",
+   "title": "Oph 163131 (wide view)",
+   "names": [],
+   "ra": 247.88029166666664,
+   "dec": -24.441483333333334,
+   "release": "3 April 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2603c/",
+   "title": "Tau 042021",
+   "names": [],
+   "ra": 65.08941666666666,
+   "dec": 28.230269444444442,
+   "release": "3 April 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2604a/",
+   "title": "A beacon of light in swirls of dust",
+   "names": [],
+   "ra": 40.669333333333334,
+   "dec": 0.013394444444444445,
+   "release": "7 May 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2604b/",
+   "title": "Messier 77 (MIRI + NIRCam)",
+   "names": [],
+   "ra": 40.669041666666665,
+   "dec": 0.012374999999999999,
+   "release": "7 May 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2604c/",
+   "title": "Messier 77 (NIRCam)",
+   "names": [],
+   "ra": 40.66908333333334,
+   "dec": 0.011716666666666667,
+   "release": "7 May 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2605a/",
+   "title": "Webb unveils young stars across every stage of formation",
+   "names": [],
+   "ra": 83.85875,
+   "dec": -5.110588888888889,
+   "release": "5 June 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2606a/",
+   "title": "A cosmic construction project",
+   "names": [
+    "MACS J0553.4-3342"
+   ],
+   "ra": 88.34587499999999,
+   "dec": -33.70761111111111,
+   "release": "3 July 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2607a/",
+   "title": "Webb opens a Treasure Chest filled with stars",
+   "names": [],
+   "ra": 161.47108333333333,
+   "dec": -59.962744444444446,
+   "release": "6 August 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2608a/",
+   "title": "Striking star clusters and irregular clumps",
+   "names": [],
+   "ra": 156.27229166666666,
+   "dec": 17.164294444444444,
+   "release": "27 August 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2608b/",
+   "title": "Starstruck image of Arp 263",
+   "names": [],
+   "ra": 156.2735,
+   "dec": 17.16194722222222,
+   "release": "27 August 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2608c/",
+   "title": "Arp 263 (crop)",
+   "names": [],
+   "ra": 156.2734583333333,
+   "dec": 17.161944444444444,
+   "release": "27 August 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/potm2609a/",
+   "title": "Galaxies in a cosmic house of mirrors",
+   "names": [
+    "MACS J0454.1-0300"
+   ],
+   "ra": 73.546,
+   "dec": -3.014375,
+   "release": "29 September 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/questionmark1/",
+   "title": "Lensed Question Mark Galaxy (NIRCam)",
+   "names": [
+    "MACS J0417.5-1154"
+   ],
+   "ra": 64.39470833333333,
+   "dec": -11.908661111111112,
+   "release": "4 September 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/questionmark2/",
+   "title": "MACS J0417.5-1154 Wide Field (NIRCam)",
+   "names": [
+    "MACS J0417.5-1154"
+   ],
+   "ra": 64.39504166666667,
+   "dec": -11.911030555555556,
+   "release": "4 September 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/sombrerogalaxy1/",
+   "title": "Sombrero Galaxy (NIRCam image)",
+   "names": [],
+   "ra": 189.99758333333335,
+   "dec": -11.622727777777778,
+   "release": "3 June 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/southernring2/",
+   "title": "Southern Ring Nebula’s Gas (NIRCam and MIRI Composite Compass Image)",
+   "names": [
+    "NGC 3132"
+   ],
+   "ra": 151.75583333333333,
+   "dec": -40.43539166666666,
+   "release": "8 December 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/southernring3/",
+   "title": "Southern Ring Nebula’s Spokes (NIRCam and MIRI Composite Image)",
+   "names": [
+    "NGC 3132"
+   ],
+   "ra": 151.75466666666668,
+   "dec": -40.43712222222222,
+   "release": "8 December 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/sunrisearc1/",
+   "title": "Galaxy cluster WHL0137-08",
+   "names": [],
+   "ra": 24.35425,
+   "dec": -8.457047222222222,
+   "release": "9 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/supernova-encore3/",
+   "title": "Webb spots a second lensed supernova in a distant galaxy",
+   "names": [
+    "MACS J0138.0 -2155"
+   ],
+   "ra": 24.52425,
+   "dec": -21.929855555555555,
+   "release": "21 December 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/udf-a/",
+   "title": "Webb observes the Hubble Ultra Deep Field",
+   "names": [],
+   "ra": 53.143499999999996,
+   "dec": -27.801905555555557,
+   "release": "12 April 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/webb-first-deep-field/",
+   "title": "Webb Delivers Deepest Infrared Image of Universe Yet",
+   "names": [],
+   "ra": 110.78566666666667,
+   "dec": -73.44977222222222,
+   "release": "12 July 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2205a/",
+   "title": "NIRCam Image of the “Cosmic Cliffs” in Carina",
+   "names": [
+    "Carina Nebula",
+    "NGC 3324"
+   ],
+   "ra": 159.212625,
+   "dec": -58.620016666666665,
+   "release": "12 July 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2205b/",
+   "title": "Combined NIRCam and MIRI Image of the “Cosmic Cliffs” in Carina",
+   "names": [
+    "Carina Nebula",
+    "NGC 3324"
+   ],
+   "ra": 159.2264583333333,
+   "dec": -58.62168055555556,
+   "release": "12 July 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2207b/",
+   "title": "Southern Ring Nebula (NIRCam Image)",
+   "names": [
+    "NGC 3132"
+   ],
+   "ra": 151.75704166666668,
+   "dec": -40.43643333333333,
+   "release": "12 July 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2207c/",
+   "title": "Southern Ring Nebula (MIRI Image)",
+   "names": [],
+   "ra": 151.753375,
+   "dec": -40.43530555555555,
+   "release": "12 July 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2208a/",
+   "title": "Stephan’s Quintet (NIRCam + MIRI Imaging)",
+   "names": [],
+   "ra": 338.9982083333333,
+   "dec": 33.958400000000005,
+   "release": "12 July 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2208b/",
+   "title": "Stephan’s Quintet (MIRI Imaging)",
+   "names": [],
+   "ra": 339.006125,
+   "dec": 33.95968611111111,
+   "release": "12 July 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2209a/",
+   "title": "Webb’s First Deep Field (NIRCam Image)",
+   "names": [],
+   "ra": 110.78566666666667,
+   "dec": -73.44977222222222,
+   "release": "12 July 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2211a/",
+   "title": "Cartwheel Galaxy (NIRCam and MIRI Composite Image)",
+   "names": [],
+   "ra": 9.423208333333335,
+   "dec": -33.71306111111112,
+   "release": "2 August 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2211b/",
+   "title": "Cartwheel Galaxy (MIRI)",
+   "names": [],
+   "ra": 9.417166666666667,
+   "dec": -33.70356666666667,
+   "release": "2 August 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2212a/",
+   "title": "Tarantula Nebula (NIRCam Image)",
+   "names": [
+    "30 Doradus",
+    "RMC 136",
+    "Tarantula Nebula"
+   ],
+   "ra": 84.698375,
+   "dec": -69.09526666666666,
+   "release": "6 September 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2212b/",
+   "title": "Tarantula Nebula (MIRI Image)",
+   "names": [
+    "30 Doradus",
+    "RMC 136",
+    "Tarantula Nebula"
+   ],
+   "ra": 84.67991666666666,
+   "dec": -69.09246388888889,
+   "release": "6 September 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2216a/",
+   "title": "Webb Takes a Stunning, Star-Filled Portrait of the Pillars of Creation (Cropped)",
+   "names": [
+    "Eagle Nebula",
+    "Messier 16"
+   ],
+   "ra": 274.73058333333336,
+   "dec": -13.844944444444446,
+   "release": "19 October 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2216b/",
+   "title": "Webb Takes a Stunning, Star-Filled Portrait of the Pillars of Creation (Full View)",
+   "names": [
+    "Eagle Nebula",
+    "Messier 16"
+   ],
+   "ra": 274.72991666666667,
+   "dec": -13.851738888888889,
+   "release": "19 October 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2217b/",
+   "title": "Webb’s View of the Extremely Red Quasar SDSS J165202.64+172852.3",
+   "names": [
+    "SDSS J165202.64+172852.3"
+   ],
+   "ra": 253.01108333333335,
+   "dec": 17.48114722222222,
+   "release": "20 October 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2217c/",
+   "title": "Wide Field Hubble View of Extremely Red Quasar SDSS J165202.64+172852.3",
+   "names": [
+    "SDSS J165202.64+172852.3"
+   ],
+   "ra": 253.01116666666667,
+   "dec": 17.481111111111108,
+   "release": "20 October 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2218a/",
+   "title": "Pillars of Creation (MIRI Image)",
+   "names": [
+    "Eagle Nebula",
+    "Messier 16"
+   ],
+   "ra": 274.72679166666666,
+   "dec": -13.837672222222222,
+   "release": "28 October 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2219a/",
+   "title": "Protostar L1527",
+   "names": [
+    "LDN 1527"
+   ],
+   "ra": 69.97379166666667,
+   "dec": 26.052466666666668,
+   "release": "16 November 2022"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2301a/",
+   "title": "Webb Inspects NGC 346 (NIRCam Image)",
+   "names": [],
+   "ra": 14.767999999999999,
+   "dec": -72.17380555555556,
+   "release": "11 January 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2301c/",
+   "title": "NGC 346 (Hubble)",
+   "names": [
+    "NGC 346"
+   ],
+   "ra": 14.774291666666665,
+   "dec": -72.17622777777778,
+   "release": "11 January 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2301d/",
+   "title": "NGC 346 (Webb)",
+   "names": [
+    "NGC 346"
+   ],
+   "ra": 14.774291666666665,
+   "dec": -72.17622777777778,
+   "release": "11 January 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2303a/",
+   "title": "Webb’s View of the Molecular Cloud Chameleon I",
+   "names": [
+    "Cha 1",
+    "IRAS 11051-7706",
+    "[PMG2001] NIR 38",
+    "SSTSL2 J110621.64-772354.1"
+   ],
+   "ra": 166.65079166666666,
+   "dec": -77.38714444444444,
+   "release": "23 January 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2305a/",
+   "title": "Pandora’s Cluster (Abell 2744)",
+   "names": [
+    "Abell 2744"
+   ],
+   "ra": 3.576166666666667,
+   "dec": -30.379030555555556,
+   "release": "15 February 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2306a/",
+   "title": "NGC 1433 (MIRI Image)",
+   "names": [],
+   "ra": 55.507000000000005,
+   "dec": -47.22174444444445,
+   "release": "16 February 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2306c/",
+   "title": "NGC 7496 (MIRI Image)",
+   "names": [],
+   "ra": 347.4460833333333,
+   "dec": -43.428438888888884,
+   "release": "16 February 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2306e/",
+   "title": "NGC 1365 (MIRI Image)",
+   "names": [],
+   "ra": 53.38908333333333,
+   "dec": -36.146,
+   "release": "16 February 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2307a/",
+   "title": "Wolf-Rayet 124 (NIRCam and MIRI composite image)",
+   "names": [
+    "WR 124"
+   ],
+   "ra": 287.87924999999996,
+   "dec": 16.860358333333334,
+   "release": "14 March 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2307c/",
+   "title": "Wolf-Rayet 124 (MIRI image)",
+   "names": [
+    "WR 124"
+   ],
+   "ra": 287.8785833333334,
+   "dec": 16.859886111111113,
+   "release": "14 March 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2307d/",
+   "title": "Wolf-Rayet 124 (NIRCam and MIRI composite image)",
+   "names": [
+    "WR 124"
+   ],
+   "ra": 287.87875,
+   "dec": 16.859775000000003,
+   "release": "14 March 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2307e/",
+   "title": "Wolf-Rayet 124 (MIRI image)",
+   "names": [
+    "WR 124"
+   ],
+   "ra": 287.87875,
+   "dec": 16.859775000000003,
+   "release": "14 March 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2307f/",
+   "title": "Hubble’s view of Wolf-Rayet 124",
+   "names": [
+    "WR 124"
+   ],
+   "ra": 287.87875,
+   "dec": 16.859775000000003,
+   "release": "14 March 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2311a/",
+   "title": "Cassiopeia A (MIRI Image)",
+   "names": [
+    "Cas A"
+   ],
+   "ra": 350.85816666666665,
+   "dec": 58.81815277777778,
+   "release": "7 April 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2311c/",
+   "title": "Hubble’s view of Cassiopeia A",
+   "names": [],
+   "ra": 350.85816666666665,
+   "dec": 58.81815277777778,
+   "release": "7 April 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2315b/",
+   "title": "The Orion Bar region (NIRCam image)",
+   "names": [
+    "[BOM2000] d203-506",
+    "HH 520",
+    "Messier 42",
+    "Orion Bar",
+    "Orion Nebula"
+   ],
+   "ra": 83.84279166666666,
+   "dec": -5.408230555555556,
+   "release": "26 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2315c/",
+   "title": "The Orion Bar region (upscaled MIRI image)",
+   "names": [
+    "[BOM2000] d203-506",
+    "HH 520",
+    "Messier 42",
+    "Orion Bar",
+    "Orion Nebula"
+   ],
+   "ra": 83.83454166666667,
+   "dec": -5.417916666666667,
+   "release": "26 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2315d/",
+   "title": "The Orion Bar region (Hubble image)",
+   "names": [
+    "[BOM2000] d203-506",
+    "HH 520",
+    "Messier 42",
+    "Orion Bar",
+    "Orion Nebula"
+   ],
+   "ra": 83.84279166666666,
+   "dec": -5.408230555555556,
+   "release": "26 June 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2316a/",
+   "title": "Rho Ophiuchi cloud complex",
+   "names": [],
+   "ra": 246.62733333333333,
+   "dec": -24.385388888888887,
+   "release": "12 July 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2317c/",
+   "title": "Crop of the GOODS-S field: JADES (NIRCam image, clean)",
+   "names": [],
+   "ra": 53.152125,
+   "dec": -27.792705555555557,
+   "release": "19 July 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2319a/",
+   "title": "Herbig-Haro 46/47 (NIRCam image)",
+   "names": [],
+   "ra": 126.43212499999998,
+   "dec": -51.01059722222222,
+   "release": "26 July 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2320b/",
+   "title": "Webb captures detailed beauty of Ring Nebula (NIRCam image)",
+   "names": [],
+   "ra": 283.39504166666666,
+   "dec": 33.02927777777778,
+   "release": "21 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2320c/",
+   "title": "Webb captures detailed beauty of Ring Nebula (MIRI image)",
+   "names": [],
+   "ra": 283.39641666666665,
+   "dec": 33.02901111111111,
+   "release": "21 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2320d/",
+   "title": "Webb captures detailed beauty of Ring Nebula (NIRCam image - cropped)",
+   "names": [],
+   "ra": 283.39625,
+   "dec": 33.02876111111111,
+   "release": "21 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2320e/",
+   "title": "Webb captures detailed beauty of Ring Nebula (MIRI image - cropped)",
+   "names": [],
+   "ra": 283.39625,
+   "dec": 33.02876111111111,
+   "release": "21 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2320f/",
+   "title": "Hubble’s view of the Ring Nebula (2013 image - cropped)",
+   "names": [],
+   "ra": 283.39625,
+   "dec": 33.02876111111111,
+   "release": "21 August 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2322a/",
+   "title": "HH 211 (NIRCam image, cropped)",
+   "names": [
+    "HH 211"
+   ],
+   "ra": 55.987375,
+   "dec": 32.01374444444444,
+   "release": "14 September 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2322b/",
+   "title": "HH 211 (NIRCam image)",
+   "names": [
+    "HH 211"
+   ],
+   "ra": 55.989375,
+   "dec": 32.008783333333334,
+   "release": "14 September 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2324a/",
+   "title": "NGC 346 (MIRI image)",
+   "names": [],
+   "ra": 14.771125,
+   "dec": -72.16915833333334,
+   "release": "10 October 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2325c/",
+   "title": "Kilonova and host galaxy (clean)",
+   "names": [
+    "GRB 230307A"
+   ],
+   "ra": 60.836833333333324,
+   "dec": -75.3823861111111,
+   "release": "25 October 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2326a/",
+   "title": "The Crab Nebula",
+   "names": [
+    "Crab Nebula",
+    "M1"
+   ],
+   "ra": 83.63570833333334,
+   "dec": 22.016661111111112,
+   "release": "30 October 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2326d/",
+   "title": "Hubble’s view of the Crab Nebula (2005 image)",
+   "names": [
+    "Crab Nebula",
+    "M1"
+   ],
+   "ra": 83.63570833333334,
+   "dec": 22.016661111111112,
+   "release": "30 October 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2326e/",
+   "title": "Webb’s new view of the Crab Nebula",
+   "names": [
+    "Crab Nebula",
+    "M1"
+   ],
+   "ra": 83.63570833333334,
+   "dec": 22.016661111111112,
+   "release": "30 October 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2327a/",
+   "title": "Galaxy cluster MACS0416 (Hubble and Webb composite image)",
+   "names": [
+    "MACS J0416.1-2403"
+   ],
+   "ra": 64.03758333333333,
+   "dec": -24.07435277777778,
+   "release": "9 November 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2328a/",
+   "title": "Sagittarius C (NIRCam Image)",
+   "names": [
+    "Sagittarius C"
+   ],
+   "ra": 266.17033333333336,
+   "dec": -29.44766111111111,
+   "release": "20 November 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2330a/",
+   "title": "Cas A (NIRCam image)",
+   "names": [
+    "Cas A"
+   ],
+   "ra": 350.84975,
+   "dec": 58.81505277777777,
+   "release": "11 December 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2330e/",
+   "title": "Cas A (NIRCam image)",
+   "names": [
+    "Cas A"
+   ],
+   "ra": 350.855,
+   "dec": 58.820025,
+   "release": "11 December 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2330f/",
+   "title": "Cas A (MIRI image)",
+   "names": [
+    "Cas A"
+   ],
+   "ra": 350.855,
+   "dec": 58.820025,
+   "release": "11 December 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2331a/",
+   "title": "Star Cluster IC 348 (NIRCam image)",
+   "names": [
+    "IC 348"
+   ],
+   "ra": 56.143125000000005,
+   "dec": 32.160333333333334,
+   "release": "13 December 2023"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2402b/",
+   "title": "Lyman-α emitting galaxy EGSY8p7 (NIRCam image)",
+   "names": [
+    "EGSY8p7"
+   ],
+   "ra": 215.0355,
+   "dec": 52.89068888888889,
+   "release": "18 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403b/",
+   "title": "IC 5332",
+   "names": [
+    "IC 5332"
+   ],
+   "ra": 353.61370833333336,
+   "dec": -36.10121388888889,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403c/",
+   "title": "NGC 628",
+   "names": [
+    "NGC 628"
+   ],
+   "ra": 24.174375,
+   "dec": 15.78061388888889,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403d/",
+   "title": "NGC 1087",
+   "names": [
+    "NGC 1087"
+   ],
+   "ra": 41.60570833333333,
+   "dec": 0.4992611111111111,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403e/",
+   "title": "NGC 1300",
+   "names": [
+    "NGC 1300"
+   ],
+   "ra": 49.920791666666666,
+   "dec": -19.410066666666665,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403f/",
+   "title": "NGC 1365",
+   "names": [
+    "NGC 1365"
+   ],
+   "ra": 53.3985,
+   "dec": -36.14427777777778,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403g/",
+   "title": "NGC 1385",
+   "names": [
+    "NGC 1385"
+   ],
+   "ra": 54.37083333333333,
+   "dec": -24.501319444444444,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403h/",
+   "title": "NGC 1433",
+   "names": [
+    "NGC 1433"
+   ],
+   "ra": 55.50804166666667,
+   "dec": -47.22090555555556,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403i/",
+   "title": "NGC 1512",
+   "names": [
+    "NGC 1512"
+   ],
+   "ra": 60.97516666666666,
+   "dec": -43.34733611111111,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403j/",
+   "title": "NGC 1566",
+   "names": [
+    "NGC 1566"
+   ],
+   "ra": 65.00066666666666,
+   "dec": -54.936924999999995,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403k/",
+   "title": "NGC 1672",
+   "names": [
+    "NGC 1672"
+   ],
+   "ra": 71.4285,
+   "dec": -59.243830555555554,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403l/",
+   "title": "NGC 2835",
+   "names": [
+    "NGC 2835"
+   ],
+   "ra": 139.47045833333334,
+   "dec": -22.353394444444447,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403m/",
+   "title": "NGC 3351",
+   "names": [
+    "NGC 3351"
+   ],
+   "ra": 160.99075,
+   "dec": 11.704180555555554,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403n/",
+   "title": "NGC 3627",
+   "names": [
+    "NGC 3627"
+   ],
+   "ra": 170.059625,
+   "dec": 12.984036111111111,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403o/",
+   "title": "NGC 4254",
+   "names": [
+    "NGC 4254"
+   ],
+   "ra": 184.71120833333333,
+   "dec": 14.422588888888889,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403p/",
+   "title": "NGC 4303",
+   "names": [
+    "NGC 4303"
+   ],
+   "ra": 185.48820833333335,
+   "dec": 4.470769444444445,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403q/",
+   "title": "NGC 4321",
+   "names": [
+    "NGC 4321"
+   ],
+   "ra": 185.74133333333336,
+   "dec": 15.818463888888889,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403r/",
+   "title": "NGC 4535",
+   "names": [
+    "NGC 4535"
+   ],
+   "ra": 188.58408333333335,
+   "dec": 8.196813888888888,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403s/",
+   "title": "NGC 5068",
+   "names": [
+    "NGC 5068"
+   ],
+   "ra": 199.71083333333334,
+   "dec": -21.03418888888889,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2403t/",
+   "title": "NGC 7496",
+   "names": [
+    "NGC 7496"
+   ],
+   "ra": 347.4460833333333,
+   "dec": -43.42890555555555,
+   "release": "29 January 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2406d/",
+   "title": "GOODS-North field (clean)",
+   "names": [],
+   "ra": 189.22904166666666,
+   "dec": 62.20231944444445,
+   "release": "4 March 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2407a/",
+   "title": "NGC 604 (NIRCam image)",
+   "names": [
+    "NGC 604"
+   ],
+   "ra": 23.641416666666668,
+   "dec": 30.782533333333333,
+   "release": "9 March 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2407b/",
+   "title": "NGC 604 (MIRI image)",
+   "names": [
+    "NGC 604"
+   ],
+   "ra": 23.6405,
+   "dec": 30.78376111111111,
+   "release": "9 March 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2407d/",
+   "title": "NGC 604 (NIRCam image)",
+   "names": [
+    "NGC 604"
+   ],
+   "ra": 23.640916666666666,
+   "dec": 30.783647222222225,
+   "release": "9 March 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2407e/",
+   "title": "NGC 604 (MIRI image)",
+   "names": [
+    "NGC 604"
+   ],
+   "ra": 23.640875,
+   "dec": 30.783630555555558,
+   "release": "9 March 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2408a/",
+   "title": "NGC 5468 — Cepheid host galaxy",
+   "names": [
+    "NGC 5468"
+   ],
+   "ra": 211.64558333333332,
+   "dec": -5.4537861111111114,
+   "release": "11 March 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2409a/",
+   "title": "Parallel field to protostar IRAS23385",
+   "names": [],
+   "ra": 355.2053333333334,
+   "dec": 61.18979722222222,
+   "release": "13 March 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2410b/",
+   "title": "M82 (NIRCam image - longer wavelengths)",
+   "names": [
+    "M82"
+   ],
+   "ra": 148.965125,
+   "dec": 69.67928055555556,
+   "release": "3 April 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2410c/",
+   "title": "M82 (NIRCam image - shorter wavelengths)",
+   "names": [
+    "M82"
+   ],
+   "ra": 148.965125,
+   "dec": 69.67928333333334,
+   "release": "3 April 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2410e/",
+   "title": "M82 (Hubble image)",
+   "names": [
+    "M82"
+   ],
+   "ra": 148.965125,
+   "dec": 69.67928333333334,
+   "release": "3 April 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2411a/",
+   "title": "Horsehead Nebula (NIRCam image)",
+   "names": [
+    "Horsehead Nebula"
+   ],
+   "ra": 85.21925,
+   "dec": -2.4798583333333335,
+   "release": "29 April 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2411b/",
+   "title": "Horsehead Nebula (MIRI image)",
+   "names": [
+    "Horsehead Nebula"
+   ],
+   "ra": 85.223875,
+   "dec": -2.467652777777778,
+   "release": "29 April 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2411d/",
+   "title": "Horsehead Nebula (NIRCam image)",
+   "names": [
+    "Horsehead Nebula"
+   ],
+   "ra": 85.221,
+   "dec": -2.4699861111111114,
+   "release": "29 April 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2411e/",
+   "title": "Horsehead Nebula (MIRI image)",
+   "names": [
+    "Horsehead Nebula"
+   ],
+   "ra": 85.221,
+   "dec": -2.4699861111111114,
+   "release": "29 April 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2413a/",
+   "title": "ZS7 environment (NIRcam image)",
+   "names": [
+    "ZS7"
+   ],
+   "ra": 150.09900000000002,
+   "dec": 2.343602777777778,
+   "release": "16 May 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2415a/",
+   "title": "Serpens Nebula (NIRCam image)",
+   "names": [
+    "Serpens Nebula"
+   ],
+   "ra": 277.4825,
+   "dec": 1.2429666666666668,
+   "release": "20 June 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2415b/",
+   "title": "Serpens Nebula North – aligned outflows crop (NIRCam image)",
+   "names": [
+    "Serpens Nebula"
+   ],
+   "ra": 277.459,
+   "dec": 1.2634777777777777,
+   "release": "20 June 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2415c/",
+   "title": "Serpens Nebula centre crop (NIRCam image)",
+   "names": [
+    "Serpens Nebula"
+   ],
+   "ra": 277.4825,
+   "dec": 1.2430611111111112,
+   "release": "20 June 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2417a/",
+   "title": "Crab Nebula (MIRI and NIRCam image)",
+   "names": [
+    "Crab Nebula",
+    "M1",
+    "NGC 1952"
+   ],
+   "ra": 83.63566666666667,
+   "dec": 22.016333333333332,
+   "release": "17 June 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2418a/",
+   "title": "Galaxy cluster SPT-CL J0615−5746 (cropped)",
+   "names": [
+    "[SCB2018] SPTJ0615-JD1",
+    "SPT-CL J0615−5746"
+   ],
+   "ra": 93.96795833333334,
+   "dec": -57.780274999999996,
+   "release": "24 June 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2418d/",
+   "title": "Galaxy cluster SPT-CL J0615−5746 (wide-field view)",
+   "names": [
+    "[SCB2018] SPTJ0615-JD1",
+    "SPT-CL J0615−5746"
+   ],
+   "ra": 93.9675,
+   "dec": -57.78093611111111,
+   "release": "24 June 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2418e/",
+   "title": "Star clusters in the Cosmic Gems arc (cropped)",
+   "names": [
+    "[SCB2018] SPTJ0615-JD1"
+   ],
+   "ra": 93.97933333333333,
+   "dec": -57.772225,
+   "release": "24 June 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2420a/",
+   "title": "Interacting galaxies Arp 142 (NIRCam and MIRI image)",
+   "names": [
+    "Arp 142"
+   ],
+   "ra": 144.42929166666667,
+   "dec": 2.7566722222222224,
+   "release": "12 July 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2420b/",
+   "title": "Interacting galaxies Arp 142 (MIRI image)",
+   "names": [
+    "Arp 142"
+   ],
+   "ra": 144.4335,
+   "dec": 2.759202777777778,
+   "release": "12 July 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2420f/",
+   "title": "Interacting galaxies Arp 142 (NIRCam image)",
+   "names": [
+    "Arp 142"
+   ],
+   "ra": 144.42929166666667,
+   "dec": 2.7566722222222224,
+   "release": "12 July 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2420g/",
+   "title": "Interacting galaxies Arp 142 (NIRCam image, rotated full-field)",
+   "names": [
+    "Arp 142"
+   ],
+   "ra": 144.43012500000003,
+   "dec": 2.759177777777778,
+   "release": "12 July 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2421a/",
+   "title": "Exoplanet Epsilon Indi Ab (MIRI image)",
+   "names": [
+    "HD209100"
+   ],
+   "ra": 330.8875,
+   "dec": -56.80261944444444,
+   "release": "24 July 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2422a/",
+   "title": "Digel Cloud 2S",
+   "names": [
+    "[YKT2006b] Cloud2-S"
+   ],
+   "ra": 42.12433333333333,
+   "dec": 58.39389444444444,
+   "release": "12 September 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2423a/",
+   "title": "Arp 107 composite image (NIRCam + MIRI)",
+   "names": [
+    "Arp 107"
+   ],
+   "ra": 163.07004166666667,
+   "dec": 30.064194444444446,
+   "release": "18 September 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2423b/",
+   "title": "Arp 107 MIRI image",
+   "names": [
+    "Arp 107"
+   ],
+   "ra": 163.06529166666667,
+   "dec": 30.062125,
+   "release": "18 September 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2425a/",
+   "title": "NGC 602 (NIRCam and MIRI image)",
+   "names": [
+    "NGC 602"
+   ],
+   "ra": 22.348333333333336,
+   "dec": -73.56099444444445,
+   "release": "23 October 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2425b/",
+   "title": "NGC 602 (Hubble image)",
+   "names": [
+    "NGC 602"
+   ],
+   "ra": 22.369416666666666,
+   "dec": -73.56134722222222,
+   "release": "23 October 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2425c/",
+   "title": "NGC 602 (Webb image)",
+   "names": [
+    "NGC 602"
+   ],
+   "ra": 22.369375,
+   "dec": -73.56134444444444,
+   "release": "23 October 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2426a/",
+   "title": "Galaxies IC 2163 and NGC 2207 (Webb and Hubble image)",
+   "names": [
+    "IC 2163",
+    "NGC 2207"
+   ],
+   "ra": 94.10520833333334,
+   "dec": -21.374791666666667,
+   "release": "31 October 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2426b/",
+   "title": "Galaxies IC 2163 and NGC 2207 (Webb MIRI image)",
+   "names": [
+    "IC 2163",
+    "NGC 2207"
+   ],
+   "ra": 94.10133333333333,
+   "dec": -21.372733333333333,
+   "release": "31 October 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2427a/",
+   "title": "Sombrero galaxy (MIRI)",
+   "names": [],
+   "ra": 189.99725,
+   "dec": -11.622461111111111,
+   "release": "25 November 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2428a/",
+   "title": "Spiderweb Protocluster (NIRCam)",
+   "names": [
+    "Spiderweb Protocluster"
+   ],
+   "ra": 175.19916666666666,
+   "dec": -26.489316666666667,
+   "release": "4 December 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2429a/",
+   "title": "Galaxy cluster MACS J1423 (NIRCam image)",
+   "names": [
+    "MACS J1423.8+2404"
+   ],
+   "ra": 215.94779166666666,
+   "dec": 24.076666666666668,
+   "release": "11 December 2024"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2501d/",
+   "title": "Wolf-Rayet 140 (MIRI image) - September 2023",
+   "names": [
+    "WR140"
+   ],
+   "ra": 305.11704166666664,
+   "dec": 43.85466944444445,
+   "release": "13 January 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2501e/",
+   "title": "Wolf-Rayet 140 (MIRI image) - July 2022",
+   "names": [
+    "WR140"
+   ],
+   "ra": 305.11704166666664,
+   "dec": 43.85466944444445,
+   "release": "13 January 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2503a/",
+   "title": "Actively forming star system Lynds 483 (NIRCam image)",
+   "names": [
+    "LDN 483"
+   ],
+   "ra": 274.3815416666667,
+   "dec": -4.6615527777777785,
+   "release": "7 March 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2505b/",
+   "title": "JADES-GS-z13-1 (NIRCam close-up)",
+   "names": [
+    "GS-z13-1"
+   ],
+   "ra": 53.064875,
+   "dec": -27.889802777777778,
+   "release": "26 March 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2506a/",
+   "title": "Herbig-Haro 49/50 (NIRCam and MIRI Image)",
+   "names": [
+    "HH 49",
+    "HH 50"
+   ],
+   "ra": 166.48958333333334,
+   "dec": -77.55063055555556,
+   "release": "24 March 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2508a/",
+   "title": "Planetary Nebula NGC 1514 (MIRI image)",
+   "names": [
+    "NGC 1514"
+   ],
+   "ra": 62.320416666666674,
+   "dec": 30.77595833333333,
+   "release": "14 April 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2513a/",
+   "title": "Cat’s Paw Nebula (NIRCam)",
+   "names": [
+    "NGC 6334"
+   ],
+   "ra": 260.17504166666663,
+   "dec": -35.82715555555556,
+   "release": "10 July 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2514a/",
+   "title": "NGC 6072 (NIRCam image)",
+   "names": [],
+   "ra": 243.244625,
+   "dec": -36.23062222222222,
+   "release": "30 July 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2514b/",
+   "title": "NGC 6072 (MIRI image)",
+   "names": [],
+   "ra": 243.24279166666665,
+   "dec": -36.230475,
+   "release": "30 July 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2517b/",
+   "title": "Butterfly Nebula NGC 6302 (Webb and ALMA image)",
+   "names": [
+    "NGC 6302"
+   ],
+   "ra": 258.4350416666666,
+   "dec": -37.103425,
+   "release": "27 August 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2517d/",
+   "title": "Butterfly Nebula NGC 6302 (Optical Hubble image)",
+   "names": [
+    "NGC 6302"
+   ],
+   "ra": 258.4346666666666,
+   "dec": -37.10295277777778,
+   "release": "27 August 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2517e/",
+   "title": "Butterfly Nebula NGC 6302 (Near-infrared Hubble image)",
+   "names": [
+    "NGC 6302"
+   ],
+   "ra": 258.43470833333333,
+   "dec": -37.10295555555556,
+   "release": "27 August 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2518a/",
+   "title": "Pismis 24 (NIRCam image)",
+   "names": [],
+   "ra": 261.185,
+   "dec": -34.19331666666666,
+   "release": "4 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2519a/",
+   "title": "Stellar jet in Sh2-284 (NIRCam image)",
+   "names": [],
+   "ra": 101.56575,
+   "dec": 0.10521944444444445,
+   "release": "10 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2520a/",
+   "title": "Sagittarius B2 (NIRCam image)",
+   "names": [
+    "Sagittarius B2"
+   ],
+   "ra": 266.83470833333337,
+   "dec": -28.397777777777776,
+   "release": "24 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2520b/",
+   "title": "Sagittarius B2 (MIRI image)",
+   "names": [
+    "Sagittarius B2"
+   ],
+   "ra": 266.8342916666667,
+   "dec": -28.39806388888889,
+   "release": "24 September 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2522b/",
+   "title": "MACS J1149.5+2223",
+   "names": [
+    "MACS J1149.5+2223"
+   ],
+   "ra": 177.372625,
+   "dec": 22.35740277777778,
+   "release": "19 November 2025"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2601a/",
+   "title": "Helix Nebula (NIRCam image)",
+   "names": [],
+   "ra": 337.3516666666667,
+   "dec": -20.872016666666667,
+   "release": "20 January 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2603c/",
+   "title": "COSMOS Field (NIRCam clean image)",
+   "names": [],
+   "ra": 150.07941666666667,
+   "dec": 2.301286111111111,
+   "release": "28 January 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2605c/",
+   "title": "Exposed Cranium Nebula (NIRCam image)",
+   "names": [],
+   "ra": 142.172,
+   "dec": -49.610683333333334,
+   "release": "25 February 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2605d/",
+   "title": "Exposed Cranium Nebula (MIRI image)",
+   "names": [],
+   "ra": 142.17225,
+   "dec": -49.610886111111114,
+   "release": "25 February 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2605e/",
+   "title": "Exposed Cranium Nebula (MIRI image)",
+   "names": [],
+   "ra": 142.172,
+   "dec": -49.610683333333334,
+   "release": "25 February 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2608a/",
+   "title": "Star-forming regions in M51",
+   "names": [],
+   "ra": 202.4975,
+   "dec": 47.22728888888889,
+   "release": "6 May 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2608c/",
+   "title": "Star-forming region in M51 (close-up)",
+   "names": [],
+   "ra": 202.48154166666666,
+   "dec": 47.233916666666666,
+   "release": "6 May 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2610c/",
+   "title": "Abell S1063 galaxy cluster",
+   "names": [
+    "Abell S1063"
+   ],
+   "ra": 342.183125,
+   "dec": -44.530680555555556,
+   "release": "10 June 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2611a/",
+   "title": "Bulge fossil fragment Terzan 5 (Webb and Hubble image)",
+   "names": [],
+   "ra": 267.019625,
+   "dec": -24.779794444444445,
+   "release": "16 June 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2612a/",
+   "title": "The Cigar Galaxy: M82 (Webb and Hubble image)",
+   "names": [
+    "M82"
+   ],
+   "ra": 148.974,
+   "dec": 69.68089444444445,
+   "release": "23 June 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2612b/",
+   "title": "The Cigar Galaxy: M82 (Webb NIRCam image)",
+   "names": [
+    "M82"
+   ],
+   "ra": 148.974,
+   "dec": 69.68089444444445,
+   "release": "23 June 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2612e/",
+   "title": "M82 (Webb NIRCam image)",
+   "names": [
+    "M82"
+   ],
+   "ra": 148.97924999999998,
+   "dec": 69.6817138888889,
+   "release": "23 June 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2615a/",
+   "title": "Centaurus A (MIRI image)",
+   "names": [
+    "Centaurus A"
+   ],
+   "ra": 201.3623333333333,
+   "dec": -43.02496111111111,
+   "release": "6 July 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2615b/",
+   "title": "Centaurus A (MIRI + NIRCam image)",
+   "names": [
+    "Centaurus A"
+   ],
+   "ra": 201.36524999999997,
+   "dec": -43.01897777777778,
+   "release": "6 July 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2615d/",
+   "title": "Centaurus A (MIRI + NIRCam image wide-field view)",
+   "names": [
+    "Centaurus A"
+   ],
+   "ra": 201.36520833333333,
+   "dec": -43.01883333333333,
+   "release": "6 July 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2615e/",
+   "title": "Centaurus A (NIRCam image)",
+   "names": [
+    "Centaurus A"
+   ],
+   "ra": 201.36520833333333,
+   "dec": -43.01883333333333,
+   "release": "6 July 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2616a/",
+   "title": "Lion Nebula (NIRCam + MIRI image)",
+   "names": [],
+   "ra": 112.29504166666666,
+   "dec": 20.912144444444444,
+   "release": "10 August 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2616b/",
+   "title": "Lion Nebula (MIRI image)",
+   "names": [],
+   "ra": 112.295,
+   "dec": 20.912333333333333,
+   "release": "10 August 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2617a/",
+   "title": "IRS 3 Field (NIRCam and MIRI image)",
+   "names": [
+    "Galactic Centre"
+   ],
+   "ra": 266.416875,
+   "dec": -29.007791666666666,
+   "release": "11 August 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2617c/",
+   "title": "IRS 3 Field (NIRCam image)",
+   "names": [
+    "Galactic Centre"
+   ],
+   "ra": 266.41837499999997,
+   "dec": -29.007769444444445,
+   "release": "11 August 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2617d/",
+   "title": "IRS 3 Field (MIRI image)",
+   "names": [
+    "Galactic Centre"
+   ],
+   "ra": 266.41704166666665,
+   "dec": -29.008280555555555,
+   "release": "11 August 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2619a/",
+   "title": "Star-forming region IC 348 (NIRCam image)",
+   "names": [
+    "IC 348"
+   ],
+   "ra": 56.12858333333334,
+   "dec": 32.14155,
+   "release": "15 September 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2619c/",
+   "title": "IC 348 Crop: Star embedded in a nebula",
+   "names": [],
+   "ra": 56.17979166666667,
+   "dec": 32.02567222222222,
+   "release": "15 September 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2619d/",
+   "title": "IC 348 Crop: Central star cluster",
+   "names": [],
+   "ra": 56.138625,
+   "dec": 32.16191388888889,
+   "release": "15 September 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2619e/",
+   "title": "IC 348 Crop: Stars and faint outflows",
+   "names": [],
+   "ra": 56.315749999999994,
+   "dec": 32.10456666666667,
+   "release": "15 September 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2619g/",
+   "title": "IC 348 Crop: Gravitational lensing",
+   "names": [],
+   "ra": 56.19079166666667,
+   "dec": 32.08918055555556,
+   "release": "15 September 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2619h/",
+   "title": "IC 348 Crop: Spiral galaxies",
+   "names": [],
+   "ra": 55.93508333333334,
+   "dec": 32.21295833333333,
+   "release": "15 September 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2620a/",
+   "title": "NGC 7129 (NIRCam image)",
+   "names": [
+    "NGC 7129"
+   ],
+   "ra": 325.77054166666665,
+   "dec": 66.1125111111111,
+   "release": "6 October 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/weic2621d/",
+   "title": "FRB 20240304B (NIRCam clean image)",
+   "names": [],
+   "ra": 183.00983333333332,
+   "dec": 11.820183333333333,
+   "release": "8 October 2026"
+  },
+  {
+   "source": "esawebb",
+   "url": "https://esawebb.org/images/wolf-rayet-apep/",
+   "title": "Wolf-Rayet Apep (MIRI Image)",
+   "names": [
+    "2XMM J160050.7–514245"
+   ],
+   "ra": 240.21029166666665,
+   "dec": -51.71226111111111,
+   "release": "19 November 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/14-herculis-c-nircam/",
+   "title": "14 Herculis c (NIRCam)",
+   "names": [
+    "14 Herculis c"
+   ],
+   "ra": 242.60254166666667,
+   "dec": 43.81562777777778,
+   "release": "June 10, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/30-doradus-miri-compass-image/",
+   "title": "30 Doradus (MIRI Compass Image)",
+   "names": [
+    "Tarantula Nebula",
+    "30 Doradus",
+    "30 Dor",
+    "NGC 2070"
+   ],
+   "ra": 84.67666666666666,
+   "dec": -69.10093055555555,
+   "release": "September 6, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/3d-classifications-for-distant-galaxies-in-webbs-ceers-survey-nircam-image/",
+   "title": "3D Classifications for Distant Galaxies in Webb’s CEERS Survey (NIRCam Image)",
+   "names": [
+    "CEERS Survey",
+    "Extended Groth Strip"
+   ],
+   "ra": 214.94166666666666,
+   "dec": 52.89361111111111,
+   "release": "January 17, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/51-eridani-nircam-image/",
+   "title": "51 Eridani (NIRCam Image)",
+   "names": [
+    "Eri 51; Eridani 51"
+   ],
+   "ra": 69.40085,
+   "dec": -2.473977777777778,
+   "release": "March 17, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/abell-2744-glass-nircam-compass-image/",
+   "title": "Abell 2744 GLASS (NIRCam Compass Image)",
+   "names": [
+    "Abell 2744",
+    "Pandora's Cluster"
+   ],
+   "ra": 3.5942916666666664,
+   "dec": -30.395694444444445,
+   "release": "November 17, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/abell-2744-glass-nircam-image/",
+   "title": "Abell 2744 GLASS (NIRCam Image)",
+   "names": [
+    "Abell 2744",
+    "Pandora's Cluster"
+   ],
+   "ra": 3.5942916666666664,
+   "dec": -30.395694444444445,
+   "release": "November 17, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/abell-s1063-with-pullout-of-glimpse-17775-nircam-image/",
+   "title": "Abell S1063 with Pullout of GLIMPSE-17775 (NIRCam Image)",
+   "names": [
+    "Abell S1063; GLIMPSE-17775"
+   ],
+   "ra": 342.20079166666665,
+   "dec": -44.543661111111106,
+   "release": "June 10, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/actively-forming-star-system-lynds-483-nircam-image/",
+   "title": "Actively Forming Star System Lynds 483 (NIRCam Image)",
+   "names": [
+    "Lynds 483"
+   ],
+   "ra": 274.3795416666667,
+   "dec": -4.663083333333334,
+   "release": "March 7, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/alpha-centauri-3-panel-dss-hubble-webb/",
+   "title": "Alpha Centauri 3 Panel (DSS, Hubble, Webb)",
+   "names": [
+    "Alpha Centauri AB"
+   ],
+   "ra": 219.9045,
+   "dec": -60.81563611111111,
+   "release": "August 7, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/alpha-centauri-3-panel-webb-miri-image-detail/",
+   "title": "Alpha Centauri 3 Panel (Webb MIRI Image Detail)",
+   "names": [
+    "Alpha Centauri AB"
+   ],
+   "ra": 219.9045,
+   "dec": -60.81563611111111,
+   "release": "August 7, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/apep-star-system-vlt/",
+   "title": "Apep Star System (VLT)",
+   "names": [
+    "Apep"
+   ],
+   "ra": 240.21033333333335,
+   "dec": -51.71248333333334,
+   "release": "November 18, 2020"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/arp-220-nircam-and-miri-compass-image/",
+   "title": "Arp 220 (NIRCam and MIRI Compass image)",
+   "names": [
+    "Arp 220",
+    "IC 1127",
+    "VV 540",
+    "KPG 470",
+    "UGC 09913"
+   ],
+   "ra": 233.7405,
+   "dec": 23.501644444444445,
+   "release": "April 17, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/arp-220-nircam-and-miri-image/",
+   "title": "Arp 220 (NIRCam and MIRI image)",
+   "names": [
+    "Arp 220",
+    "IC 1127",
+    "VV 540",
+    "KPG 470",
+    "UGC 09913"
+   ],
+   "ra": 233.7405,
+   "dec": 23.501644444444445,
+   "release": "April 17, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/aspire-cosmic-filament-nircam-compass-image/",
+   "title": "ASPIRE Cosmic Filament (NIRCam Compass Image)",
+   "names": [
+    "ASPIRE",
+    "J0305-3150"
+   ],
+   "ra": 46.32083333333333,
+   "dec": -31.865555555555556,
+   "release": "June 29, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/aspire-cosmic-filament-nircam-image/",
+   "title": "ASPIRE Cosmic Filament (NIRCam Image)",
+   "names": [
+    "ASPIRE",
+    "J0305-3150"
+   ],
+   "ra": 46.32083333333333,
+   "dec": -31.865555555555556,
+   "release": "June 29, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/au-mic-nircam-compass-image/",
+   "title": "AU Mic (NIRCam Compass Image)",
+   "names": [
+    "AU Mic",
+    "AU Micrscopii"
+   ],
+   "ra": 470.11245833333334,
+   "dec": -31.340830555555556,
+   "release": "January 11, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/au-mic-nircam-image/",
+   "title": "AU Mic (NIRCam Image)",
+   "names": [
+    "AU Mic",
+    "AU Micrscopii"
+   ],
+   "ra": 470.11245833333334,
+   "dec": -31.340830555555556,
+   "release": "January 11, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/beta-pictoris-miri-annotated-image/",
+   "title": "Beta Pictoris (MIRI Annotated Image)",
+   "names": [
+    "Beta Pictoris"
+   ],
+   "ra": 86.82116666666667,
+   "dec": -51.06650833333333,
+   "release": "January 10, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/beta-pictoris-miri-compass-image/",
+   "title": "Beta Pictoris (MIRI Compass Image)",
+   "names": [
+    "Beta Pictoris"
+   ],
+   "ra": 86.82116666666667,
+   "dec": -51.06650833333333,
+   "release": "January 10, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/beta-pictoris-miri-image/",
+   "title": "Beta Pictoris (MIRI Image)",
+   "names": [
+    "Beta Pictoris"
+   ],
+   "ra": 86.82116666666667,
+   "dec": -51.06650833333333,
+   "release": "January 10, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/beta-pictoris-system-nirspec-ifu-image-annotated/",
+   "title": "Beta Pictoris System (NIRSpec IFU Image Annotated)",
+   "names": [
+    "Beta Pictoris system"
+   ],
+   "ra": 86.82124999999999,
+   "dec": -51.06589722222222,
+   "release": "July 15, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/brick-in-galactic-center-spitzer/",
+   "title": "Brick in Galactic Center (Spitzer)",
+   "names": [],
+   "ra": 266.405,
+   "dec": -28.93616666666667,
+   "release": "April 10, 2020"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/brown-dwarfs-in-ic-348-nircam-image/",
+   "title": "Brown Dwarfs in IC 348 (NIRCam Image)",
+   "names": [
+    "IC 348"
+   ],
+   "ra": 56.142833333333336,
+   "dec": 32.16197222222222,
+   "release": "December 13, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/bulge-fossil-fragment-terzan-5-webb-and-hubble-image/",
+   "title": "Bulge Fossil Fragment Terzan 5 (Webb and Hubble Image)",
+   "names": [
+    "Terzan 5"
+   ],
+   "ra": 267.02083333333337,
+   "dec": -24.779999999999998,
+   "release": "June 16, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/bullet-cluster-nircam-image/",
+   "title": "Bullet Cluster (NIRCam Image)",
+   "names": [
+    "Bullet Cluster",
+    "1E 0657-56"
+   ],
+   "ra": 104.65791666666667,
+   "dec": -55.95,
+   "release": "June 30, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/bullet-cluster-webb-and-chandra-compass-image/",
+   "title": "Bullet Cluster (Webb and Chandra Compass Image)",
+   "names": [
+    "Bullet Cluster",
+    "1E 0657-56"
+   ],
+   "ra": 104.65791666666667,
+   "dec": -55.95,
+   "release": "June 30, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/bullet-cluster-webb-and-chandra-image/",
+   "title": "Bullet Cluster (Webb and Chandra Image)",
+   "names": [
+    "Bullet Cluster",
+    "1E 0657-56"
+   ],
+   "ra": 104.65791666666667,
+   "dec": -55.95,
+   "release": "June 30, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/carina-nebula-jets-nircam-narrowband-filters-compass-image/",
+   "title": "Carina Nebula Jets (NIRCam Narrowband Filters Compass Image)",
+   "names": [
+    "NGC 3324",
+    "Carina Nebula"
+   ],
+   "ra": 159.24583333333334,
+   "dec": -58.61666666666667,
+   "release": "December 15, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/carina-nebula-jets-nircam-narrowband-filters/",
+   "title": "Carina Nebula Jets (NIRCam Narrowband Filters)",
+   "names": [
+    "NGC 3324",
+    "Carina Nebula"
+   ],
+   "ra": 159.24583333333334,
+   "dec": -58.61666666666667,
+   "release": "December 15, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cartwheel-galaxy-miri-compass-image/",
+   "title": "Cartwheel Galaxy (MIRI Compass Image)",
+   "names": [
+    "Cartwheel Galaxy",
+    "ESO 350-40",
+    "AM0035-335"
+   ],
+   "ra": 9.421208333333333,
+   "dec": -33.71638888888889,
+   "release": "August 2, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cartwheel-galaxy-miri-image/",
+   "title": "Cartwheel Galaxy (MIRI Image)",
+   "names": [
+    "Cartwheel Galaxy",
+    "ESO 350-40",
+    "AM0035-335"
+   ],
+   "ra": 9.421208333333333,
+   "dec": -33.71638888888889,
+   "release": "August 2, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cartwheel-galaxy-nircam-and-miri-composite-compass-image/",
+   "title": "Cartwheel Galaxy (NIRCam and MIRI Composite Compass Image)",
+   "names": [
+    "Cartwheel Galaxy",
+    "ESO 350-40",
+    "AM0035-335"
+   ],
+   "ra": 9.421208333333333,
+   "dec": -33.71638888888889,
+   "release": "August 2, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cartwheel-galaxy-nircam-and-miri-composite-image/",
+   "title": "Cartwheel Galaxy (NIRCam and MIRI Composite Image)",
+   "names": [
+    "Cartwheel Galaxy",
+    "ESO 350-40",
+    "AM0035-335"
+   ],
+   "ra": 9.421208333333333,
+   "dec": -33.71638888888889,
+   "release": "August 2, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cassiopeia-a-close-ups-nircam-image/",
+   "title": "Cassiopeia A Close-ups (NIRCam Image)",
+   "names": [
+    "Cassiopeia A; SNR G111.7-02.1"
+   ],
+   "ra": 350.85,
+   "dec": 58.815,
+   "release": "December 10, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cassiopeia-a-light-echoes-compass-image/",
+   "title": "Cassiopeia A Light Echoes (Compass Image)",
+   "names": [
+    "Light Echoes from Cassiopeia A"
+   ],
+   "ra": 349.016375,
+   "dec": 58.37544166666667,
+   "release": "January 14, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cassiopeia-a-light-echoes-nircam-images/",
+   "title": "Cassiopeia A Light Echoes (NIRCam Images)",
+   "names": [
+    "Light Echoes from Cassiopeia A"
+   ],
+   "ra": 349.016375,
+   "dec": 58.37544166666667,
+   "release": "January 14, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cassiopeia-a-light-echoes-spitzer-context/",
+   "title": "Cassiopeia A Light Echoes (Spitzer Context)",
+   "names": [
+    "Light Echoes from Cassiopeia A"
+   ],
+   "ra": 349.016375,
+   "dec": 58.37544166666667,
+   "release": "January 14, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cassiopeia-a-miri-compass-image/",
+   "title": "Cassiopeia A (MIRI Compass Image)",
+   "names": [
+    "Cassiopeia A; SNR G111.7-02.1"
+   ],
+   "ra": 350.85,
+   "dec": 58.815,
+   "release": "April 7, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cassiopeia-a-miri-image/",
+   "title": "Cassiopeia A (MIRI Image)",
+   "names": [
+    "Cassiopeia A; SNR G111.7-02.1"
+   ],
+   "ra": 350.85,
+   "dec": 58.815,
+   "release": "April 7, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cassiopeia-a-nircam-and-miri-side-by-side/",
+   "title": "Cassiopeia A (NIRCam and MIRI side by side)",
+   "names": [
+    "Cassiopeia A; SNR G111.7-02.1"
+   ],
+   "ra": 350.85,
+   "dec": 58.815,
+   "release": "December 10, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cassiopeia-a-nircam-compass-image/",
+   "title": "Cassiopeia A (NIRCam Compass Image)",
+   "names": [
+    "Cassiopeia A; SNR G111.7-02.1"
+   ],
+   "ra": 350.85,
+   "dec": 58.815,
+   "release": "December 10, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cassiopeia-a-nircam-image/",
+   "title": "Cassiopeia A (NIRCam Image)",
+   "names": [
+    "Cassiopeia A; SNR G111.7-02.1"
+   ],
+   "ra": 350.85,
+   "dec": 58.815,
+   "release": "December 10, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cats-paw-nebula-nircam-image/",
+   "title": "Cat&#039;s Paw Nebula (NIRCam Image)",
+   "names": [
+    "Cat's Paw Nebula",
+    "NGC 6334"
+   ],
+   "ra": 260.1744583333333,
+   "dec": -35.826708333333336,
+   "release": "July 10, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cats-paw-nircam-compass-image/",
+   "title": "Cat&#039;s Paw (NIRCam) Compass Image",
+   "names": [
+    "Cat's Paw Nebula",
+    "NGC 6334"
+   ],
+   "ra": 260.1744583333333,
+   "dec": -35.826708333333336,
+   "release": "July 10, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ceers-crop-nircam-image/",
+   "title": "CEERS Crop (NIRCam Image)",
+   "names": [
+    "CEERS Survey",
+    "Extended Groth Strip"
+   ],
+   "ra": 214.94166666666666,
+   "dec": 52.89361111111111,
+   "release": "August 26, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/centaurus-a-context-image-eso-and-webb-images/",
+   "title": "Centaurus A Context Image (ESO and Webb Images)",
+   "names": [
+    "Centaurus A",
+    "NGC 5128",
+    "Caldwell 77"
+   ],
+   "ra": 201.375375,
+   "dec": -42.97045,
+   "release": "July 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/centaurus-a-crop-nircam-and-miri-compass-image/",
+   "title": "Centaurus A Crop (NIRCam and MIRI Compass Image)",
+   "names": [
+    "Centaurus A",
+    "NGC 5128",
+    "Caldwell 77"
+   ],
+   "ra": 201.375375,
+   "dec": -42.97045,
+   "release": "July 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/centaurus-a-crop-nircam-and-miri-image/",
+   "title": "Centaurus A Crop (NIRCam and MIRI Image)",
+   "names": [
+    "Centaurus A",
+    "NGC 5128",
+    "Caldwell 77"
+   ],
+   "ra": 201.375375,
+   "dec": -42.97045,
+   "release": "July 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/centaurus-a-miri-compass-image/",
+   "title": "Centaurus A (MIRI Compass Image)",
+   "names": [
+    "Centaurus A",
+    "NGC 5128",
+    "Caldwell 77"
+   ],
+   "ra": 201.375375,
+   "dec": -42.97045,
+   "release": "July 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/centaurus-a-miri-image/",
+   "title": "Centaurus A (MIRI Image)",
+   "names": [
+    "Centaurus A",
+    "NGC 5128",
+    "Caldwell 77"
+   ],
+   "ra": 201.375375,
+   "dec": -42.97045,
+   "release": "July 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/chamaeleon-i-dark-cloud-nircam-nirspec-and-miri-spectra/",
+   "title": "Chamaeleon I Dark Cloud (NIRCam, NIRSpec, and MIRI Spectra)",
+   "names": [
+    "Chamaeleon I"
+   ],
+   "ra": 166.693625,
+   "dec": -77.37581388888889,
+   "release": "January 23, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/chamaeleon-i-molecular-cloud-nircam-image/",
+   "title": "Chamaeleon I Molecular Cloud (NIRCam Image)",
+   "names": [
+    "Chamaeleon I"
+   ],
+   "ra": 166.693625,
+   "dec": -77.37581388888889,
+   "release": "January 23, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/circumstellar-disk-around-hr-4796a-hubble/",
+   "title": "Circumstellar Disk Around HR 4796A (Hubble)",
+   "names": [
+    "HR 4796A"
+   ],
+   "ra": 189.00429166666666,
+   "dec": -39.869508333333336,
+   "release": "May 29, 2019"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/compare-observations-of-wolf-rayet-140-miri-images/",
+   "title": "Compare Observations of Wolf-Rayet 140 (MIRI Images)",
+   "names": [
+    "Wolf-Rayet 140; WR 140"
+   ],
+   "ra": 305.1165833333333,
+   "dec": 43.85452222222222,
+   "release": "January 13, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cosmic-evolution-early-release-science-ceers-survey-nircam-compass-image/",
+   "title": "Cosmic Evolution Early Release Science (CEERS) Survey (NIRCam Compass Image)",
+   "names": [
+    "CEERS Survey",
+    "Extended Groth Strip"
+   ],
+   "ra": 214.94166666666666,
+   "dec": 52.89361111111111,
+   "release": "July 6, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cosmic-evolution-early-release-science-ceers-survey-nircam-image/",
+   "title": "Cosmic Evolution Early Release Science (CEERS) Survey (NIRCam Image)",
+   "names": [
+    "CEERS Survey",
+    "Extended Groth Strip"
+   ],
+   "ra": 214.94166666666666,
+   "dec": 52.89361111111111,
+   "release": "July 6, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cosmos-field-mom-z14-galaxy-nircam-compass-image/",
+   "title": "COSMOS Field MoM-z14 Galaxy (NIRCam Compass Image)",
+   "names": [
+    "MoM-z14 in the COSMOS Legacy Field"
+   ],
+   "ra": 150.09354166666665,
+   "dec": 2.27325,
+   "release": "January 28, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/cosmos-field-mom-z14-galaxy-nircam-image/",
+   "title": "COSMOS Field MoM-z14 Galaxy (NIRCam Image)",
+   "names": [
+    "MoM-z14 in the COSMOS Legacy Field"
+   ],
+   "ra": 150.09354166666665,
+   "dec": 2.27325,
+   "release": "January 28, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/crab-nebula-4/",
+   "title": "Crab Nebula",
+   "names": [
+    "Crab Nebula",
+    "M1",
+    "NGC 1952"
+   ],
+   "ra": 83.63333333333333,
+   "dec": 22.014444444444443,
+   "release": "June 17, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/crab-nebula-compass-image/",
+   "title": "Crab Nebula (Compass Image)",
+   "names": [
+    "Crab Nebula",
+    "M1",
+    "NGC 1952"
+   ],
+   "ra": 83.63333333333333,
+   "dec": 22.014444444444443,
+   "release": "June 17, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/crab-nebula-nircam-and-miri-compass-image/",
+   "title": "Crab Nebula (NIRCam and MIRI Compass Image)",
+   "names": [
+    "Crab Nebula",
+    "M1",
+    "NGC 1952"
+   ],
+   "ra": 83.63333333333333,
+   "dec": 22.014444444444443,
+   "release": "October 30, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/crab-nebula-nircam-and-miri-image/",
+   "title": "Crab Nebula (NIRCam and MIRI Image)",
+   "names": [
+    "Crab Nebula",
+    "M1",
+    "NGC 1952"
+   ],
+   "ra": 83.63333333333333,
+   "dec": 22.014444444444443,
+   "release": "October 30, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/crab-nebula-webb-and-hubble-comparison/",
+   "title": "Crab Nebula (Webb and Hubble Comparison)",
+   "names": [
+    "Crab Nebula",
+    "M1",
+    "NGC 1952"
+   ],
+   "ra": 83.63333333333333,
+   "dec": 22.014444444444443,
+   "release": "October 30, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/debris-disk-around-star-beta-pictoris-hubble/",
+   "title": "Debris Disk Around Star Beta Pictoris (Hubble)",
+   "names": [
+    "Beta Pictoris"
+   ],
+   "ra": 86.82116666666667,
+   "dec": -51.06650833333333,
+   "release": "July 21, 2021"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/diagram-of-an-exoplanet-phase-curve/",
+   "title": "Diagram of an Exoplanet Phase Curve",
+   "names": [
+    "GJ 1214 b"
+   ],
+   "ra": 258.8314166666667,
+   "dec": 4.960680555555555,
+   "release": "November 17, 2021"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/digel-cloud-2s-compass-image/",
+   "title": "Digel Cloud 2S (Compass Image)",
+   "names": [
+    "Digel Cloud 2"
+   ],
+   "ra": 42.118541666666665,
+   "dec": 58.39158888888889,
+   "release": "September 12, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/digel-cloud-2s/",
+   "title": "Digel Cloud 2S",
+   "names": [
+    "Digel Cloud 2"
+   ],
+   "ra": 42.118541666666665,
+   "dec": 58.39158888888889,
+   "release": "September 12, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/distant-galaxy-samples-near-quasar-j01002802-nircam-image/",
+   "title": "Distant Galaxy Samples Near Quasar J0100+2802 (NIRCam Image)",
+   "names": [],
+   "ra": 15.05425,
+   "dec": 28.0405,
+   "release": "June 12, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/dusty-supernovae-miri-compass-image/",
+   "title": "Dusty Supernovae (MIRI Compass Image)",
+   "names": [
+    "NGC 6946",
+    "SN2004et",
+    "SN2017eaw"
+   ],
+   "ra": 308.71791666666667,
+   "dec": 60.153888888888886,
+   "release": "July 5, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/dusty-supernovae-miri/",
+   "title": "Dusty Supernovae (MIRI)",
+   "names": [
+    "NGC 6946",
+    "SN2004et",
+    "SN2017eaw"
+   ],
+   "ra": 308.71791666666667,
+   "dec": 60.153888888888886,
+   "release": "July 5, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/dwarf-galaxy-wlm-nircam-image/",
+   "title": "Dwarf Galaxy WLM (NIRCam Image)",
+   "names": [
+    "Wolf–Lundmark–Melotte (WLM)"
+   ],
+   "ra": 0.4892875000000001,
+   "dec": -15.481247222222223,
+   "release": "November 9, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/dwarf-galaxy-wlm-spitzer-irac-and-webb-nircam/",
+   "title": "Dwarf Galaxy WLM (Spitzer IRAC and Webb NIRCam)",
+   "names": [
+    "Wolf–Lundmark–Melotte (WLM)"
+   ],
+   "ra": 0.4892875000000001,
+   "dec": -15.481247222222223,
+   "release": "November 9, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/el-gordo-nircam-compass-image/",
+   "title": "El Gordo (NIRCam Compass Image)",
+   "names": [
+    "El Gordo",
+    "ACT-CL J0102-4915",
+    "SPT-CL J0102-4915"
+   ],
+   "ra": 15.729166666666668,
+   "dec": -49.260555555555555,
+   "release": "August 2, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/el-gordo-nircam-image/",
+   "title": "El Gordo (NIRCam Image)",
+   "names": [
+    "El Gordo",
+    "ACT-CL J0102-4915",
+    "SPT-CL J0102-4915"
+   ],
+   "ra": 15.729166666666668,
+   "dec": -49.260555555555555,
+   "release": "August 2, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/epsilon-indi-ab-exoplanet-miri-image/",
+   "title": "Epsilon Indi Ab Exoplanet (MIRI Image)",
+   "names": [
+    "Eps Ind A; HD209100; HIP108870"
+   ],
+   "ra": 330.8402083333333,
+   "dec": -56.785977777777774,
+   "release": "July 24, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-29-cygni-b-nircam-image/",
+   "title": "Exoplanet 29 Cygni b (NIRCam Image)",
+   "names": [
+    "29 Cygni b"
+   ],
+   "ra": 303.6341666666667,
+   "dec": 36.806805555555556,
+   "release": "April 14, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-gj-1214-b-and-its-star-illustration/",
+   "title": "Exoplanet GJ 1214 b and Its Star (Illustration)",
+   "names": [
+    "GJ 1214 b"
+   ],
+   "ra": 258.8314166666667,
+   "dec": 4.960680555555555,
+   "release": "November 17, 2021"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-gj-486-b-artist-concept/",
+   "title": "Exoplanet GJ 486 b (Artist Concept)",
+   "names": [
+    "GJ 486 b"
+   ],
+   "ra": 191.98749999999998,
+   "dec": 9.751388888888888,
+   "release": "May 1, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-gj-486-b-transmission-spectrum/",
+   "title": "Exoplanet GJ 486 b (Transmission Spectrum)",
+   "names": [
+    "GJ 486 b"
+   ],
+   "ra": 191.98749999999998,
+   "dec": 9.751388888888888,
+   "release": "May 1, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-toi-421-b-and-its-star-illustration/",
+   "title": "Exoplanet TOI-421 b and Its Star (Illustration)",
+   "names": [
+    "TOI-421 b"
+   ],
+   "ra": 81.85329166666666,
+   "dec": -14.276741666666668,
+   "release": "November 17, 2021"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-wasp-39-b-and-its-star-illustration-2/",
+   "title": "Exoplanet WASP-39 b and its Star (Illustration)",
+   "names": [
+    "WASP-39 b"
+   ],
+   "ra": 217.32674999999998,
+   "dec": 3.4445,
+   "release": "November 22, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-wasp-39-b-and-its-star-illustration/",
+   "title": "Exoplanet WASP-39 b and Its Star (Illustration)",
+   "names": [
+    "WASP-39 b"
+   ],
+   "ra": 217.32674999999998,
+   "dec": 3.4445,
+   "release": "August 25, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-wasp-39-b-nirspec-transit-light-curves/",
+   "title": "Exoplanet WASP-39 b (NIRSpec Transit Light Curves)",
+   "names": [
+    "WASP-39 b"
+   ],
+   "ra": 217.32674999999998,
+   "dec": 3.4445,
+   "release": "August 25, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-wasp-39-b-nirspec-transmission-spectrum/",
+   "title": "Exoplanet WASP-39 b (NIRSpec Transmission Spectrum)",
+   "names": [
+    "WASP-39 b"
+   ],
+   "ra": 217.32674999999998,
+   "dec": 3.4445,
+   "release": "August 25, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-wasp-39-b-transmission-spectra/",
+   "title": "Exoplanet WASP-39 b (Transmission Spectra)",
+   "names": [
+    "WASP-39 b"
+   ],
+   "ra": 217.32674999999998,
+   "dec": 3.4445,
+   "release": "November 22, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-wasp-96-b-niriss-transit-light-curve/",
+   "title": "Exoplanet WASP-96 b (NIRISS Transit Light Curve)",
+   "names": [
+    "WASP-96 b"
+   ],
+   "ra": 1.0465833333333334,
+   "dec": -47.36063611111111,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exoplanet-wasp-96-b-niriss-transmission-spectrum/",
+   "title": "Exoplanet WASP-96 b (NIRISS Transmission Spectrum)",
+   "names": [
+    "WASP-96 b"
+   ],
+   "ra": 1.0465833333333334,
+   "dec": -47.36063611111111,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exposed-cranium-nebula-nircam-and-miri-compass-image/",
+   "title": "Exposed Cranium Nebula (NIRCam and MIRI Compass Image)",
+   "names": [
+    "PMR 1",
+    "PN G272.8+01.0",
+    "Exposed Cranium Nebula"
+   ],
+   "ra": 142.17041666666665,
+   "dec": -49.60738888888889,
+   "release": "February 25, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/exposed-cranium-nebula-nircam-and-miri-images/",
+   "title": "Exposed Cranium Nebula (NIRCam and MIRI Images)",
+   "names": [
+    "PMR 1",
+    "PN G272.8+01.0",
+    "Exposed Cranium Nebula"
+   ],
+   "ra": 142.17041666666665,
+   "dec": -49.60738888888889,
+   "release": "February 25, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/flame-nebula-hubble-and-webb-observations-compass-image/",
+   "title": "Flame Nebula: Hubble and Webb Observations (Compass Image)",
+   "names": [
+    "Flame Nebula",
+    "NGC 2024"
+   ],
+   "ra": 85.42399999999999,
+   "dec": -1.90925,
+   "release": "March 10, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/flame-nebula-hubble-and-webb-observations/",
+   "title": "Flame Nebula: Hubble and Webb Observations",
+   "names": [
+    "Flame Nebula",
+    "NGC 2024"
+   ],
+   "ra": 85.42399999999999,
+   "dec": -1.90925,
+   "release": "March 10, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/fomalhaut-dusty-debris-disk-miri-compass-image/",
+   "title": "Fomalhaut Dusty Debris Disk (MIRI Compass Image)",
+   "names": [
+    "Fomalhaut"
+   ],
+   "ra": 344.4127083333333,
+   "dec": -29.62223611111111,
+   "release": "May 8, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/fomalhaut-dusty-debris-disk-miri-image/",
+   "title": "Fomalhaut Dusty Debris Disk (MIRI Image)",
+   "names": [
+    "Fomalhaut"
+   ],
+   "ra": 344.4127083333333,
+   "dec": -29.62223611111111,
+   "release": "May 8, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/frb-20240304b-nircam-compass-image/",
+   "title": "FRB 20240304B (NIRCam Compass Image)",
+   "names": [
+    "FRB 20240304B"
+   ],
+   "ra": 182.99705833333334,
+   "dec": 11.813008333333334,
+   "release": "October 8, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/frb-20240304b-nircam-image/",
+   "title": "FRB 20240304B (NIRCam Image)",
+   "names": [
+    "FRB 20240304B"
+   ],
+   "ra": 182.99705833333334,
+   "dec": 11.813008333333334,
+   "release": "October 8, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/fs-tau-side-by-side-webb-and-hubble-image/",
+   "title": "FS Tau Side-by-Side (Webb and Hubble Image)",
+   "names": [
+    "FS Tau"
+   ],
+   "ra": 65.50733333333332,
+   "dec": 26.958016666666666,
+   "release": "July 2, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/fs-tau-webb-compass-image/",
+   "title": "FS Tau (Webb Compass Image)",
+   "names": [
+    "FS Tau"
+   ],
+   "ra": 65.50733333333332,
+   "dec": 26.958016666666666,
+   "release": "July 2, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/fs-tau-webb-image/",
+   "title": "FS Tau (Webb Image)",
+   "names": [
+    "FS Tau"
+   ],
+   "ra": 65.50733333333332,
+   "dec": 26.958016666666666,
+   "release": "July 2, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxies-ic-2163-and-ngc-2207-hubble-and-webb-images-side-by-side/",
+   "title": "Galaxies IC 2163 and NGC 2207 (Hubble and Webb Images Side by Side)",
+   "names": [
+    "IC 2163 and NGC 2207"
+   ],
+   "ra": 94.10374999999999,
+   "dec": -21.37388888888889,
+   "release": "October 31, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxies-ic-2163-and-ngc-2207-webb-and-hubble-compass-image/",
+   "title": "Galaxies IC 2163 and NGC 2207 (Webb and Hubble Compass Image)",
+   "names": [
+    "IC 2163 and NGC 2207"
+   ],
+   "ra": 94.10374999999999,
+   "dec": -21.37388888888889,
+   "release": "October 31, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxies-ic-2163-and-ngc-2207-webb-and-hubble-image/",
+   "title": "Galaxies IC 2163 and NGC 2207 (Webb and Hubble Image)",
+   "names": [
+    "IC 2163 and NGC 2207"
+   ],
+   "ra": 94.10374999999999,
+   "dec": -21.37388888888889,
+   "release": "October 31, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxies-ic-2163-and-ngc-2207-webb-miri-image/",
+   "title": "Galaxies IC 2163 and NGC 2207 (Webb MIRI Image)",
+   "names": [
+    "IC 2163 and NGC 2207"
+   ],
+   "ra": 94.10374999999999,
+   "dec": -21.37388888888889,
+   "release": "October 31, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxies-in-ceers-field-nircam-image/",
+   "title": "Galaxies in CEERS Field (NIRCam image)",
+   "names": [
+    "CEERS Survey",
+    "Extended Groth Strip"
+   ],
+   "ra": 214.94166666666666,
+   "dec": 52.89361111111111,
+   "release": "January 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxy-cluster-plck-g1657-nircam-image/",
+   "title": "Galaxy Cluster PLCK G165.7 (NIRCam Image)",
+   "names": [
+    "PLCK G165.7+67.0",
+    "G165",
+    "SN H0pe"
+   ],
+   "ra": 171.81495833333332,
+   "dec": 42.47596111111111,
+   "release": "October 1, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxy-cluster-plck-g1657670-and-sn-h0pe-inset-nircam/",
+   "title": "Galaxy cluster PLCK G165.7+67.0 and SN H0pe Inset (NIRCam)",
+   "names": [
+    "PLCK G165.7+67.0",
+    "G165",
+    "SN H0pe"
+   ],
+   "ra": 171.81495833333332,
+   "dec": 42.47596111111111,
+   "release": "October 1, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxy-gs-ndg-9422-compass-nircam-image/",
+   "title": "Galaxy GS-NDG-9422 (Compass NIRCam Image)",
+   "names": [
+    "GS-NDG-9422",
+    "JWST Advanced Deep Extragalactic Survey",
+    "GOODS-S"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "September 25, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxy-gs-ndg-9422-nircam-image/",
+   "title": "Galaxy GS-NDG-9422 (NIRCam Image)",
+   "names": [
+    "GS-NDG-9422",
+    "JWST Advanced Deep Extragalactic Survey",
+    "GOODS-S"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "September 25, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxy-gs-ndg-9422-spectrum-nirspec/",
+   "title": "Galaxy GS-NDG-9422 Spectrum (NIRSpec)",
+   "names": [
+    "GS-NDG-9422"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "September 25, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxy-jades-gs-z14-0-spectrum-nirspec/",
+   "title": "Galaxy JADES-GS-z14-0 Spectrum (NIRSpec)",
+   "names": [
+    "JADES-GS-z14-0"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "May 30, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxy-protocluster-nircam-compass-image/",
+   "title": "Galaxy Protocluster (NIRCam Compass Image)",
+   "names": [
+    "Pandora's Cluster",
+    "Abell 2744"
+   ],
+   "ra": 3.5760416666666663,
+   "dec": -30.379455555555555,
+   "release": "April 24, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/galaxy-protocluster-nircam-image/",
+   "title": "Galaxy Protocluster (NIRCam Image)",
+   "names": [
+    "Pandora's Cluster",
+    "Abell 2744"
+   ],
+   "ra": 3.5760416666666663,
+   "dec": -30.379455555555555,
+   "release": "April 24, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/globular-cluster-m92-nircam-detail/",
+   "title": "Globular Cluster M92 (NIRCam Detail)",
+   "names": [
+    "Messier 92 (M92); NGC 6341"
+   ],
+   "ra": 259.2807916666667,
+   "dec": 43.13594444444444,
+   "release": "February 22, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/globular-cluster-m92-nircam-image/",
+   "title": "Globular Cluster M92 (NIRCam Image)",
+   "names": [
+    "Messier 92 (M92); NGC 6341"
+   ],
+   "ra": 259.2807916666667,
+   "dec": 43.13594444444444,
+   "release": "February 22, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/goods-north-field-nircam-compass-image/",
+   "title": "GOODS-North Field (NIRCam Compass Image)",
+   "names": [
+    "GOODS-North Field",
+    "GN-z11"
+   ],
+   "ra": 189.133875,
+   "dec": 62.26666111111111,
+   "release": "March 4, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/goods-north-field-nircam-image/",
+   "title": "GOODS-North Field (NIRCam Image)",
+   "names": [
+    "GOODS-North Field",
+    "GN-z11"
+   ],
+   "ra": 189.133875,
+   "dec": 62.26666111111111,
+   "release": "March 4, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/grb-250314a-pull-out-compass-nircam-image/",
+   "title": "GRB 250314A Pull-out (Compass NIRCam Image)",
+   "names": [
+    "GRB 250314A"
+   ],
+   "ra": 201.30066666666667,
+   "dec": -5.2819722222222225,
+   "release": "December 9, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/grb-250314a-pull-out-nircam-image/",
+   "title": "GRB 250314A Pull-out (NIRCam Image)",
+   "names": [
+    "GRB 250314A"
+   ],
+   "ra": 201.30066666666667,
+   "dec": -5.2819722222222225,
+   "release": "December 9, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/helix-nebula-context-vista-and-webb/",
+   "title": "Helix Nebula Context (VISTA and Webb)",
+   "names": [
+    "Helix Nebula",
+    "NGC 7293"
+   ],
+   "ra": 337.40125,
+   "dec": -20.844194444444444,
+   "release": "January 20, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/helix-nebula-nircam-compass-image/",
+   "title": "Helix Nebula (NIRCam Compass Image)",
+   "names": [
+    "Helix Nebula",
+    "NGC 7293"
+   ],
+   "ra": 337.40125,
+   "dec": -20.844194444444444,
+   "release": "January 20, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/helix-nebula-nircam/",
+   "title": "Helix Nebula (NIRCam)",
+   "names": [
+    "Helix Nebula",
+    "NGC 7293"
+   ],
+   "ra": 337.40125,
+   "dec": -20.844194444444444,
+   "release": "January 20, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/herbig-haro-4647-nircam-compass-image/",
+   "title": "Herbig-Haro 46/47 (NIRCam Compass Image)",
+   "names": [
+    "HH 46/47"
+   ],
+   "ra": 126.43166666666664,
+   "dec": -50.01,
+   "release": "July 26, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/herbig-haro-4647-nircam-image/",
+   "title": "Herbig-Haro 46/47 (NIRCam Image)",
+   "names": [
+    "HH 46/47"
+   ],
+   "ra": 126.43166666666664,
+   "dec": -51.01,
+   "release": "July 26, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/herbig-haro-4950-nircam-and-miri-compass-image/",
+   "title": "Herbig-Haro 49/50 (NIRCam and MIRI Compass Image)",
+   "names": [
+    "Herbig-Haro 49/50",
+    "HH 49/50"
+   ],
+   "ra": 166.48416666666668,
+   "dec": -77.55880555555555,
+   "release": "March 24, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/herbig-haro-4950-nircam-and-miri-image/",
+   "title": "Herbig-Haro 49/50 (NIRCam and MIRI Image)",
+   "names": [
+    "Herbig-Haro 49/50",
+    "HH 49/50"
+   ],
+   "ra": 166.48416666666668,
+   "dec": -77.55880555555555,
+   "release": "March 24, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/herbig-haro-4950-spitzer-and-webb-images/",
+   "title": "Herbig-Haro 49/50 (Spitzer and Webb Images)",
+   "names": [
+    "Herbig-Haro 49/50",
+    "HH 49/50"
+   ],
+   "ra": 166.48416666666668,
+   "dec": -77.55880555555555,
+   "release": "March 24, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/hh-211-nircam-image/",
+   "title": "HH 211 (NIRCam Image)",
+   "names": [
+    "HH 211"
+   ],
+   "ra": 55.9855,
+   "dec": 32.01466666666666,
+   "release": "September 14, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/horsehead-nebula-euclid-hubble-and-webb-images/",
+   "title": "Horsehead Nebula (Euclid, Hubble and Webb Images)",
+   "names": [
+    "Horsehead Nebula",
+    "Barnard 33"
+   ],
+   "ra": 85.21925,
+   "dec": -2.4798583333333335,
+   "release": "April 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/horsehead-nebula-miri-image/",
+   "title": "Horsehead Nebula (MIRI Image)",
+   "names": [
+    "Horsehead Nebula",
+    "Barnard 33"
+   ],
+   "ra": 85.21925,
+   "dec": -2.4798583333333335,
+   "release": "April 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/horsehead-nebula-nircam-image/",
+   "title": "Horsehead Nebula (NIRCam Image)",
+   "names": [
+    "Horsehead Nebula",
+    "Barnard 33"
+   ],
+   "ra": 85.21925,
+   "dec": -2.4798583333333335,
+   "release": "April 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/hot-gas-giant-exoplanet-wasp-43-b-artists-concept/",
+   "title": "Hot Gas-Giant Exoplanet WASP-43 b (Artist&#039;s Concept)",
+   "names": [
+    "WASP-43 b"
+   ],
+   "ra": 154.90816666666666,
+   "dec": -9.806444444444445,
+   "release": "April 30, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/hot-gas-giant-exoplanet-wasp-43-b-miri-phase-curve/",
+   "title": "Hot Gas-Giant Exoplanet WASP-43 b (MIRI Phase Curve)",
+   "names": [
+    "WASP-43 b"
+   ],
+   "ra": 154.90816666666666,
+   "dec": -9.806444444444445,
+   "release": "April 30, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/hot-gas-giant-exoplanet-wasp-43-b-temperature-maps/",
+   "title": "Hot Gas-Giant Exoplanet WASP-43 b (Temperature Maps)",
+   "names": [
+    "WASP-43 b"
+   ],
+   "ra": 154.90816666666666,
+   "dec": -9.806444444444445,
+   "release": "April 30, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/hr-8799-nircam-image/",
+   "title": "HR 8799 (NIRCam Image)",
+   "names": [
+    "HR 8799"
+   ],
+   "ra": 346.87042083333336,
+   "dec": 21.13392222222222,
+   "release": "March 17, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ic-348-collage/",
+   "title": "IC 348 Collage",
+   "names": [
+    "IC 348"
+   ],
+   "ra": 56.142833333333336,
+   "dec": 32.16197222222222,
+   "release": "September 15, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ic-348-nircam-compass-image/",
+   "title": "IC 348 (NIRCam Compass Image)",
+   "names": [
+    "IC 348"
+   ],
+   "ra": 56.142833333333336,
+   "dec": 32.16197222222222,
+   "release": "December 13, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ic-348-nircam-image-2/",
+   "title": "IC 348 (NIRCam Image)",
+   "names": [
+    "IC 348"
+   ],
+   "ra": 56.142833333333336,
+   "dec": 32.16197222222222,
+   "release": "September 15, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ic-348-nircam-image/",
+   "title": "IC 348 (NIRCam Image)",
+   "names": [
+    "IC 348"
+   ],
+   "ra": 56.142833333333336,
+   "dec": 32.16197222222222,
+   "release": "December 13, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/illustration-of-exoplanet-55-cancri-e-and-its-star/",
+   "title": "Illustration of Exoplanet 55 Cancri e and Its Star",
+   "names": [
+    "55 Cancri e"
+   ],
+   "ra": 133.14683333333332,
+   "dec": 28.329816666666666,
+   "release": "May 26, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/illustration-of-exoplanet-lhs-3844-b-and-its-star/",
+   "title": "Illustration of Exoplanet LHS 3844 b and Its Star",
+   "names": [
+    "LHS 3844 b"
+   ],
+   "ra": 340.4962083333333,
+   "dec": 69.17210833333334,
+   "release": "May 26, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/illustration-of-star-interactions-in-the-southern-ring-nebula/",
+   "title": "Illustration of Star Interactions in the Southern Ring Nebula",
+   "names": [
+    "Southern Ring Nebula",
+    "NGC 3132",
+    "Eight-Burst Nebula"
+   ],
+   "ra": 151.74391666666668,
+   "dec": -40.43333333333333,
+   "release": "December 8, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/image-of-exoplanet-hip-65426-b-in-near-and-mid-infrared/",
+   "title": "Image of Exoplanet HIP 65426 b in Near and Mid Infrared",
+   "names": [
+    "HIP 65426 b"
+   ],
+   "ra": 201.15,
+   "dec": -51.504444444444445,
+   "release": "September 1, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/infinity-galaxy-nircam-with-radio-emission-contour-map-vla/",
+   "title": "Infinity Galaxy (NIRCam) with Radio Emission Contour Map (VLA)",
+   "names": [
+    "Infinity Galaxy"
+   ],
+   "ra": 150.05916666666667,
+   "dec": 2.2199166666666668,
+   "release": "July 15, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/infinity-galaxy-nircam/",
+   "title": "Infinity Galaxy (NIRCam)",
+   "names": [
+    "Infinity Galaxy"
+   ],
+   "ra": 150.05916666666667,
+   "dec": 2.2199166666666668,
+   "release": "July 15, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/interacting-galaxies-arp-142-hubble-and-webb-image/",
+   "title": "Interacting Galaxies Arp 142 (Hubble and Webb Image)",
+   "names": [
+    "Arp 142",
+    "NGC 2396/2397"
+   ],
+   "ra": 144.42954166666667,
+   "dec": 2.7630583333333334,
+   "release": "July 12, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/interacting-galaxies-arp-142-miri-compass-image/",
+   "title": "Interacting Galaxies Arp 142 (MIRI Compass Image)",
+   "names": [
+    "Apr 142",
+    "NGC 2396/2397"
+   ],
+   "ra": 144.42954166666667,
+   "dec": 2.7630583333333334,
+   "release": "July 12, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/interacting-galaxies-arp-142-miri-image/",
+   "title": "Interacting Galaxies Arp 142 (MIRI Image)",
+   "names": [
+    "Arp 142",
+    "NGC 2396/2397"
+   ],
+   "ra": 144.42954166666667,
+   "dec": 2.7630583333333334,
+   "release": "July 12, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/interacting-galaxies-arp-142-nircam-and-miri-compass-image/",
+   "title": "Interacting Galaxies Arp 142 (NIRCam and MIRI Compass Image)",
+   "names": [
+    "Arp 142",
+    "NGC 2396/2397"
+   ],
+   "ra": 144.42954166666667,
+   "dec": 2.7630583333333334,
+   "release": "July 12, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/interacting-galaxies-arp-142-nircam-and-miri-image/",
+   "title": "Interacting Galaxies Arp 142 (NIRCam and MIRI Image)",
+   "names": [
+    "Arp 142",
+    "NGC 2936 (Penguin) and NGC 2937 (Egg)"
+   ],
+   "ra": 144.42954166666667,
+   "dec": 2.7630583333333334,
+   "release": "July 12, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/jades-gs-z13-1-in-the-goods-s-field-nircam-image/",
+   "title": "JADES-GS-z13-1 in the GOODS-S field (NIRCam Image)",
+   "names": [
+    "The JWST Advanced Deep Extragalactic Survey (JADES)",
+    "JADES-GS-z13-1"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "March 26, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/jades-gs-z13-1-nircam-close-up/",
+   "title": "JADES-GS-z13-1 (NIRCam Close-Up)",
+   "names": [
+    "The JWST Advanced Deep Extragalactic Survey (JADES)",
+    "JADES-GS-z13-1"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "March 26, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/jades-gs-z14-0-pullout-nircam/",
+   "title": "JADES-GS-z14-0 Pullout (NIRCam)",
+   "names": [
+    "The JWST Advanced Deep Extragalactic Survey (JADES)",
+    "JADES-GS-z14-0"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "May 30, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/jades-transient-survey-nircam-image/",
+   "title": "JADES Transient Survey (NIRCam Image)",
+   "names": [
+    "JWST Advanced Deep Extragalactic Survey",
+    "GOODS-S"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "June 10, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/jades-transients-nircam-image/",
+   "title": "JADES Transients (NIRCam Image)",
+   "names": [
+    "JWST Advanced Deep Extragalactic Survey",
+    "GOODS-S"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "June 10, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/jwst-advanced-deep-extragalactic-survey-nircam-compass-image/",
+   "title": "JWST Advanced Deep Extragalactic Survey (NIRCam Compass Image)",
+   "names": [
+    "Advanced Deep Extragalactic Survey",
+    "GOODS-S"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "June 5, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/jwst-advanced-deep-extragalactic-survey-nircam-image/",
+   "title": "JWST Advanced Deep Extragalactic Survey (NIRCam Image)",
+   "names": [
+    "Advanced Deep Extragalactic Survey",
+    "GOODS-S"
+   ],
+   "ra": 53.15370833333333,
+   "dec": -27.780369444444442,
+   "release": "June 5, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/kilonova-and-host-galaxy-compass-image/",
+   "title": "Kilonova and Host Galaxy (Compass Image)",
+   "names": [
+    "GRB 230307A"
+   ],
+   "ra": 60.858374999999995,
+   "dec": -75.37854999999999,
+   "release": "October 25, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/kilonova-and-host-galaxy/",
+   "title": "Kilonova and Host Galaxy",
+   "names": [
+    "GRB 230307A"
+   ],
+   "ra": 60.858374999999995,
+   "dec": -75.37854999999999,
+   "release": "October 25, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/kilonova-emission-spectrum/",
+   "title": "Kilonova Emission Spectrum",
+   "names": [],
+   "ra": 60.858374999999995,
+   "dec": -75.37854999999999,
+   "release": "October 25, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/l1527-and-protostar-miri-compass-image/",
+   "title": "L1527 and Protostar (MIRI Compass Image)",
+   "names": [
+    "L1527 IRS (IRAS 04368+2557)"
+   ],
+   "ra": 69.97329166666667,
+   "dec": 26.05152777777778,
+   "release": "July 2, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/l1527-and-protostar-miri-image/",
+   "title": "L1527 and Protostar (MIRI Image)",
+   "names": [
+    "L1527 IRS (IRAS 04368+2557)"
+   ],
+   "ra": 69.97329166666667,
+   "dec": 26.05152777777778,
+   "release": "July 2, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/l1527-and-protostar-nircam-compass-image/",
+   "title": "L1527 and Protostar (NIRCam Compass Image)",
+   "names": [
+    "L1527 IRS (IRAS 04368+2557)"
+   ],
+   "ra": 69.97329166666667,
+   "dec": 26.05152777777778,
+   "release": "November 16, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/l1527-and-protostar-nircam-image/",
+   "title": "L1527 and Protostar (NIRCam Image)",
+   "names": [
+    "L1527 IRS (IRAS 04368+2557)"
+   ],
+   "ra": 69.97329166666667,
+   "dec": 26.05152777777778,
+   "release": "November 16, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/la-flaca-and-el-anzuelo-nircam-image/",
+   "title": "La Flaca and El Anzuelo (NIRCam Image)",
+   "names": [
+    "El Gordo",
+    "ACT-CL J0102-4915",
+    "SPT-CL J0102-4915",
+    "La Flaca",
+    "El Anzeulo"
+   ],
+   "ra": 15.729166666666668,
+   "dec": -49.260555555555555,
+   "release": "August 2, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/lion-nebula-miri-image/",
+   "title": "Lion Nebula (MIRI Image)",
+   "names": [
+    "Lion Nebula",
+    "NGC 2392",
+    "Caldwell 39"
+   ],
+   "ra": 112.29483333333333,
+   "dec": 20.911802777777776,
+   "release": "August 10, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/lion-nebula-nircam-and-miri-image/",
+   "title": "Lion Nebula (NIRCam and MIRI Image)",
+   "names": [
+    "Lion Nebula",
+    "NGC 2392",
+    "Caldwell 39"
+   ],
+   "ra": 112.29483333333333,
+   "dec": 20.911802777777776,
+   "release": "August 10, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/little-red-dot-abell2744-qso1-nircam-compass-image/",
+   "title": "Little Red Dot Abell2744-QSO1 (NIRCam Compass Image)",
+   "names": [
+    "Pandora’s Cluster",
+    "Abell 2744",
+    "Abell2744-QSO1"
+   ],
+   "ra": 3.5760416666666663,
+   "dec": -30.379455555555555,
+   "release": "May 27, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/little-red-dot-abell2744-qso1-nircam-image/",
+   "title": "Little Red Dot Abell2744-QSO1 (NIRCam Image)",
+   "names": [
+    "Pandora’s Cluster",
+    "Abell 2744",
+    "Abell2744-QSO1"
+   ],
+   "ra": 3.5760416666666663,
+   "dec": -30.379455555555555,
+   "release": "May 27, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/little-red-dot-abell2744-qso1a-nircam-image-with-nirspec-ifu-velocity-map/",
+   "title": "Little Red Dot Abell2744-QSO1a (NIRCam Image with NIRSpec IFU Velocity Map)",
+   "names": [
+    "Abell2744-QSO1"
+   ],
+   "ra": 3.5798333333333336,
+   "dec": -30.40157222222222,
+   "release": "May 27, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/low-mass-objects-within-the-flame-nebula-nircam-image/",
+   "title": "Low Mass Objects within the Flame Nebula (NIRCam Image)",
+   "names": [
+    "Flame Nebula",
+    "NGC 2024"
+   ],
+   "ra": 85.42399999999999,
+   "dec": -1.90925,
+   "release": "March 10, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/lynds-483-nircam-compass-image/",
+   "title": "Lynds 483 (NIRCam Compass Image)",
+   "names": [
+    "Lynds 483"
+   ],
+   "ra": 274.3795416666667,
+   "dec": -4.663083333333334,
+   "release": "March 7, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/lynx-arc-star-formation-region-illustration/",
+   "title": "Lynx Arc Star-Formation Region (Illustration)",
+   "names": [
+    "Lynx arc"
+   ],
+   "ra": 132.20316666666668,
+   "dec": 44.93044444444444,
+   "release": "May 14, 2018"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/m82-cigar-galaxy-compass-image/",
+   "title": "M82 Cigar Galaxy (Compass Image)",
+   "names": [
+    "M82",
+    "The Cigar Galaxy"
+   ],
+   "ra": 148.96666666666667,
+   "dec": 69.68027500000001,
+   "release": "June 23, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/m82-cigar-galaxy-hubble-webb-side-by-side/",
+   "title": "M82 Cigar Galaxy (Hubble/Webb Side-by-Side)",
+   "names": [
+    "M82",
+    "The Cigar Galaxy"
+   ],
+   "ra": 148.96666666666667,
+   "dec": 69.68027500000001,
+   "release": "June 23, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/m82-cigar-galaxy-nircam-image/",
+   "title": "M82 Cigar Galaxy (NIRCam Image)",
+   "names": [
+    "M82",
+    "The Cigar Galaxy"
+   ],
+   "ra": 148.96666666666667,
+   "dec": 69.68027500000001,
+   "release": "June 23, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/m82-cigar-galaxy-webb-hubble/",
+   "title": "M82 Cigar Galaxy (Webb + Hubble)",
+   "names": [
+    "M82",
+    "The Cigar Galaxy"
+   ],
+   "ra": 148.96666666666667,
+   "dec": 69.68027500000001,
+   "release": "June 23, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/m82-hubble-and-webb-compass-image/",
+   "title": "M82 (Hubble and Webb Compass Image)",
+   "names": [
+    "M82",
+    "NGC 3034"
+   ],
+   "ra": 148.96666666666667,
+   "dec": 69.68027500000001,
+   "release": "April 3, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/m82-hubble-and-webb/",
+   "title": "M82 (Hubble and Webb)",
+   "names": [
+    "M82",
+    "NGC 3034"
+   ],
+   "ra": 148.96666666666667,
+   "dec": 69.68027500000001,
+   "release": "April 3, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/m82-nircam-image-2/",
+   "title": "M82 (NIRCam Image)",
+   "names": [
+    "M82",
+    "NGC 3034"
+   ],
+   "ra": 148.96666666666667,
+   "dec": 69.68027500000001,
+   "release": "April 3, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/m82-nircam-image/",
+   "title": "M82 (NIRCam Image)",
+   "names": [
+    "M82",
+    "NGC 3034"
+   ],
+   "ra": 148.96666666666667,
+   "dec": 69.68027500000001,
+   "release": "April 3, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/macs-0416-hubble-acs-and-wfc3-webb-nircam-image/",
+   "title": "MACS 0416 (Hubble ACS and WFC3 + Webb NIRCam Image)",
+   "names": [
+    "MACS J0416.1-2403"
+   ],
+   "ra": 360.9916666666667,
+   "dec": -24.066111111111113,
+   "release": "November 9, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/macs-0416-hubble-and-webb-compared/",
+   "title": "MACS 0416 (Hubble and Webb Compared)",
+   "names": [
+    "MACS J0416.1-2403"
+   ],
+   "ra": 360.9916666666667,
+   "dec": -24.066111111111113,
+   "release": "November 9, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/macs-0416-hubble-webb-compass-image/",
+   "title": "MACS 0416 (Hubble + Webb Compass Image)",
+   "names": [
+    "MACS J0416.1-2403"
+   ],
+   "ra": 360.9916666666667,
+   "dec": -24.066111111111113,
+   "release": "November 9, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/macs-0416-mothra-pullout-hubble-acs-and-wfc3-webb-nircam-image/",
+   "title": "MACS 0416 Mothra Pullout (Hubble ACS and WFC3 + Webb NIRCam Image)",
+   "names": [
+    "MACS J0416.1-2403"
+   ],
+   "ra": 360.9916666666667,
+   "dec": -24.066111111111113,
+   "release": "November 9, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/macs-j0138-hubble-and-webb-side-by-side/",
+   "title": "MACS J0138 Hubble and Webb Side-by-Side",
+   "names": [
+    "MACSJ0138",
+    "Supernova Encore"
+   ],
+   "ra": 24.509,
+   "dec": -21.92289166666667,
+   "release": "December 21, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/macs-j04175-1154-wide-field-nircam-image/",
+   "title": "MACS J0417.5-1154 Wide Field (NIRCam Image)",
+   "names": [
+    "MACS J0417.5-1154"
+   ],
+   "ra": 64.39416666666666,
+   "dec": -11.908888888888889,
+   "release": "September 4, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/macs0647-nircam-image/",
+   "title": "MACS0647 (NIRCam Image)",
+   "names": [
+    "MACS J0647+7015",
+    "MACS0647-JD"
+   ],
+   "ra": 101.95833333333334,
+   "dec": 70.24861111111112,
+   "release": "October 26, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/messier-92-hubble/",
+   "title": "Messier 92 (Hubble)",
+   "names": [
+    "Messier 92"
+   ],
+   "ra": 647.0464583333334,
+   "dec": 43.136430555555556,
+   "release": "February 22, 2021"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/milky-way-center-meerkat-and-webb-labeled/",
+   "title": "Milky Way Center (MeerKAT and Webb), Labeled",
+   "names": [
+    "Sagittarius A* (A-star) and Sagittarius C"
+   ],
+   "ra": 266.1679166666667,
+   "dec": -29.470813888888888,
+   "release": "April 2, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/milky-way-center-meerkat-and-webb/",
+   "title": "Milky Way Center (MeerKAT and Webb)",
+   "names": [
+    "Sagittarius A* (A-star) and Sagittarius C"
+   ],
+   "ra": 266.1679166666667,
+   "dec": -29.470813888888888,
+   "release": "April 2, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/multiwavelength-view-of-ngc-1300-alma-vlt/",
+   "title": "Multiwavelength View of NGC 1300 (ALMA, VLT)",
+   "names": [
+    "NGC 1300"
+   ],
+   "ra": 49.91995833333333,
+   "dec": -19.41110833333333,
+   "release": "January 19, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/multiwavelength-view-of-ngc-3351-hubble-vlt-alma/",
+   "title": "Multiwavelength View of NGC 3351 (Hubble, VLT, ALMA)",
+   "names": [
+    "NGC 3351"
+   ],
+   "ra": 160.9795,
+   "dec": 11.690194444444444,
+   "release": "January 19, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-1365-miri-compass-image/",
+   "title": "NGC 1365 (MIRI Compass Image)",
+   "names": [
+    "NGC 1365",
+    "The Great Barred Spiral Galaxy"
+   ],
+   "ra": 53.39483333333333,
+   "dec": -36.14314722222222,
+   "release": "February 16, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-1365-miri-image/",
+   "title": "NGC 1365 (MIRI Image)",
+   "names": [
+    "NGC 1365",
+    "The Great Barred Spiral Galaxy"
+   ],
+   "ra": 53.39483333333333,
+   "dec": -36.14314722222222,
+   "release": "February 16, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-1433-miri-compass-image/",
+   "title": "NGC 1433 (MIRI Compass Image)",
+   "names": [
+    "NGC 1433",
+    "PGC 13586"
+   ],
+   "ra": 55.50341666666667,
+   "dec": -47.2246,
+   "release": "February 16, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-1433-miri-image/",
+   "title": "NGC 1433 (MIRI Image)",
+   "names": [
+    "NGC 1433",
+    "PGC 13586"
+   ],
+   "ra": 55.50341666666667,
+   "dec": -47.2246,
+   "release": "February 16, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-1637-compass-image/",
+   "title": "NGC 1637 Compass Image",
+   "names": [
+    "NGC 1637 (SN 2025pht)"
+   ],
+   "ra": 70.37054166666667,
+   "dec": -2.865616666666667,
+   "release": "February 23, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-346-hubble-and-webb-observations/",
+   "title": "NGC 346: Hubble and Webb Observations",
+   "names": [
+    "NGC 346"
+   ],
+   "ra": 14.770624999999999,
+   "dec": -72.16920833333334,
+   "release": "December 16, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-346-miri-compass-image/",
+   "title": "NGC 346 (MIRI Compass Image)",
+   "names": [
+    "NGC 346"
+   ],
+   "ra": 14.770624999999999,
+   "dec": -72.16920833333334,
+   "release": "October 10, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-346-miri-image/",
+   "title": "NGC 346 (MIRI Image)",
+   "names": [
+    "NGC 346"
+   ],
+   "ra": 14.770624999999999,
+   "dec": -72.16920833333334,
+   "release": "October 10, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-346-nircam-compass-image/",
+   "title": "NGC 346 (NIRCam Compass Image)",
+   "names": [
+    "NGC 346"
+   ],
+   "ra": 14.770624999999999,
+   "dec": -72.16920833333334,
+   "release": "January 11, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-346-nircam-image/",
+   "title": "NGC 346 (NIRCam Image)",
+   "names": [
+    "NGC 346"
+   ],
+   "ra": 14.770624999999999,
+   "dec": -72.16920833333334,
+   "release": "January 11, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-4151-hubble-compass-image/",
+   "title": "NGC 4151 (Hubble Compass Image)",
+   "names": [
+    "NGC 4151"
+   ],
+   "ra": 182.63583333333332,
+   "dec": 39.405833333333334,
+   "release": "October 17, 2018"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-4151-hubble-image/",
+   "title": "NGC 4151 (Hubble Image)",
+   "names": [
+    "NGC 4151"
+   ],
+   "ra": 182.63583333333332,
+   "dec": 39.405833333333334,
+   "release": "October 17, 2018"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-5584-webb-nircam-hubble-wfc3/",
+   "title": "NGC 5584 (Webb NIRCam + Hubble WFC3)",
+   "names": [
+    "NGC 5584"
+   ],
+   "ra": 215.59900000000002,
+   "dec": 0.38766944444444446,
+   "release": "September 12, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-604-miri-image/",
+   "title": "NGC 604 (MIRI Image)",
+   "names": [
+    "NGC 604",
+    "M33"
+   ],
+   "ra": 23.640791666666665,
+   "dec": 30.783055555555556,
+   "release": "March 9, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-604-nircam-compass-image/",
+   "title": "NGC 604 (NIRCam Compass Image)",
+   "names": [
+    "NGC 604",
+    "M33"
+   ],
+   "ra": 23.640791666666665,
+   "dec": 30.783055555555556,
+   "release": "March 9, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-604-nircam-image/",
+   "title": "NGC 604 (NIRCam Image)",
+   "names": [
+    "NGC 604",
+    "M33"
+   ],
+   "ra": 23.640791666666665,
+   "dec": 30.783055555555556,
+   "release": "March 9, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-6072-miri-image/",
+   "title": "NGC 6072 (MIRI Image)",
+   "names": [
+    "NGC 6072; IRAS F16097-3606"
+   ],
+   "ra": 243.2433333333333,
+   "dec": 36.230361111111115,
+   "release": "July 30, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-6072-nircam-compass-image/",
+   "title": "NGC 6072 (NIRCam Compass Image)",
+   "names": [
+    "NGC 6072; IRAS F16097-3606"
+   ],
+   "ra": 243.2433333333333,
+   "dec": -36.230361111111115,
+   "release": "July 30, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-6072-nircam-image/",
+   "title": "NGC 6072 (NIRCam Image)",
+   "names": [
+    "NGC 6072; IRAS F16097-3606"
+   ],
+   "ra": 243.2433333333333,
+   "dec": -36.230361111111115,
+   "release": "July 30, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-6946-kitt-peak-national-observatory/",
+   "title": "NGC 6946 (Kitt Peak National Observatory)",
+   "names": [
+    "NGC 6946",
+    "SN2004et",
+    "SN2017eaw"
+   ],
+   "ra": 308.71791666666667,
+   "dec": 60.153888888888886,
+   "release": "July 5, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-7129-nircam-image/",
+   "title": "NGC 7129 (NIRCam Image)",
+   "names": [
+    "NGC 7129"
+   ],
+   "ra": 325.7709166666666,
+   "dec": 66.11273055555554,
+   "release": "October 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-7129-side-by-side-spitzer-and-webb-image/",
+   "title": "NGC 7129 Side-by-Side (Spitzer and Webb Image)",
+   "names": [
+    "NGC 7129"
+   ],
+   "ra": 325.7709166666666,
+   "dec": 66.11273055555554,
+   "release": "October 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-7496-miri-compass-image/",
+   "title": "NGC 7496 (MIRI Compass Image)",
+   "names": [
+    "NGC 7496"
+   ],
+   "ra": 347.4470416666667,
+   "dec": -43.42793888888889,
+   "release": "February 16, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ngc-7496-miri-image/",
+   "title": "NGC 7496 (MIRI Image)",
+   "names": [
+    "NGC 7496"
+   ],
+   "ra": 347.4470416666667,
+   "dec": -43.42793888888889,
+   "release": "February 16, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/north-ecliptic-pole-time-domain-field/",
+   "title": "North Ecliptic Pole Time Domain Field",
+   "names": [
+    "North Ecliptic Pole (NEP)",
+    "PEARLS"
+   ],
+   "ra": 260.6995833333333,
+   "dec": 65.82265,
+   "release": "December 14, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/pandoras-cluster-nircam-image/",
+   "title": "Pandora&#039;s Cluster (NIRCam Image)",
+   "names": [
+    "Pandora's Cluster",
+    "Abell 2744"
+   ],
+   "ra": 3.5760416666666663,
+   "dec": -30.379455555555555,
+   "release": "February 15, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/phoenix-cluster-hubble-chandra-vla/",
+   "title": "Phoenix Cluster (Hubble, Chandra, VLA)",
+   "names": [
+    "Phoenix Cluster"
+   ],
+   "ra": 356.17041666666665,
+   "dec": -42.69833333333333,
+   "release": "February 13, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/pillars-of-creation-hubble-and-webb-images-side-by-side/",
+   "title": "Pillars of Creation (Hubble and Webb Images Side by Side)",
+   "names": [
+    "M16",
+    "Eagle Nebula",
+    "NGC 6611"
+   ],
+   "ra": 274.70070833333335,
+   "dec": -13.807230555555556,
+   "release": "October 19, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/pillars-of-creation-miri-compass-image/",
+   "title": "Pillars of Creation (MIRI Compass Image)",
+   "names": [
+    "M16",
+    "Eagle Nebula",
+    "NGC 6611"
+   ],
+   "ra": 274.70070833333335,
+   "dec": -13.807230555555556,
+   "release": "October 28, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/pillars-of-creation-miri-image/",
+   "title": "Pillars of Creation (MIRI Image)",
+   "names": [
+    "M16",
+    "Eagle Nebula",
+    "NGC 6611"
+   ],
+   "ra": 274.70070833333335,
+   "dec": -13.807230555555556,
+   "release": "October 28, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/pillars-of-creation-nircam-and-miri-composite-image/",
+   "title": "Pillars of Creation (NIRCam and MIRI Composite Image)",
+   "names": [
+    "M16",
+    "Eagle Nebula",
+    "NGC 6611"
+   ],
+   "ra": 274.70070833333335,
+   "dec": -13.807230555555556,
+   "release": "November 30, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/pillars-of-creation-nircam-compass-image/",
+   "title": "Pillars of Creation (NIRCam Compass Image)",
+   "names": [
+    "M16",
+    "Eagle Nebula",
+    "NGC 6611"
+   ],
+   "ra": 274.70070833333335,
+   "dec": -13.807230555555556,
+   "release": "October 19, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/pillars-of-creation-nircam-image/",
+   "title": "Pillars of Creation (NIRCam Image)",
+   "names": [
+    "M16",
+    "Eagle Nebula",
+    "NGC 6611"
+   ],
+   "ra": 274.70070833333335,
+   "dec": -13.807230555555556,
+   "release": "October 19, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/pismis-24-nircam-compass-image/",
+   "title": "Pismis 24 (NIRCam Compass Image)",
+   "names": [
+    "Pismis 24",
+    "HD 319718",
+    "NGC 6357"
+   ],
+   "ra": 261.18491666666665,
+   "dec": -34.193152777777776,
+   "release": "September 4, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/pismis-24-nircam-image/",
+   "title": "Pismis 24 (NIRCam Image)",
+   "names": [
+    "Pismis 24",
+    "HD 319718",
+    "NGC 6357"
+   ],
+   "ra": 261.18491666666665,
+   "dec": -34.193152777777776,
+   "release": "September 4, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/planetary-nebula-ngc-1514-miri-compass-image/",
+   "title": "Planetary Nebula NGC 1514 (MIRI Compass Image)",
+   "names": [
+    "NGC 1514",
+    "Crystal Ball Nebula"
+   ],
+   "ra": 62.32083333333334,
+   "dec": 30.77583333333333,
+   "release": "April 14, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/planetary-nebula-ngc-1514-miri-image/",
+   "title": "Planetary Nebula NGC 1514 (MIRI Image)",
+   "names": [
+    "NGC 1514",
+    "Crystal Ball Nebula"
+   ],
+   "ra": 62.32083333333334,
+   "dec": 30.77583333333333,
+   "release": "April 14, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/planetary-nebula-ngc-1514-wise-and-webb-images-side-by-side/",
+   "title": "Planetary Nebula NGC 1514 (WISE and Webb Images Side by Side)",
+   "names": [
+    "NGC 1514",
+    "Crystal Ball Nebula"
+   ],
+   "ra": 62.32083333333334,
+   "dec": 30.77583333333333,
+   "release": "April 14, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/portion-of-cosmic-evolution-early-release-science-ceers-survey-nircam-compass-image/",
+   "title": "Portion of Cosmic Evolution Early Release Science (CEERS) Survey (NIRCam Compass Image)",
+   "names": [
+    "CEERS Survey",
+    "Extended Groth Strip"
+   ],
+   "ra": 214.94166666666666,
+   "dec": 52.89361111111111,
+   "release": "January 17, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/protoplanetary-disk-around-dwarf-star-pds-70-vlt/",
+   "title": "Protoplanetary Disk Around Dwarf Star PDS 70 (VLT)",
+   "names": [
+    "PDS 70"
+   ],
+   "ra": 212.04233333333335,
+   "dec": -41.39794444444444,
+   "release": "December 16, 2020"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/protoplanetary-disks-in-ngc-346-nircam-compass-image/",
+   "title": "Protoplanetary Disks in NGC 346 (NIRCam Compass Image)",
+   "names": [
+    "NGC 346"
+   ],
+   "ra": 14.770624999999999,
+   "dec": -72.16920833333334,
+   "release": "December 16, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/protoplanetary-disks-in-ngc-346-nircam-image/",
+   "title": "Protoplanetary Disks in NGC 346 (NIRCam Image)",
+   "names": [
+    "NGC 346"
+   ],
+   "ra": 14.770624999999999,
+   "dec": -72.16920833333334,
+   "release": "December 16, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/protostar-ec-53-in-the-serpens-nebula-nircam-compass-image/",
+   "title": "Protostar EC 53 in the Serpens Nebula (NIRCam Compass Image)",
+   "names": [
+    "EC 53",
+    "Serpens Nebula",
+    "HBC 672",
+    "[EC 92] 82"
+   ],
+   "ra": 277.487125,
+   "dec": 1.2460472222222223,
+   "release": "January 21, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/protostar-ec-53-in-the-serpens-nebula-nircam-image/",
+   "title": "Protostar EC 53 in the Serpens Nebula (NIRCam Image)",
+   "names": [
+    "EC 53",
+    "Serpens Nebula",
+    "HBC 672",
+    "[EC 92] 82"
+   ],
+   "ra": 277.487125,
+   "dec": 1.2460472222222223,
+   "release": "January 21, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/quasar-j01002802-nircam-compass-image/",
+   "title": "Quasar J0100+2802 (NIRCam Compass Image)",
+   "names": [
+    "Quasar SDSS J0100+2802",
+    "EIGER (Emission-line galaxies and Intergalactic Gas in the Epoch of Reionization) Survey"
+   ],
+   "ra": 15.05425,
+   "dec": 28.0405,
+   "release": "June 12, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/quasar-j01002802-nircam-image/",
+   "title": "Quasar J0100+2802 (NIRCam Image)",
+   "names": [
+    "Quasar SDSS J0100+2802",
+    "EIGER (Emission-line galaxies and Intergalactic Gas in the Epoch of Reionization) Survey"
+   ],
+   "ra": 15.05425,
+   "dec": 28.0405,
+   "release": "June 12, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/question-mark-galaxy-annotated-nircam-compass-image/",
+   "title": "Question Mark Galaxy, Annotated (NIRCam Compass Image)",
+   "names": [
+    "Question Mark Galaxy in MACS J0417.5-1154"
+   ],
+   "ra": 64.39416666666666,
+   "dec": -11.908888888888889,
+   "release": "September 4, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/question-mark-galaxy-hubble-and-webb-image/",
+   "title": "Question Mark Galaxy (Hubble and Webb Image)",
+   "names": [
+    "Question Mark Galaxy in MACS J0417.5-1154"
+   ],
+   "ra": 64.39416666666666,
+   "dec": -11.908888888888889,
+   "release": "September 4, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/question-mark-galaxy-nircam-image/",
+   "title": "Question Mark Galaxy (NIRCam Image)",
+   "names": [
+    "Question Mark Galaxy in MACS J0417.5-1154"
+   ],
+   "ra": 64.39416666666666,
+   "dec": -11.908888888888889,
+   "release": "September 4, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/rho-ophiuchi-nircam-compass-image/",
+   "title": "Rho Ophiuchi (NIRCam Compass Image)",
+   "names": [
+    "Rho Ophiuchi"
+   ],
+   "ra": 246.62733333333333,
+   "dec": -24.38448888888889,
+   "release": "July 12, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/rho-ophiuchi-nircam-image/",
+   "title": "Rho Ophiuchi (NIRCam Image)",
+   "names": [
+    "Rho Ophiuchi"
+   ],
+   "ra": 246.62733333333333,
+   "dec": -24.38448888888889,
+   "release": "July 12, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ring-nebula-miri-image/",
+   "title": "Ring Nebula (MIRI image)",
+   "names": [
+    "Ring Nebula",
+    "M57",
+    "NGC 6720"
+   ],
+   "ra": 283.3958333333333,
+   "dec": 33.02916666666667,
+   "release": "August 21, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/ring-nebula-nircam-image/",
+   "title": "Ring Nebula (NIRCam Image)",
+   "names": [
+    "Ring Nebula",
+    "M57",
+    "NGC 6720"
+   ],
+   "ra": 283.3958333333333,
+   "dec": 33.02916666666667,
+   "release": "August 21, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sagittarius-b2-miri-compass-image/",
+   "title": "Sagittarius B2 (MIRI Compass Image)",
+   "names": [
+    "Sagittarius B2",
+    "Sgr B2"
+   ],
+   "ra": 266.83325,
+   "dec": -28.397425,
+   "release": "September 24, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sagittarius-b2-miri-image/",
+   "title": "Sagittarius B2 (MIRI Image)",
+   "names": [
+    "Sagittarius B2",
+    "Sgr B2"
+   ],
+   "ra": 266.83325,
+   "dec": -28.397425,
+   "release": "September 24, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sagittarius-b2-nircam-compass-image/",
+   "title": "Sagittarius B2 (NIRCam Compass Image)",
+   "names": [
+    "Sagittarius B2",
+    "Sgr B2"
+   ],
+   "ra": 266.83325,
+   "dec": -28.397425,
+   "release": "September 24, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sagittarius-b2-nircam-image/",
+   "title": "Sagittarius B2 (NIRCam Image)",
+   "names": [
+    "Sagittarius B2",
+    "Sgr B2"
+   ],
+   "ra": 266.83325,
+   "dec": -28.397425,
+   "release": "September 24, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sagittarius-c-annotated-nircam-image/",
+   "title": "Sagittarius C (Annotated NIRCam Image)",
+   "names": [],
+   "ra": 266.1679166666667,
+   "dec": -29.470813888888888,
+   "release": "November 20, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sagittarius-c-nircam-compass-image/",
+   "title": "Sagittarius C (NIRCam Compass Image)",
+   "names": [],
+   "ra": 266.1679166666667,
+   "dec": -29.470813888888888,
+   "release": "November 20, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sagittarius-c-nircam-image/",
+   "title": "Sagittarius C (NIRCam Image)",
+   "names": [],
+   "ra": 266.1679166666667,
+   "dec": -29.470813888888888,
+   "release": "November 20, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/saguaro-in-goods-north-field-nircam/",
+   "title": "Saguaro in GOODS-North Field (NIRCam)",
+   "names": [
+    "Saguaro",
+    "WISEA J123635.56+621424.2"
+   ],
+   "ra": 189.14816666666667,
+   "dec": 62.24008333333333,
+   "release": "July 29, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sample-shapes-of-distant-galaxies-identified-in-webbs-ceers-survey-nircam-image/",
+   "title": "Sample Shapes of Distant Galaxies Identified in Webb’s CEERS Survey (NIRCam Image)",
+   "names": [
+    "CEERS Survey",
+    "Extended Groth Strip"
+   ],
+   "ra": 214.94166666666666,
+   "dec": 52.89361111111111,
+   "release": "January 17, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sdss-j12262152-hubble/",
+   "title": "SDSS J1226+2152 (Hubble)",
+   "names": [
+    "SDSS J1226+2152"
+   ],
+   "ra": 186.71370833333333,
+   "dec": 21.872205555555556,
+   "release": "August 21, 2019"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/serpens-center-crop-nircam-image/",
+   "title": "Serpens Center Crop (NIRCam Image)",
+   "names": [
+    "Serpens Nebula",
+    "HBC 672",
+    "[EC 92] 82"
+   ],
+   "ra": 277.487125,
+   "dec": 1.2460472222222223,
+   "release": "June 20, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/serpens-nircam-compass-image/",
+   "title": "Serpens (NIRCam Compass Image)",
+   "names": [
+    "Serpens Nebula",
+    "HBC 672",
+    "[EC 92] 82"
+   ],
+   "ra": 277.487125,
+   "dec": 1.2460472222222223,
+   "release": "June 20, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/serpens-nircam-image/",
+   "title": "Serpens (NIRCam Image)",
+   "names": [
+    "Serpens Nebula",
+    "HBC 672",
+    "[EC 92] 82"
+   ],
+   "ra": 277.487125,
+   "dec": 1.2460472222222223,
+   "release": "June 20, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/serpens-north-aligned-outflows-crop-nircam-image/",
+   "title": "Serpens North – Aligned Outflows Crop (NIRCam Image)",
+   "names": [
+    "Serpens Nebula",
+    "HBC 672",
+    "[EC 92] 82"
+   ],
+   "ra": 277.487125,
+   "dec": 1.2460472222222223,
+   "release": "June 20, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sextans-a-context-image-webb-and-kpno/",
+   "title": "Sextans A Context Image (Webb and KPNO)",
+   "names": [
+    "Sextans A",
+    "UGCA 205"
+   ],
+   "ra": 152.75879166666667,
+   "dec": -4.713763888888889,
+   "release": "January 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sextans-a-pahs-pull-out-compass-image/",
+   "title": "Sextans A PAHs Pull-out (Compass Image)",
+   "names": [
+    "Sextans A",
+    "UGCA 205"
+   ],
+   "ra": 152.75879166666667,
+   "dec": -4.713763888888889,
+   "release": "January 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sextans-a-pahs-pull-out-nircam-and-miri-image/",
+   "title": "Sextans A PAHs Pull-out (NIRCam and MIRI Image)",
+   "names": [
+    "Sextans A",
+    "UGCA 205"
+   ],
+   "ra": 152.75879166666667,
+   "dec": -4.713763888888889,
+   "release": "January 6, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/simulated-thermal-emission-spectrum-of-exoplanet-lhs-3844-b/",
+   "title": "Simulated Thermal Emission Spectrum of Exoplanet LHS 3844 b",
+   "names": [
+    "LHS 3844 b"
+   ],
+   "ra": 340.4962083333333,
+   "dec": 69.17210833333334,
+   "release": "May 26, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/simulated-transmission-spectrum-of-exoplanet-toi-421-b/",
+   "title": "Simulated Transmission Spectrum of Exoplanet TOI-421 b",
+   "names": [
+    "TOI-421 b"
+   ],
+   "ra": 81.85329166666666,
+   "dec": -14.276741666666668,
+   "release": "November 17, 2021"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sn-1987a-nircam-miri-and-nirspec-images/",
+   "title": "SN 1987A (NIRCam, MIRI and NIRSpec Images)",
+   "names": [
+    "SN 1987A"
+   ],
+   "ra": 83.86679166666666,
+   "dec": -69.26994444444445,
+   "release": "February 22, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sn-2025pht-in-ngc-1637/",
+   "title": "SN 2025pht in NGC 1637",
+   "names": [
+    "NGC 1637 (SN 2025pht)"
+   ],
+   "ra": 70.37054166666667,
+   "dec": -2.865616666666667,
+   "release": "February 23, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sombrero-galaxy-compass/",
+   "title": "Sombrero Galaxy Compass",
+   "names": [
+    "Sombrero Galaxy",
+    "M104"
+   ],
+   "ra": 189.99758333333335,
+   "dec": -11.623055555555556,
+   "release": "June 3, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sombrero-galaxy-hubble-and-webb-image/",
+   "title": "Sombrero Galaxy (Hubble and Webb Image)",
+   "names": [
+    "Sombrero Galaxy",
+    "M104"
+   ],
+   "ra": 189.99758333333335,
+   "dec": -11.623055555555556,
+   "release": "November 25, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sombrero-galaxy-miri-compass-image/",
+   "title": "Sombrero Galaxy (MIRI Compass Image)",
+   "names": [
+    "Sombrero Galaxy",
+    "M104"
+   ],
+   "ra": 189.99758333333335,
+   "dec": -11.623055555555556,
+   "release": "November 25, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sombrero-galaxy-miri-image/",
+   "title": "Sombrero Galaxy (MIRI Image)",
+   "names": [
+    "Sombrero Galaxy",
+    "M104"
+   ],
+   "ra": 189.99758333333335,
+   "dec": -11.623055555555556,
+   "release": "November 25, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sombrero-galaxy-nircam/",
+   "title": "Sombrero Galaxy (NIRCam)",
+   "names": [
+    "Sombrero Galaxy",
+    "M104"
+   ],
+   "ra": 189.99758333333335,
+   "dec": -11.623055555555556,
+   "release": "June 3, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sombrero-galaxy-nircammiri/",
+   "title": "Sombrero Galaxy (NIRCam/MIRI)",
+   "names": [
+    "Sombrero Galaxy",
+    "M104"
+   ],
+   "ra": 189.99758333333335,
+   "dec": -11.623055555555556,
+   "release": "June 3, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/southern-ring-nebula-miri-compass-image/",
+   "title": "Southern Ring Nebula (MIRI Compass Image)",
+   "names": [
+    "Southern Ring Nebula",
+    "NGC 3132",
+    "Eight-Burst Nebula"
+   ],
+   "ra": 151.74391666666668,
+   "dec": -40.43333333333333,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/southern-ring-nebula-miri-image/",
+   "title": "Southern Ring Nebula (MIRI Image)",
+   "names": [
+    "Southern Ring Nebula",
+    "NGC 3132",
+    "Eight-Burst Nebula"
+   ],
+   "ra": 151.74391666666668,
+   "dec": -40.43333333333333,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/southern-ring-nebula-nircam-and-miri-images-side-by-side/",
+   "title": "Southern Ring Nebula (NIRCam and MIRI Images Side by Side)",
+   "names": [
+    "Southern Ring Nebula",
+    "NGC 3132",
+    "Eight-Burst Nebula"
+   ],
+   "ra": 151.74391666666668,
+   "dec": -40.43333333333333,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/southern-ring-nebula-nircam-compass-image/",
+   "title": "Southern Ring Nebula (NIRCam Compass Image)",
+   "names": [
+    "Southern Ring Nebula",
+    "NGC 3132",
+    "Eight-Burst Nebula"
+   ],
+   "ra": 151.74391666666668,
+   "dec": -40.43333333333333,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/southern-ring-nebula-nircam-image/",
+   "title": "Southern Ring Nebula (NIRCam Image)",
+   "names": [
+    "Southern Ring Nebula",
+    "NGC 3132",
+    "Eight-Burst Nebula"
+   ],
+   "ra": 151.74391666666668,
+   "dec": -40.43333333333333,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/southern-ring-nebulas-gas-nircam-and-miri-composite-compass-image/",
+   "title": "Southern Ring Nebula’s Gas (NIRCam and MIRI Composite Compass Image)",
+   "names": [
+    "Southern Ring Nebula",
+    "NGC 3132",
+    "Eight-Burst Nebula"
+   ],
+   "ra": 151.74391666666668,
+   "dec": -40.43333333333333,
+   "release": "December 8, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/southern-ring-nebulas-spokes-nircam-and-miri-composite-compass-image/",
+   "title": "Southern Ring Nebula’s Spokes (NIRCam and MIRI Composite Compass Image)",
+   "names": [
+    "Southern Ring Nebula",
+    "NGC 3132",
+    "Eight-Burst Nebula"
+   ],
+   "ra": 151.74391666666668,
+   "dec": -40.43333333333333,
+   "release": "December 8, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/southern-ring-nebulas-spokes-nircam-and-miri-composite-image/",
+   "title": "Southern Ring Nebula’s Spokes (NIRCam and MIRI Composite Image)",
+   "names": [
+    "Southern Ring Nebula",
+    "NGC 3132",
+    "Eight-Burst Nebula"
+   ],
+   "ra": 151.74391666666668,
+   "dec": -40.43333333333333,
+   "release": "December 8, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/stellar-jet-in-sh2-284-nircam-compass-image/",
+   "title": "Stellar Jet in Sh2-284 (NIRCam Compass Image)",
+   "names": [
+    "Sh2-284 p1"
+   ],
+   "ra": 101.56625,
+   "dec": 0.10762222222222223,
+   "release": "September 10, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/stellar-jet-in-sh2-284-nircam-image/",
+   "title": "Stellar Jet in Sh2-284 (NIRCam Image)",
+   "names": [
+    "Sh2-284 p1"
+   ],
+   "ra": 101.56625,
+   "dec": 0.10762222222222223,
+   "release": "September 10, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/stephans-quintet-miri-compass-image/",
+   "title": "Stephan&#039;s Quintet (MIRI Compass Image)",
+   "names": [
+    "Stephan’s Quintet",
+    "Hickson Compact Group (HCG) 92",
+    "NGC 7318A",
+    "NGC 7318B",
+    "NGC 7319",
+    "NGC 7320"
+   ],
+   "ra": 338.98954166666664,
+   "dec": 33.96,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/stephans-quintet-miri-ifu/",
+   "title": "Stephan&#039;s Quintet (MIRI IFU)",
+   "names": [
+    "Stephan’s Quintet",
+    "Hickson Compact Group (HCG) 92"
+   ],
+   "ra": 338.98954166666664,
+   "dec": 33.96,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/stephans-quintet-miri-image/",
+   "title": "Stephan&#039;s Quintet (MIRI Image)",
+   "names": [
+    "Stephan’s Quintet",
+    "Hickson Compact Group (HCG) 92",
+    "NGC 7318A",
+    "NGC 7318B",
+    "NGC 7319",
+    "NGC 7320"
+   ],
+   "ra": 338.98954166666664,
+   "dec": 33.96,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/stephans-quintet-miri-spectra/",
+   "title": "Stephan&#039;s Quintet (MIRI Spectra)",
+   "names": [
+    "Stephan’s Quintet",
+    "Hickson Compact Group (HCG) 92"
+   ],
+   "ra": 338.98954166666664,
+   "dec": 33.96,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/stephans-quintet-nircam-and-miri-composite-compass-image/",
+   "title": "Stephan&#039;s Quintet (NIRCam and MIRI Composite Compass Image)",
+   "names": [
+    "Stephan’s Quintet",
+    "Hickson Compact Group (HCG) 92",
+    "NGC 7318A",
+    "NGC 7318B",
+    "NGC 7319",
+    "NGC 7320"
+   ],
+   "ra": 338.98954166666664,
+   "dec": 33.96,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/stephans-quintet-nircam-and-miri-composite-image/",
+   "title": "Stephan&#039;s Quintet (NIRCam and MIRI Composite Image)",
+   "names": [
+    "Stephan’s Quintet",
+    "Hickson Compact Group (HCG) 92",
+    "NGC 7318A",
+    "NGC 7318B",
+    "NGC 7319",
+    "NGC 7320"
+   ],
+   "ra": 338.98954166666664,
+   "dec": 33.96,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/stephans-quintet-nirspec-ifu/",
+   "title": "Stephan&#039;s Quintet (NIRSpec IFU)",
+   "names": [
+    "Stephan’s Quintet",
+    "Hickson Compact Group (HCG) 92"
+   ],
+   "ra": 338.98954166666664,
+   "dec": 33.96,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sunrise-arc-nircam-compass-image/",
+   "title": "Sunrise Arc (NIRCam Compass Image)",
+   "names": [
+    "WHL-J24.3324-8.477",
+    "Earendel"
+   ],
+   "ra": 24.346791666666668,
+   "dec": -8.4645,
+   "release": "August 9, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sunrise-arc-nircam-image/",
+   "title": "Sunrise Arc (NIRCam Image)",
+   "names": [
+    "WHL-J24.3324-8.477",
+    "Earendel"
+   ],
+   "ra": 24.346791666666668,
+   "dec": -8.4645,
+   "release": "August 9, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/sunrise-arc-zoom-in-nircam-image/",
+   "title": "Sunrise Arc Zoom-In (NIRCam Image)",
+   "names": [
+    "WHL-J24.3324-8.477",
+    "Earendel"
+   ],
+   "ra": 24.346791666666668,
+   "dec": -8.4645,
+   "release": "August 9, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/supernova-1987a-nircam-compass-image/",
+   "title": "Supernova 1987A (NIRCam Compass Image)",
+   "names": [
+    "SN 1987A"
+   ],
+   "ra": 83.86679166666666,
+   "dec": -69.26994444444445,
+   "release": "August 31, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/supernova-1987a-nircam-image/",
+   "title": "Supernova 1987A (NIRCam Image)",
+   "names": [
+    "SN 1987A"
+   ],
+   "ra": 83.86679166666666,
+   "dec": -69.26994444444445,
+   "release": "August 31, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/supernova-encore-in-macs-j0138-nircam-image/",
+   "title": "Supernova Encore in MACS J0138 (NIRCam Image)",
+   "names": [
+    "MACSJ0138",
+    "Supernova Encore"
+   ],
+   "ra": 24.509,
+   "dec": -21.92289166666667,
+   "release": "December 21, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/tarantula-nebula-miri-image/",
+   "title": "Tarantula Nebula (MIRI Image)",
+   "names": [
+    "Tarantula Nebula",
+    "30 Doradus",
+    "30 Dor",
+    "NGC 2070"
+   ],
+   "ra": 84.67666666666666,
+   "dec": -69.10093055555555,
+   "release": "September 6, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/tarantula-nebula-nircam-compass-image/",
+   "title": "Tarantula Nebula (NIRCam Compass Image)",
+   "names": [
+    "Tarantula Nebula",
+    "30 Doradus",
+    "30 Dor",
+    "NGC 2070"
+   ],
+   "ra": 84.67666666666666,
+   "dec": -69.10093055555555,
+   "release": "September 6, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/tarantula-nebula-nircam-image/",
+   "title": "Tarantula Nebula (NIRCam Image)",
+   "names": [
+    "Tarantula Nebula",
+    "30 Doradus",
+    "30 Dor",
+    "NGC 2070"
+   ],
+   "ra": 84.67666666666666,
+   "dec": -69.10093055555555,
+   "release": "September 6, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/tarantula-nebula-nirspec-ifu/",
+   "title": "Tarantula Nebula (NIRSpec IFU)",
+   "names": [
+    "Tarantula Nebula",
+    "30 Doradus",
+    "30 Dor",
+    "NGC 2070"
+   ],
+   "ra": 84.67666666666666,
+   "dec": -69.10093055555555,
+   "release": "September 6, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/terzan-5-webb-and-hubble-compass-image/",
+   "title": "Terzan 5 (Webb and Hubble Compass Image)",
+   "names": [
+    "Terzan 5"
+   ],
+   "ra": 267.02083333333337,
+   "dec": -24.779999999999998,
+   "release": "June 16, 2026"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/twa-7-miri-vlt-image/",
+   "title": "TWA 7 (MIRI + VLT Image)",
+   "names": [
+    "TWA 7"
+   ],
+   "ra": 160.625425,
+   "dec": -33.671175,
+   "release": "June 25, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/two-views-of-the-gas-in-the-southern-ring-nebula-nircam-and-miri-composite-images/",
+   "title": "Two Views of the Gas in the Southern Ring Nebula (NIRCam and MIRI Composite Images)",
+   "names": [
+    "Southern Ring Nebula",
+    "NGC 3132",
+    "Eight-Burst Nebula"
+   ],
+   "ra": 151.74391666666668,
+   "dec": -40.43333333333333,
+   "release": "December 8, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/two-views-of-the-tarantula-nebula-nircam-and-miri-images/",
+   "title": "Two Views of the Tarantula Nebula (NIRCam and MIRI images)",
+   "names": [
+    "Tarantula Nebula",
+    "30 Doradus",
+    "30 Dor",
+    "NGC 2070"
+   ],
+   "ra": 84.67666666666666,
+   "dec": -69.10093055555555,
+   "release": "September 6, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/uncrowding-cepheids-in-the-near-infrared/",
+   "title": "Uncrowding Cepheids in the Near Infrared",
+   "names": [
+    "NGC 5584"
+   ],
+   "ra": 215.59900000000002,
+   "dec": 0.38766944444444446,
+   "release": "September 12, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubble-compared-hudf-nircam-image/",
+   "title": "Webb and Hubble Compared HUDF (NIRCam Image)",
+   "names": [],
+   "ra": 53.166625,
+   "dec": -27.783333333333335,
+   "release": "April 12, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-1087/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 1087",
+   "names": [
+    "NGC 1087"
+   ],
+   "ra": 41.60483333333333,
+   "dec": -0.4987388888888889,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-1300/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 1300",
+   "names": [
+    "NGC 1300"
+   ],
+   "ra": 49.92104166666666,
+   "dec": -19.411163888888886,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-1365/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 1365",
+   "names": [
+    "NGC 1365"
+   ],
+   "ra": 53.401916666666665,
+   "dec": -36.140658333333334,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-1385/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 1385",
+   "names": [
+    "NGC 1385"
+   ],
+   "ra": 54.36804166666666,
+   "dec": -24.500894444444445,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-1433/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 1433",
+   "names": [
+    "NGC 1433"
+   ],
+   "ra": 55.509708333333336,
+   "dec": -47.22239166666667,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-1512/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 1512",
+   "names": [
+    "NGC 1512"
+   ],
+   "ra": 60.976166666666664,
+   "dec": -43.348850000000006,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-1566/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 1566",
+   "names": [
+    "NGC 1566"
+   ],
+   "ra": 65.00204166666666,
+   "dec": -54.937577777777776,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-1672/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 1672",
+   "names": [
+    "NGC 1672"
+   ],
+   "ra": 71.42541666666666,
+   "dec": -59.24888888888889,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-2835/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 2835",
+   "names": [
+    "NGC 2835"
+   ],
+   "ra": 139.47120833333335,
+   "dec": -22.354483333333334,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-3351/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 3351",
+   "names": [
+    "NGC 3351"
+   ],
+   "ra": 160.9795,
+   "dec": 11.690194444444444,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-3627/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 3627",
+   "names": [
+    "NGC 3627"
+   ],
+   "ra": 170.0625,
+   "dec": 12.991666666666665,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-4254/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 4254",
+   "names": [
+    "NGC 4254",
+    "M99"
+   ],
+   "ra": 184.711125,
+   "dec": 14.420394444444444,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-4303/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 4303",
+   "names": [
+    "NGC 4303"
+   ],
+   "ra": 185.48054166666665,
+   "dec": 4.47415,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-4321/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 4321",
+   "names": [
+    "NGC 4321",
+    "M100"
+   ],
+   "ra": 185.72891666666666,
+   "dec": 15.822080555555555,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-5068/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 5068",
+   "names": [
+    "NGC 5068"
+   ],
+   "ra": 199.728375,
+   "dec": -21.0391,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-628/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 628",
+   "names": [
+    "NGC 628; M74"
+   ],
+   "ra": 24.21291666666667,
+   "dec": 15.763055555555555,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-and-hubbles-views-of-spiral-galaxy-ngc-7496/",
+   "title": "Webb and Hubble&#039;s Views of Spiral Galaxy NGC 7496",
+   "names": [
+    "NGC 7496"
+   ],
+   "ra": 347.4506666666666,
+   "dec": -43.42233611111111,
+   "release": "January 29, 2024"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webb-observations-of-hudf-nircam-image/",
+   "title": "Webb Observations of HUDF (NIRCam Image)",
+   "names": [],
+   "ra": 53.166625,
+   "dec": -27.783333333333335,
+   "release": "April 12, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webbs-first-deep-field-miri-and-nircam-images-side-by-side/",
+   "title": "Webb’s First Deep Field (MIRI and NIRCam Images Side by Side)",
+   "names": [
+    "SMACS 0723-73 (1RXS J072319.7-732735",
+    "SMACSJ0723.3-7327)"
+   ],
+   "ra": 110.83125000000001,
+   "dec": -73.45433333333334,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webbs-first-deep-field-miri-and-nircam-side-by-side-compass-image/",
+   "title": "Webb&#039;s First Deep Field (MIRI and NIRCam Side-by-Side Compass Image)",
+   "names": [
+    "SMACS 0723-73 (1RXS J072319.7-732735",
+    "SMACSJ0723.3-7327)"
+   ],
+   "ra": 110.83125000000001,
+   "dec": -73.45433333333334,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webbs-first-deep-field-nircam-compass-image/",
+   "title": "Webb&#039;s First Deep Field (NIRCam Compass Image)",
+   "names": [
+    "SMACS 0723-73 (1RXS J072319.7-732735",
+    "SMACS J0723.3-7327)"
+   ],
+   "ra": 110.83125000000001,
+   "dec": -73.45433333333334,
+   "release": "July 11, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webbs-first-deep-field-nircam-image/",
+   "title": "Webb&#039;s First Deep Field (NIRCam Image)",
+   "names": [
+    "SMACS 0723-73 (1RXS J072319.7-732735",
+    "SMACS J0723.3-7327)"
+   ],
+   "ra": 110.83125000000001,
+   "dec": -73.45433333333334,
+   "release": "July 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/webbs-first-deep-field-unveiled-nircam-image/",
+   "title": "Webb&#039;s First Deep Field Unveiled (NIRCam Image)",
+   "names": [
+    "SMACS 0723-73 (1RXS J072319.7-732735",
+    "SMACS J0723.3-7327)"
+   ],
+   "ra": 110.83125000000001,
+   "dec": -73.45433333333334,
+   "release": "July 11, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/wolf-rayet-140-miri-compass-image/",
+   "title": "Wolf-Rayet 140 (MIRI Compass Image)",
+   "names": [
+    "Wolf-Rayet 140; WR 140"
+   ],
+   "ra": 305.1165833333333,
+   "dec": 43.85452222222222,
+   "release": "January 13, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/wolf-rayet-140-miri/",
+   "title": "Wolf-Rayet 140 (MIRI)",
+   "names": [
+    "WR 140"
+   ],
+   "ra": 305.1165833333333,
+   "dec": 43.85452222222222,
+   "release": "October 12, 2022"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/wolf-rayet-apep-miri-compass-image/",
+   "title": "Wolf-Rayet Apep (MIRI Compass Image)",
+   "names": [
+    "Apep",
+    "2XMM J160050.7–514245"
+   ],
+   "ra": 240.21041666666665,
+   "dec": -51.712500000000006,
+   "release": "November 19, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/wolf-rayet-apep-miri-image/",
+   "title": "Wolf-Rayet Apep (MIRI Image)",
+   "names": [
+    "Apep",
+    "2XMM J160050.7–514245"
+   ],
+   "ra": 240.21041666666665,
+   "dec": -51.712500000000006,
+   "release": "November 19, 2025"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/wr-124-miri-image/",
+   "title": "WR 124 (MIRI Image)",
+   "names": [
+    "WR 124"
+   ],
+   "ra": 287.8786666666667,
+   "dec": 16.860611111111112,
+   "release": "March 14, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/wr-124-nircam-and-miri-compass-image/",
+   "title": "WR 124 (NIRCam and MIRI Compass Image)",
+   "names": [
+    "WR 124"
+   ],
+   "ra": 287.8786666666667,
+   "dec": 16.860611111111112,
+   "release": "March 14, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/wr-124-nircam-and-miri-composite-image/",
+   "title": "WR 124 (NIRCam and MIRI Composite Image)",
+   "names": [
+    "WR 124"
+   ],
+   "ra": 287.8786666666667,
+   "dec": 16.860611111111112,
+   "release": "March 14, 2023"
+  },
+  {
+   "source": "webbtelescope/nasa",
+   "url": "https://science.nasa.gov/asset/webb/young-gas-giant-hr-8799-e-nircam-spectrum/",
+   "title": "Young Gas Giant HR 8799 e (NIRCam Spectrum)",
+   "names": [
+    "HR 8799e"
+   ],
+   "ra": 346.87042083333336,
+   "dec": 21.13392222222222,
+   "release": "March 17, 2025"
+  }
+ ]
+}

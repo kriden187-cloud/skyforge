@@ -306,6 +306,26 @@ def report(folder: Annotated[Optional[Path], typer.Argument(help="Папка в 
 
 @app.command()
 @_handle
+def discover(config: Annotated[Optional[Path], typer.Option("--config", help="Настройки поиска (configs/discover.yaml)")] = None,
+             refresh_press: Annotated[bool, typer.Option("--refresh-press",
+                                                         help="Заново собрать галерею пресс-релизов (сеть)")] = False,
+             since: Annotated[Optional[str], typer.Option(help="Эксклюзив снят не раньше (ГГГГ-ММ-ДД)")] = None,
+             top: Annotated[Optional[int], typer.Option(help="Сколько кандидатов в лист")] = None) -> None:
+    """Найти в MAST недавно открытые наблюдения JWST без пресс-релиза: таблица, candidates.md, лист превью."""
+    from datetime import date
+
+    from skyforge.discover import load_config, run as run_discover
+
+    paths = _paths()
+    cfg = load_config(config or paths.root / "configs" / "discover.yaml")
+    upd = {k: v for k, v in (("since", date.fromisoformat(since) if since else None), ("top", top)) if v is not None}
+    if upd:
+        cfg = cfg.model_copy(update=upd)
+    run_discover(paths.root, cfg, date.today(), refresh_press=refresh_press)
+
+
+@app.command()
+@_handle
 def baseline(config: ConfigArg,
              name: Annotated[str, typer.Option(help="Имя принятого результата, обычно тег: phase-3c")],
              run_dir: Annotated[Path, typer.Option("--from", help="Папка прогона (стиля или --all со стилями)")]) -> None:

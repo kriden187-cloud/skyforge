@@ -294,6 +294,13 @@ class BackgroundConfig(_Strict):
     nebula_dilate_arcsec: float | None = Field(None, ge=0, description="радиус диска; None — mask_dilate_arcsec")
     nebula_star_fraction: float = Field(0.5, gt=0, le=1, description="компонента, где звёзд больше этой доли, — не туманность")
     nebula_drop_saturated: bool = True  # компоненты отдельно от главной с насыщенным ядром внутри — яркая звезда, не туманность
+    # Фаза 4, шаг 7: фильтры, которые маску туманности не строят (Sh2-305: полосы 1/f F182M уровня 3 расширяли маску
+    # 21 → 30% кадра, тени поднимали лишнее). Пустой список в ключи кеша не входит — кеш NGC 3132 и Hubble прежний.
+    nebula_mask_exclude: list[str] = []
+
+    def key(self) -> dict:
+        """Ключ clean: nebula_mask_exclude — только если задан."""
+        return self.model_dump(mode="json", exclude=set() if self.nebula_mask_exclude else {"nebula_mask_exclude"})
 
     @field_validator("filter_size")
     @classmethod
@@ -334,6 +341,9 @@ class StretchConfig(_Strict):
     # плавной монотонной кривой без обрезки. Носок — в данных до asinh: выше неба отображение линейно по данным
     # (как обычная чёрная точка), туманность не темнеет. None — выкл. Только при anchor masks.
     sky_level: float | None = Field(None, gt=0, lt=255)
+    # фаза 4: наибольшая степень носка; None — как в 3k (без ограничения). При сильной растяжке (a 0,02–0,03) и небе
+    # высоко по шкале (Sh2-305 F335M: u_неба 0,40) p = 135–340 — «стенка», шум чуть ниже неба уходил в 0.
+    sky_toe_max_p: float | None = Field(None, gt=0)
     # 3k п.3: гладкая модель крупного хода неба для показа — полином порядка sky_poly_order по x и y на фильтр,
     # подгонка по пустому небу вне файла sky_poly_exclude (туманность с кольцом ореола и круг у центра, FITS с WCS),
     # вычитается до растяжки (skyforge.skymodel). 0 — выкл.

@@ -34,6 +34,7 @@ REVEAL_BLACK, REVEAL_WHITE, REVEAL_A = 1.0, 90.0, 0.02
 
 
 CLEAN_VERSION = 13  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
+NEBULA_MASK_VERSION = 1  # исключение фильтров из маски туманности (background.nebula_mask_exclude), фаза 4 шаг 7
 
 
 def enabled(cfg: Config) -> bool:
@@ -134,7 +135,9 @@ def input_key(cfg: Config, paths: Paths) -> dict[str, Any]:
     if enabled(cfg):
         key["version"] = CLEAN_VERSION
         key["stars"] = cfg.stars.clean_key()
-        key["background"] = cfg.background.model_dump(mode="json")
+        key["background"] = cfg.background.key()
+        if cfg.background.nebula_mask_exclude:
+            key["nebula_mask_version"] = NEBULA_MASK_VERSION   # шаг 7: своя версия — общий CLEAN_VERSION не сбрасывает JWST
         # 3b: в ключе только если включены — кеш clean у JWST не сбрасывается
         if cfg.clean.cosmics.clean:
             from skyforge.cosmics import COSMICS_VERSION
@@ -478,7 +481,10 @@ def nebula_mask(layers: dict[str, np.ndarray], cfg: Config, scale: float, stars:
     plain = bc.model_copy(update={"mask_dilate_arcsec": 0.0})
     nebula = np.zeros(next(iter(layers.values())).shape, dtype=bool)
     dropped_stars = 0
-    for a in layers.values():
+    use = [a for f, a in layers.items() if f not in bc.nebula_mask_exclude]
+    if not use:
+        raise SkyforgeError(f"background.nebula_mask_exclude исключает все фильтры ({', '.join(layers)}) — маске не из чего строиться")
+    for a in use:
         finite = np.isfinite(a)
         origin = field.origin if field is not None else (0, 0)
         src = fill_stars(a, stars & finite, window_px, origin) if stars is not None else a
@@ -518,7 +524,7 @@ def nebula_mask_square(layers: dict[str, np.ndarray], cfg: Config, scale: float,
     bc = cfg.background
     star_with_halo = _star_with_halo_px(cfg, scale)
     nebula = np.zeros(next(iter(layers.values())).shape, dtype=bool)
-    for a in layers.values():
+    for a in [a for f, a in layers.items() if f not in bc.nebula_mask_exclude]:
         m = source_mask(a, bc, scale, field=field)
         labels, n = ndimage.label(m, structure=np.ones((3, 3)))
         if n == 0:

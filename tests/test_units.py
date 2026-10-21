@@ -499,3 +499,56 @@ def test_sky_box_rect_center_and_size():
     assert abs((r0 + r1) / 2 - 499.5) <= 1 and abs((c0 + c1) / 2 - 599.5) <= 1
     r0, r1, c0, c1 = sky_box_rect(SkyBox(ra=CENTER[0], dec=CENTER[1], width_arcsec=400, height_arcsec=400), w, (1000, 1200))
     assert (r0, r1, c0, c1) == (0, 1000, 0, 1200)
+
+
+def test_load_context_multiplane_same_partition_as_records(tmp_path):
+    """Фаза 4: CON мозаики > 32 экспозиций — несколько плоскостей int32 (Sh2-305: 6 × 193 млн пикселей, запись из
+    6 int32 на пиксель требовала > 4 ГБ). Хеш набора битов даёт то же разбиение на области, что и сравнение записей."""
+    import numpy as np
+    from astropy.io import fits
+
+    from skyforge.fitsio import load_context
+
+    rng = np.random.default_rng(0)
+    H, W = 60, 70
+    con = np.zeros((3, H, W), dtype=np.int32)
+    for k in range(3):
+        con[k] = rng.choice([0, 1, 5, 2**31 - 1, -2**31], size=(H, W))   # и отрицательные (старший бит)
+    con[2, :10, :] = 7                                   # области, отличающиеся только третьей плоскостью
+    hdul = fits.HDUList([fits.PrimaryHDU(), fits.ImageHDU(np.ones((H, W), np.float32), name="SCI"),
+                         fits.ImageHDU(con, name="CON")])
+    p = tmp_path / "x_i2d.fits"
+    hdul.writeto(p)
+    lab = load_context(p)
+    flat = np.ascontiguousarray(con.reshape(3, -1).T)
+    _, ref = np.unique(flat.view(np.dtype((np.void, 12))), return_inverse=True)
+    ref = ref.reshape(H, W)
+    pairs = set(zip(lab.ravel().tolist(), ref.ravel().tolist()))   # разбиения совпадают ⇔ соответствие один к одному
+    assert len(pairs) == len(set(lab.ravel().tolist())) == len(set(ref.ravel().tolist()))
+
+
+def test_sky_toe_max_p_no_zeros_under_strong_stretch():
+    """Фаза 4 шаг 4: при сильной растяжке (a 0,02) степенной носок 3k подбирает p ~ 100+ — «стенка»: шум чуть ниже
+    неба уходит в 0. С ограничением stretch.sky_toe_max_p 4 значение у неба то же, ниже неба кривая положе: нулей
+    < 0,5%, медиана неба на sky_level, выше неба кривая не меняется. Без флага — прежний носок (много нулей)."""
+    import numpy as np
+
+    from skyforge.config import StretchConfig
+    from skyforge.stretch import stretch_array
+
+    rng = np.random.default_rng(4)
+    H, W = 200, 400
+    a = np.zeros((H, W), dtype=np.float32)
+    a[:, :200] = 10 + rng.normal(0, 1.0, (H, 200))                         # небо: медиана 10, σ 1
+    a[:, 200:] = 10 + np.linspace(0, 150, 200)[None, :] + rng.normal(0, 1.0, (H, 200))   # туманность
+    sky = np.zeros((H, W), bool); sky[:, :200] = True
+    neb = ~sky
+    common = dict(anchor="masks", black_mode="pedestal", black_k=8, sky_level=6, a=0.02, white=99.9, noise_block_px=16)
+    old, so = stretch_array(a, StretchConfig(**common), masks=(sky, neb))
+    new, sn = stretch_array(a, StretchConfig(**common, sky_toe_max_p=4), masks=(sky, neb))
+    zeros = lambda y: (np.round(y[sky] * 255) <= 0).mean()
+    assert so["sky_toe"]["p"] > 20 and zeros(old) > 0.05                    # стенка: прежний носок
+    assert sn["sky_toe"]["p"] == 4 and zeros(new) < 0.005
+    assert abs(np.median(new[sky]) * 255 - 6) < 0.6
+    above = a > np.median(a[sky])
+    assert np.array_equal(new[above], old[above])                          # выше неба — без изменений

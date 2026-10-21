@@ -150,16 +150,19 @@ def export(rgb: np.ndarray, base: Path, meta: dict[str, Any], nodata: np.ndarray
     return {"tif": tif.name, "png": png.name}
 
 
-def nodata_mask(coverage: np.ndarray, fill_gaps_px: int) -> np.ndarray:
+def nodata_mask(coverage: np.ndarray, fill_gaps_px: int, clean_filled: np.ndarray | None = None) -> np.ndarray:
     """Пиксели без единого фильтра. 3б: при заполнении швов в стиле (clean.fill_gaps_px) шов, пустой во всех фильтрах,
     заполнен и уже не nodata — то же правило (cosmics.fill_gaps_linear) по геометрии покрытия; иначе финиш обнулял
-    заполненный шов, и в PNG он выходил прозрачной линией."""
+    заполненный шов, и в PNG он выходил прозрачной линией. clean_filled — есть данные хоть в одном фильтре после clean
+    (фаза 4: ядра звёзд, пустые во всех фильтрах на этапе align, заполняет clean — иначе чёрная точка в звезде)."""
     nodata = coverage == 0
     if fill_gaps_px > 0 and nodata.any():
         from skyforge.cosmics import fill_gaps_linear
 
         _, filled = fill_gaps_linear(np.where(nodata, np.nan, 1.0).astype(np.float32), fill_gaps_px)
         nodata = nodata & ~filled
+    if clean_filled is not None:             # фаза 4: ядра звёзд, заполненные clean (fill_cores), — данные
+        nodata = nodata & ~clean_filled
     return nodata
 
 
@@ -167,6 +170,23 @@ def fill_nodata(rgb: np.ndarray, nodata: np.ndarray, mode: str, sky_level: float
     """Пиксели без единого фильтра: black — 0; sky — ровный уровень неба (0–1) во всех каналах, без шума (3б)."""
     out = rgb.copy()
     out[nodata] = sky_level if mode == "sky" else 0.0
+    return out
+
+
+def _clean_filled(cfg: Config, paths: Paths, shape: tuple[int, int]) -> np.ndarray | None:
+    """Есть данные хоть в одном фильтре после clean — только если clean заполняет ядра (stars.fill_cores)."""
+    if not cfg.stars.fill_cores:
+        return None
+    from skyforge.clean import clean_dir
+
+    d = clean_dir(cfg, paths)
+    out = None
+    for f in cfg.filters:
+        p = d / f"{f}.npy"
+        if p.exists():
+            a = np.load(p, mmap_mode="r")
+            if a.shape == shape:
+                out = np.isfinite(a) if out is None else out | np.isfinite(a)
     return out
 
 
@@ -255,7 +275,7 @@ def finish(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     sw, sd, origin = finish_masks(cfg, paths)
     done = finish_array(rgb, cfg.finish, sw, sd, origin)
     coverage = load_coverage(cfg, paths)
-    nodata = (nodata_mask(coverage, cfg.clean.fill_gaps_px)
+    nodata = (nodata_mask(coverage, cfg.clean.fill_gaps_px, _clean_filled(cfg, paths, done.shape[:2]))
               if coverage is not None and coverage.shape == done.shape[:2] else None)
     if nodata is not None:  # без единого фильтра — чёрный или уровень неба (в PNG прозрачный)
         if cfg.finish.nodata_fill == "sky" and cfg.stretch.sky_level is None:

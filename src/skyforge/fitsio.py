@@ -98,18 +98,30 @@ def load_context(path: Path) -> np.ndarray | None:
         ext = next((n for n in ("CON", "CTX") if n in names), None)
         if ext is None or hdul[ext].data is None:
             return None
-        con = np.asarray(hdul[ext].data)
+        con = hdul[ext].data
         shape = hdul[_sci_index(hdul)].data.shape
-    if con.ndim == 2:
-        con = con[None]
-    if con.shape[1:] != shape:
-        return None
-    flat = np.ascontiguousarray(con.reshape(con.shape[0], -1).T)
-    if flat.shape[1] == 1:
-        _, labels = np.unique(flat[:, 0], return_inverse=True)
-    else:
-        rows = flat.view(np.dtype((np.void, flat.dtype.itemsize * flat.shape[1])))
-        _, labels = np.unique(rows, return_inverse=True)
+        if con.ndim == 2:
+            if con.shape != shape:
+                return None
+            _, labels = np.unique(np.asarray(con).ravel(), return_inverse=True)
+            return labels.reshape(shape).astype(np.int32)
+        if con.shape[1:] != shape:
+            return None
+        if con.shape[0] == 1:
+            _, labels = np.unique(np.asarray(con[0]).ravel(), return_inverse=True)
+            return labels.reshape(shape).astype(np.int32)
+        # Фаза 4: > 32 экспозиций — несколько плоскостей (Sh2-305: 6 × 193 млн пикселей). Запись из N int32 на пиксель
+        # (копия 4,6 ГБ и сортировка записей) не помещалась в память: набор битов сворачивается в 64-битный хеш,
+        # плоскости читаются по одной. Столкновения хеша при тысячах наборов практически невозможны.
+        key = np.zeros(shape, dtype=np.uint64)
+        mul = np.uint64(0x9E3779B97F4A7C15)
+        with np.errstate(over="ignore"):
+            for k in range(con.shape[0]):
+                plane = np.asarray(con[k]).astype(np.uint32).astype(np.uint64)
+                key *= mul
+                key += plane + np.uint64(k + 1)
+                key ^= key >> np.uint64(29)
+    _, labels = np.unique(key.ravel(), return_inverse=True)
     return labels.reshape(shape).astype(np.int32)
 
 

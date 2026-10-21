@@ -1,0 +1,14 @@
+# skyforge discover (фаза 4): поиск недавно открытых наблюдений JWST, которые ещё не обработаны официально.
+# Пустые поля — умолчания из skyforge.discover.DiscoverConfig.
+mission: JWST
+instrument: NIRCAM/IMAGE
+calib_level: 3
+since_months: 12            # эксклюзив снят за последние 12 месяцев (или since: ГГГГ-ММ-ДД)
+min_filters: 3              # фильтров на объект не меньше
+require_wide: true          # хотя бы один широкополосный (F…W, F…W2)
+min_area_arcmin2: 4.0       # площадь поля (объединение всех фильтров), кв. угл. мин
+top: 10                     # кандидатов в лист
+press_radius_arcmin: 3.0    # совпадение с пресс-релизом по координатам
+press_file: data/reference/press_targets.json
+per_program: 2              # не больше стольких объектов одной программы (J-Virgo ~70 галактик, VENUS ~40 скоплений)
+shortlist: 30               # полноразмерные превью i2d качаются для стольких лучших после предварительного ранжирования

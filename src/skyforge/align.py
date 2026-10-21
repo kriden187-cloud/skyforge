@@ -384,7 +384,7 @@ def _cache_key(cfg: Config, prods: dict[str, Product], reference: str) -> dict[s
                                                if getattr(cfg.align, k) == v}),
         "destripe": cfg.clean.destripe.model_dump(),
         "stars": cfg.stars.mask_key(),              # маски для destripe
-        "background": cfg.background.model_dump(),
+        "background": cfg.background.model_dump(exclude={"nebula_mask_exclude"}),   # маска туманности — этап clean
     }
 
 

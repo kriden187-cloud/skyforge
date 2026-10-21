@@ -333,3 +333,18 @@ def test_finish_nodata_fill_sky_level_keeps_alpha():
     out = fill_nodata(rgb, nodata, "sky", 6 / 255)
     assert np.allclose(out[nodata], 6 / 255) and np.array_equal(out[~nodata], rgb[~nodata])
     assert np.all(fill_nodata(rgb, nodata, "black", 6 / 255)[nodata] == 0)
+
+
+def test_finish_nodata_excludes_cores_filled_by_clean():
+    """Фаза 4 (Sh2-305): ядро звезды пусто во всех фильтрах на этапе align (покрытие 0), clean его заполнил — это
+    данные; финиш не делает его прозрачным (была чёрная точка в центре яркой звезды). Пустота вне поля — nodata."""
+    from skyforge.finish import nodata_mask
+
+    cov = np.full((50, 60), 4, dtype=np.int16)
+    cov[20:24, 30:34] = 0                                  # ядро
+    cov[:, :5] = 0                                         # край вне поля
+    filled = np.ones((50, 60), dtype=bool)
+    filled[:, :5] = False
+    nd = nodata_mask(cov, 0, filled)
+    assert not nd[20:24, 30:34].any() and nd[:, :5].all()
+    assert np.array_equal(nodata_mask(cov, 0), cov == 0)   # без карты заполненного — как раньше
