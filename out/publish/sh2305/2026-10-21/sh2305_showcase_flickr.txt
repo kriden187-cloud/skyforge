@@ -1,0 +1,20 @@
+FILE TO UPLOAD: sh2305_showcase_web.jpg  (or sh2305_showcase_master.png for full size, 55 MB)
+LICENSE ON FLICKR: set to "Attribution-ShareAlike (CC BY-SA 4.0)" in the photo's license settings
+ALBUM: Skyforge — JWST & Hubble
+
+=== TITLE ===
+Sharpless 305 (Sh 2-305) — JWST NIRCam, five filters
+
+=== DESCRIPTION ===
+Star-forming region Sharpless 305 in Puppis, imaged by the James Webb Space Telescope (NIRCam). Program 4547, PI Mark J. McCaughrean; observed 2025-03-31, data public in MAST since 2026-04-02.
+
+Five filters, colours ordered by wavelength (shorter = bluer): F182M 1.82 µm blue · F300M 3.00 µm light blue · F335M 3.35 µm yellow-green (PAH emission) · F360M 3.60 µm orange · F444W 4.44 µm red. The yellow-green filaments are polycyclic aromatic hydrocarbons glowing at 3.3 µm; the violet cavity is where that emission is weak and the shortest (F182M) and longest (F444W) filters dominate.
+
+My own processing of the public data, fully reproducible from a YAML config: every step and every number is in the open-source pipeline at https://github.com/kriden187-cloud/skyforge (tag phase-4, configs/sh2305/showcase.yaml). The sky is set to a measured empty region, nothing is painted by hand.
+
+Other processings of the same data, published earlier: Melina Thévenot (Wikimedia Commons, 2026-04-03), Thomas Carpentier, Israel Velázquez Rodríguez, Andrea Luck (Flickr, April 2026), Mark McCaughrean — the program PI (Flickr, 2026-04-15), Mehmet Hakan Özsaraç, Picturavis (May 2026).
+
+Credit: NASA, ESA, CSA, STScI; processing: Denis Krivosheev. Processing licensed CC BY-SA 4.0.
+
+=== TAGS (comma-separated) ===
+JWST, Webb, James Webb Space Telescope, NIRCam, Sharpless 305, Sh2-305, Sh 2-305, RCW 8, Puppis, HII region, star formation, PAH, nebula, astrophotography, MAST, JWST program 4547, Skyforge

@@ -71,9 +71,33 @@ class CommonsSpec(_Strict):
     others: list[CommonsOther] = []        # другие обработки тех же данных на Commons
 
 
+class FlickrSpec(_Strict):
+    """Текст для Flickr: абзацы — шаблоны с подстановкой фактов ({program}, {pi}, {obs}, {release}, {filters}, {repo_line},
+    {stem}, {master_size}, {master_mb}); кредит и лицензия дописываются сами."""
+    style: str
+    file: str = "web"                      # web / social / preview / master
+    file_note: str = ""
+    title: str
+    paragraphs: list[str]
+    filter_labels: dict[str, str] = {}     # вместо длины волны (узкие фильтры Hubble: [O III], Hα, [N II])
+    filter_notes: dict[str, str] = {}      # пояснение в скобках после цвета
+    tags: list[str]
+
+
+class PublishedEntry(_Strict):
+    style: str
+    platform: str
+    url: str | None = None                 # None — ещё не опубликовано (note — почему)
+    date: str = ""
+    license: str = ""
+    note: str = ""
+
+
 class ObjectPub(_Strict):
     accepted: str
     commons: CommonsSpec | None = None
+    flickr: FlickrSpec | None = None
+    published: list[PublishedEntry] = []
     pi: str | None = None                  # если в заголовках FITS нет (HST drz)
     jpeg_quality: int | None = Field(None, ge=50, le=100)   # качество JPEG всех версий объекта вместо sizes.*.quality
     notes_ru: list[str] = []
@@ -81,8 +105,14 @@ class ObjectPub(_Strict):
     styles: dict[str, StyleText]
 
 
+class FlickrGlobal(_Strict):
+    album: str
+    license_label: str                     # как называется лицензия в настройках Flickr
+
+
 class PublishConfig(_Strict):
     author: str | None = None
+    flickr: FlickrGlobal | None = None
     license: str
     license_url: str
     watermark: bool = False
@@ -100,6 +130,9 @@ def load_publish(path: Path) -> PublishConfig:
     for o in (data.get("objects") or {}).values():   # даты YAML → строки
         if "accepted" in o:
             o["accepted"] = str(o["accepted"])
+        for e in o.get("published") or []:
+            if e.get("date") is not None:
+                e["date"] = str(e["date"])
     pub = PublishConfig.model_validate(data)
     if pub.watermark:
         raise SkyforgeError("publish.watermark: подпись на картинке не реализована — решение владельца: только текст и метаданные")
@@ -309,6 +342,8 @@ def commons_wikitext(f: Facts, pub: PublishConfig) -> str:
         ru += " Другие обработки тех же данных на Commons: " + ", ".join(f"[[:File:{o.file}|{o.ru}]]" for o in co.others) + "."
     repo = f"{pub.repo}/tree/{f.tag}" if pub.repo else f"tag {f.tag}"
     data = pub.credit[f.mission]
+    other = " ".join(f"* [{e.url} {e.platform} ({e.date})]" for e in po.published
+                     if e.style == f.style and e.url and e.platform != "Wikimedia Commons")
     lines = [
         f"<!-- Имя файла при загрузке: {co.filename} — текст ниже вставляется целиком как описание страницы файла -->",
         "=={{int:filedesc}}==",
@@ -320,7 +355,7 @@ def commons_wikitext(f: Facts, pub: PublishConfig) -> str:
         f"program {f.program}. Pipeline and configuration: {repo} ({f.config})",
         f"|author={f.author}; data: {data}",
         "|permission=",
-        "|other versions=",
+        f"|other versions={other}",
         "}}",
         "",
         "=={{int:license-header}}==",
@@ -329,6 +364,44 @@ def commons_wikitext(f: Facts, pub: PublishConfig) -> str:
         *[f"[[Category:{c}]]" for c in co.categories],
     ]
     return "\n".join(lines) + "\n"
+
+
+def flickr_text(f: Facts, pub: PublishConfig, stem: str, master_size: tuple[int, int] = (0, 0), master_mb: float = 0.0) -> str:
+    """Текст для загрузки на Flickr: файл, лицензия, альбом, заголовок, описание (абзацы-шаблоны из publish.yaml с фактами
+    из данных), кредит и лицензия обработки, теги."""
+    po = pub.objects[f.slug]
+    fs = po.flickr
+    if fs is None or pub.flickr is None:
+        raise SkyforgeError(f"{f.slug}: нет раздела flickr в configs/publish.yaml")
+    parts = []
+    for n, w, c in f.filters:
+        s = f"{n} {fs.filter_labels[n]}" if n in fs.filter_labels else f"{n} {w:.2f} µm"
+        s += f" {color_name(c, 'en')}"
+        if n in fs.filter_notes:
+            s += f" ({fs.filter_notes[n]})"
+        parts.append(s)
+    subs = {"program": f.program, "pi": _person(f.pi), "obs": f.obs_start, "release": f.release,
+            "filters": " · ".join(parts), "repo_line": f"{pub.repo} (tag {f.tag}, {f.config})" if pub.repo else f"tag {f.tag}",
+            "stem": stem, "master_size": f"{master_size[0]}×{master_size[1]}", "master_mb": f"{master_mb:.0f}"}
+    ext = "png" if fs.file == "master" else "jpg"
+    head = f"FILE TO UPLOAD: {stem}_{fs.file}.{ext}" + (f"  {fs.file_note.format(**subs)}" if fs.file_note else "")
+    paras = [p.format(**subs).strip() for p in fs.paragraphs]
+    paras.append(f"Credit: {pub.credit[f.mission]}; processing: {f.author}. Processing licensed {pub.license}.")
+    lines = [head,
+             f"LICENSE ON FLICKR: set to \"{pub.flickr.license_label}\" in the photo's license settings",
+             f"ALBUM: {pub.flickr.album}", "", "=== TITLE ===", fs.title, "", "=== DESCRIPTION ===",
+             "\n\n".join(paras), "", "=== TAGS (comma-separated) ===", ", ".join(fs.tags)]
+    return "\n".join(lines) + "\n"
+
+
+def published_md(f: Facts, pub: PublishConfig) -> str | None:
+    """Реестр публикаций стиля: площадка, ссылка, дата, лицензия (из objects.<slug>.published)."""
+    rows = [e for e in pub.objects[f.slug].published if e.style == f.style]
+    if not rows:
+        return None
+    out = [f"# {f.target} — {f.telescope} {f.instrument}, {f.style} — где опубликовано", "", "| Площадка | Ссылка | Дата | Лицензия |", "|---|---|---|---|"]
+    out += [f"| {e.platform} | {e.url or f'({e.note})'} | {e.date} | {e.license} |" for e in rows]
+    return "\n".join(out) + "\n"
 
 
 def build_meta(f: Facts, pub: PublishConfig) -> dict[str, Any]:
@@ -533,6 +606,21 @@ def publish_object(paths: Paths, pub: PublishConfig, name: str, style: str | Non
             cpath = stem.with_name(stem.name + "_commons.txt")
             cpath.write_text(wt, encoding="utf-8")
             files.append(cpath)
+        fsp = pub.objects[name].flickr
+        if fsp is not None and fsp.style == st:
+            mpng = stem.with_name(stem.name + "_master.png")
+            ft = flickr_text(f, pub, stem.name, (arr.shape[1], arr.shape[0]), mpng.stat().st_size / 1e6)
+            bad = find_stop_words(ft, pub.stop_words)
+            if bad:
+                raise SkyforgeError(f"{cfg.slug}/{st}: в тексте для Flickr слова из стоп-списка: {bad}")
+            fpath = stem.with_name(stem.name + "_flickr.txt")
+            fpath.write_text(ft, encoding="utf-8")
+            files.append(fpath)
+        pm = published_md(f, pub)
+        if pm:
+            ppath = stem.with_name(stem.name + "_published.md")
+            ppath.write_text(pm, encoding="utf-8")
+            files.append(ppath)
         man = {"accepted_png": paths.rel(base_png), "tiff_from": paths.rel(run_tif),
                "files": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in files}, "meta": meta}
         mpath = stem.with_name(stem.name + "_publish.json")
@@ -572,6 +660,9 @@ def build_gallery(paths: Paths, pub: PublishConfig) -> Path:
                       f"- **Хеш пикселей итога (sha256):** `{f.master_sha256}`",
                       f"- **Что показано:** {stt.shown_ru}", f"- **Ограничения:** {stt.limits_ru}"]
             parts += [f"- **Примечание:** {n}" for n in po.notes_ru]
+            pubd = [e for e in po.published if e.style == st and e.url]
+            if pubd:
+                parts.append("- **Опубликовано:** " + "; ".join(f"[{e.platform}]({e.url}) ({e.date})" for e in pubd))
             parts += ["- **Как получить тот же файл:**", "", "  ```", f"  git checkout {f.tag}",
                       f"  skyforge run {name} -s {st} --bin {f.bin}        # данные из MAST при первом запуске",
                       f"  skyforge publish {name} -s {st}", "  ```", ""]

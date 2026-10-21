@@ -7,7 +7,7 @@
 |source={{own}}: processing of public JWST data from MAST (Mikulski Archive for Space Telescopes, STScI), program 4547. Pipeline and configuration: https://github.com/kriden187-cloud/skyforge/tree/phase-4 (configs/sh2305/showcase.yaml)
 |author=Denis Krivosheev; data: NASA, ESA, CSA, STScI
 |permission=
-|other versions=
+|other versions=* [https://www.flickr.com/photos/205062605@N07/55603618036/ Flickr (2026-10-21)]
 }}
 
 =={{int:license-header}}==

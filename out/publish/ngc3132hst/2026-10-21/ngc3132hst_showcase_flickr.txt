@@ -1,0 +1,18 @@
+FILE TO UPLOAD: ngc3132hst_showcase_master.png  (934×1065; the web/social versions are the same size)
+LICENSE ON FLICKR: set to "Attribution-ShareAlike (CC BY-SA 4.0)" in the photo's license settings
+ALBUM: Skyforge — JWST & Hubble
+
+=== TITLE ===
+Southern Ring Nebula (NGC 3132) — Hubble WFPC2, 1995
+
+=== DESCRIPTION ===
+Planetary nebula NGC 3132 as seen by the Hubble Space Telescope's WFPC2 camera on 1995-12-07. Program 6221, PI John Trauger. The same data underlie the 1998 Hubble Heritage image (STScI-1998-39); this is my own processing from the archive files.
+
+Three narrow-band filters: F502N [O III] blue · F656N Hα green · F658N [N II] red. Blue traces the hottest, doubly ionised oxygen in the interior; red the cooler nitrogen at the rim. Cosmic-ray hits were removed by cross-checking filters; the chip seams of WFPC2 are interpolated (≤ 6 px), the corners outside the field are filled at sky level.
+
+Fully reproducible from a YAML config: https://github.com/kriden187-cloud/skyforge (tag phase-3b, configs/ngc3132hst/showcase.yaml). Companion to my JWST image of the same nebula.
+
+Credit: NASA, ESA, STScI; processing: Denis Krivosheev. Processing licensed CC BY-SA 4.0.
+
+=== TAGS (comma-separated) ===
+Hubble, HST, Hubble Space Telescope, WFPC2, NGC 3132, Southern Ring Nebula, Caldwell 74, planetary nebula, Vela, nebula, astrophotography, MAST, HST program 6221, Skyforge

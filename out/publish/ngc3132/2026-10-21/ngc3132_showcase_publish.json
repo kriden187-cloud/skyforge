@@ -2,10 +2,12 @@
   "accepted_png": "data/baselines/ngc3132/phase-3k/showcase_bin1.png",
   "files": {
     "ngc3132_showcase_caption.md": "742c44c004b3baa17d900e775a759aba2f8ab3ad0652bae8193aa504c0340e2e",
-    "ngc3132_showcase_commons.txt": "3213aced25d95db509ee7dd27410e139c1d4f6ce5c4e0789270e7ce099be5e08",
+    "ngc3132_showcase_commons.txt": "fc3462a3fe0f38f7aa48a0f9267567e1587a2fc798744ec1da2072dc1e50aa14",
+    "ngc3132_showcase_flickr.txt": "00daea3b2d4c819bef572c8eb9ab0af88f6fc55f46483be9e07763b0b05ae44d",
     "ngc3132_showcase_master.png": "739349327af34e9f96653182ebfac12fcc4b62e8740672caff103fed75e60f53",
     "ngc3132_showcase_master.tif": "f1ccbd17f5538665f385ff444ad60c29b7819468e80c6039b3980f3a0e2412db",
     "ngc3132_showcase_preview.jpg": "85d985c71c3eef073dbf92274dcd701f47ea1c0359a1762e8cc179ca846bbaf9",
+    "ngc3132_showcase_published.md": "d83a725b9456b31708f943253ac08170f0d877ca2505043df2fb13db8adab0a4",
     "ngc3132_showcase_social.jpg": "0aa1f2c690f11617a09e5b08c78f366b355f37b2a58e4f52ba6d366ebf164cc1",
     "ngc3132_showcase_web.jpg": "2b011bfdd50251ecf1fe478b409049380c1c573c1019277bc072c3a59653ad10"
   },

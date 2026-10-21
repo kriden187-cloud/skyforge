@@ -1,0 +1,18 @@
+FILE TO UPLOAD: ngc3132_showcase_web.jpg  (or ngc3132_showcase_master.png for full size)
+LICENSE ON FLICKR: set to "Attribution-ShareAlike (CC BY-SA 4.0)" in the photo's license settings
+ALBUM: Skyforge — JWST & Hubble
+
+=== TITLE ===
+Southern Ring Nebula (NGC 3132) — JWST NIRCam, six filters
+
+=== DESCRIPTION ===
+Planetary nebula NGC 3132, the Southern Ring, imaged by the James Webb Space Telescope (NIRCam). Program 2733 (Early Release Observations), PI Klaus M. Pontoppidan; observed 2022-06-03, data public in MAST since 2022-07-13. This is the same data behind the official July 2022 release (STScI 2022-033b).
+
+Six filters, colours ordered by wavelength: F090W 0.90 µm blue · F187N 1.87 µm cyan · F212N 2.12 µm green (molecular hydrogen) · F356W 3.56 µm orange · F405N 4.05 µm red · F470N 4.70 µm red. The outer green-orange halo is H₂ emission; the blue interior is hot gas around the central pair of stars.
+
+My own processing of the public data, built as a mosaic from the 120 individual level-2 exposures rather than the archive's combined image, with detector striping removed per exposure. Fully reproducible from a YAML config: https://github.com/kriden187-cloud/skyforge (tag phase-3k, configs/ngc3132/showcase.yaml).
+
+Credit: NASA, ESA, CSA, STScI; processing: Denis Krivosheev. Processing licensed CC BY-SA 4.0.
+
+=== TAGS (comma-separated) ===
+JWST, Webb, James Webb Space Telescope, NIRCam, NGC 3132, Southern Ring Nebula, Caldwell 74, planetary nebula, Vela, nebula, astrophotography, MAST, JWST program 2733, ERO, Skyforge

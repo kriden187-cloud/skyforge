@@ -73,6 +73,8 @@ def test_publish_yaml_has_no_stop_words():
         texts += o.notes_ru + o.notes_en
         for s in o.styles.values():
             texts += [s.shown_ru, s.shown_en, s.limits_ru, s.limits_en]
+        if o.flickr:
+            texts += [o.flickr.title, *o.flickr.paragraphs, ", ".join(o.flickr.tags)]
     bad = {t: find_stop_words(t, pub.stop_words) for t in texts if find_stop_words(t, pub.stop_words)}
     assert not bad, bad
 
@@ -125,6 +127,44 @@ def test_commons_wikitext():
     hst = Facts(**{**f.__dict__, "slug": "ngc3132hst", "mission": "hst", "obs_start": "1995-12-07", "obs_end": "1995-12-07"})
     wh = commons_wikitext(hst, pub)
     assert "NASA, ESA, STScI" in wh and "CSA" not in wh and "[[Category:Hubble images of nebulae]]" in wh
+
+
+def _sh_facts(**over):
+    from skyforge.publish import Facts
+
+    base = dict(slug="sh2305", style="showcase", target="Sh 2-305", mission="jwst", telescope="JWST", instrument="NIRCam",
+                program="4547", program_title="", pi="McCaughrean, Mark J.", obs_start="2025-03-31", obs_end="2025-03-31",
+                release="2026-04-02", filters=[("F182M", 1.82, "#3050ff"), ("F335M", 3.35, "#c0ff40")],
+                config="configs/sh2305/showcase.yaml", tag="phase-4", config_digest="676fb71874f17f51", bin=1,
+                master_sha256="0" * 64, author="Denis Krivosheev", accepted="2026-10-21")
+    return Facts(**{**base, **over})
+
+
+def test_flickr_text_and_published_registry():
+    """Текст Flickr: заголовок, факты из данных, фильтры с цветом, ссылка на репозиторий и тег, кредит, лицензия, теги,
+    без стоп-слов; у Hubble — подписи фильтров вместо длин волн и кредит без CSA. Реестр published — таблица из publish.yaml,
+    ссылка Flickr попадает в «other versions» текста Commons."""
+    from skyforge.publish import commons_wikitext, find_stop_words, flickr_text, load_publish, published_md
+
+    pub = load_publish(ROOT / "configs" / "publish.yaml")
+    f = _sh_facts()
+    t = flickr_text(f, pub, "sh2305_showcase", (6076, 6971), 46.0)
+    for s in ("FILE TO UPLOAD: sh2305_showcase_web.jpg", "46 MB", "Attribution-ShareAlike (CC BY-SA 4.0)",
+              "=== TITLE ===", "Sharpless 305 (Sh 2-305)", "Program 4547, PI Mark J. McCaughrean; observed 2025-03-31",
+              "since 2026-04-02", "F182M 1.82 µm blue", "F335M 3.35 µm yellow-green (PAH emission)",
+              "https://github.com/kriden187-cloud/skyforge (tag phase-4, configs/sh2305/showcase.yaml)",
+              "Credit: NASA, ESA, CSA, STScI; processing: Denis Krivosheev. Processing licensed CC BY-SA 4.0.", "RCW 8"):
+        assert s in t, s
+    assert not find_stop_words(t, pub.stop_words)
+    h = flickr_text(_sh_facts(slug="ngc3132hst", mission="hst", pi="Trauger, John",
+                              filters=[("F502N", 0.502, "#0000ff")]), pub, "ngc3132hst_showcase", (934, 1065), 1.7)
+    assert "FILE TO UPLOAD: ngc3132hst_showcase_master.png  (934×1065;" in h and "F502N [O III] blue" in h
+    assert "PI John Trauger" in h and "CSA" not in h
+    md = published_md(f, pub)
+    assert "| Flickr | https://www.flickr.com/photos/205062605@N07/55603618036/ | 2026-10-21 | CC BY-SA 4.0 |" in md
+    assert "| Wikimedia Commons | (ждёт:" in md
+    assert published_md(_sh_facts(slug="ngc3132", style="measured"), pub) is None      # стиль нигде не публиковался
+    assert "|other versions=* [https://www.flickr.com/photos/205062605@N07/55603618036/ Flickr (2026-10-21)]" in commons_wikitext(f, pub)
 
 
 def test_owner_decisions_in_publish_yaml():
