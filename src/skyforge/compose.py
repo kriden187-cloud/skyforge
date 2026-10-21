@@ -445,7 +445,16 @@ def fill_gaps(cfg: Config, layers: dict[str, np.ndarray]) -> tuple[dict[str, np.
                 S = np.asarray(layers[src], dtype=np.float32)   # источник — исходный слой, не заполненный
                 gap = ~np.isfinite(res) & np.isfinite(S)
                 if gap.any():
-                    res[gap] = np.clip(S * ratio_map(D, S, block), 0, 1)[gap]
+                    Ss = S
+                    if fg.smooth_px > 0:                             # без NaN-краёв: нормированная свёртка
+                        from scipy import ndimage
+
+                        sig = fg.smooth_px / cfg.bin
+                        okS = np.isfinite(S)
+                        num = ndimage.gaussian_filter(np.where(okS, S, 0), sig)
+                        den = ndimage.gaussian_filter(okS.astype(np.float32), sig)
+                        Ss = np.where(den > 1e-3, num / np.maximum(den, 1e-3), np.nan).astype(np.float32)
+                    res[gap] = np.clip(Ss * ratio_map(D, S, block), 0, 1)[gap]
                     done |= gap
             if done.any():
                 out[dst], filled[dst] = res, done

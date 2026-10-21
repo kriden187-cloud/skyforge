@@ -264,19 +264,27 @@ def point_sources(a: np.ndarray, ps: Any, scale_arcsec: float) -> tuple[np.ndarr
     rmax = max(2, int(ps.max_radius_arcsec / scale_arcsec))
     out = np.zeros(a.shape, dtype=bool)
     biggest = 0
-    for y, x in peaks:
-        y0, y1, x0, x1 = max(y - rmax, 0), min(y + rmax + 1, H), max(x - rmax, 0), min(x + rmax + 1, W)
+    def window(y: int, x: int, half: int) -> tuple[tuple[slice, slice], np.ndarray]:
+        y0, y1, x0, x1 = max(y - half, 0), min(y + half + 1, H), max(x - half, 0), min(x + half + 1, W)
         yy, xx = np.ogrid[y0 - y:y1 - y, x0 - x:x1 - x]
-        rr = np.sqrt(yy ** 2 + xx ** 2).astype(np.int32)
-        sub = r[y0:y1, x0:x1]
+        return (slice(y0, y1), slice(x0, x1)), np.sqrt(yy ** 2 + xx ** 2).astype(np.int32)
+
+    # окно растёт ступенями: кольца радиуса ≤ half лежат в окне целиком — результат тот же, что в окне rmax,
+    # а у большинства звёзд кольцо уходит в фон за несколько пикселей (bin 1: rmax 127 px, звёзд тысячи)
+    steps = sorted({min(8, rmax), min(32, rmax), rmax})
+    for y, x in peaks:
         rad = rmax
-        for q in range(1, rmax + 1):               # первое кольцо, где медиана остатка — уже фон
-            ring = sub[rr == q]
-            if ring.size and np.median(ring) < ps.ring_sigma * noise:
+        for half in steps:
+            sl, rr = window(y, x, half)
+            sub = r[sl]
+            q = next((q for q in range(1, half + 1)          # первое кольцо, где медиана остатка — уже фон
+                      if (ring := sub[rr == q]).size and np.median(ring) < ps.ring_sigma * noise), None)
+            if q is not None:
                 rad = q
                 break
         biggest = max(biggest, rad)
-        out[y0:y1, x0:x1] |= rr <= rad + 1
+        sl, rr = window(y, x, min(rad + 1, rmax))
+        out[sl] |= rr <= rad + 1
     return out, {"stars": int(len(peaks)), "max_radius_arcsec": round(biggest * scale_arcsec, 2),
                  "noise": round(noise, 6)}
 

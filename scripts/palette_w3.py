@@ -62,6 +62,9 @@ def main() -> None:
                                                                   white == base.stretch.white else ""),
                      f"color.saturation={sat}" + (f";stretch.white={white}" if white != base.stretch.white else ""))
                     for white in (99.8, 99.9) for sat in (1.4, 2.0, 3.0)]
+        if len(sys.argv) > 4:   # повтор листа 43 на выбранных значениях: «1.4,2.0» при белой из конфига
+            variants = [(f"насыщенность {float(v):g}" + (" (конфиг)" if float(v) == base.color.saturation else ""),
+                         f"color.saturation={float(v)}") for v in sys.argv[4].split(",")]
     else:
         pal_a = {f: base.color.overrides[f] for f in ORDER}
         pal_b = {f: hsv_hex(h) for f, h in zip(ORDER, (240, 200, 160, 120, 80, 40, 0))}

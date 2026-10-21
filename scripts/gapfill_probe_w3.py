@@ -9,7 +9,7 @@
 (маска clean с отступом 3 px: лучи яркой звезды в полосе дают синий сдвиг сами по себе); для сравнения — тот же контраст
 у случайных полос той же ширины вне щелей (естественный разброс туманности).
 
-Запуск: uv run python scripts/gapfill_probe_w3.py <png без заполнения> <png с заполнением> <папка>
+Запуск: uv run python scripts/gapfill_probe_w3.py <png без заполнения> <png с заполнением> <папка> [bin]
 """
 
 from __future__ import annotations
@@ -27,6 +27,8 @@ from skyforge.compose import composite_path
 from skyforge.config import Config
 from skyforge.paths import Paths
 from skyforge.preview import contact_sheet, display_crop
+
+Image.MAX_IMAGE_PIXELS = None
 
 
 def bands(filled: np.ndarray) -> list[tuple[str, slice]]:
@@ -57,6 +59,8 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     P = Paths(pathlib.Path(".").resolve())
     c = Config.load("configs/w3_2/showcase.yaml", "showcase")
+    if len(sys.argv) > 4:
+        c = c.model_copy(update={"bin": int(sys.argv[4])})
     A = np.asarray(Image.open(before).convert("RGB"), dtype=np.float32)[::-1] / 255   # сетка: строка 0 — низ
     B = np.asarray(Image.open(after).convert("RGB"), dtype=np.float32)[::-1] / 255
     filled = np.load(composite_path(c, P).with_name("filled.npy"))
@@ -92,18 +96,18 @@ def main() -> None:
             cb, ca = band_contrast(fa, bname, bsl, nostar[sl]), band_contrast(fb, bname, bsl, nostar[sl])
             rows.append(f"{name}: полоса ({bname} {bsl.start}–{bsl.stop}) минус соседи R/G/B, уровни: без / с\t"
                         f"{' / '.join(f'{v:+.1f}' for v in cb)}  →  {' / '.join(f'{v:+.1f}' for v in ca)}")
-    rng, nat, w = np.random.default_rng(0), [], 17
+    rng, nat, w, ln = np.random.default_rng(0), [], round(17 * 4 / c.bin), round(150 * 4 / c.bin)   # ширина щели; при bin 4 — 17 px
     for _ in range(200000):
         if len(nat) >= 300:
             break
-        y0, x0 = int(rng.integers(0, H - 150)), int(rng.integers(w, W - 2 * w))
-        reg = (slice(y0, y0 + 150), slice(x0 - w, x0 + 2 * w))
+        y0, x0 = int(rng.integers(0, H - ln)), int(rng.integers(w, W - 2 * w))
+        reg = (slice(y0, y0 + ln), slice(x0 - w, x0 + 2 * w))
         if filled[reg].any() or not data[reg].all():
             continue
         nat.append(np.abs(band_contrast(B[reg], "столбцы", slice(w, 2 * w), nostar[reg])))
     if nat:
         q = np.percentile(np.array(nat), [50, 90, 95], axis=0)
-        rows.append(f"естественный разброс: |контраст| случайных полос {w}×150 px вне щелей ({len(nat)} шт.) "
+        rows.append(f"естественный разброс: |контраст| случайных полос {w}×{ln} px вне щелей ({len(nat)} шт.) "
                     f"R/G/B p50 / p90 / p95\t" + "  ·  ".join(" / ".join(f"{v:.1f}" for v in r) for r in q))
     contact_sheet(tiles, labels, out / "02_заполнение_щелей.png", cols=5, tile_inches=3.6, interpolation="nearest",
                   title=f"W3-2: щели F182M/F210M — без и с заполнением (bin {c.bin}; 100% и ×3; белое — заполнено)")
