@@ -96,6 +96,24 @@ class RedditSpec(_Strict):
     filter_notes: dict[str, str] = {}
 
 
+class PartSpec(_Strict):
+    # Фаза 6 (W3-2, решение владельца 2026-10-22): кадр из нескольких областей покрытия (модули NIRCam) выкладывается и по
+    # частям — свой комплект на область align (regions, слева направо), пиксели — вырезка из принятого PNG без изменений.
+    name: str                              # суффикс файлов: <slug>_<стиль>_<name>_*
+    region: int = Field(..., ge=0)         # номер области покрытия слева направо
+    style: str
+    label_ru: str                          # «левая половина поля W3-JWST-2 — модуль A NIRCam»
+    label_en: str
+    flickr_title: str | None = None
+    reddit_title: str | None = None
+    commons_filename: str | None = None
+    # тексты диптиха, неверные для половины («два модуля, промежуток»), — своя версия для части
+    shown_ru: str | None = None
+    shown_en: str | None = None
+    flickr_paragraphs: list[str] | None = None
+    reddit_paragraphs: list[str] | None = None
+
+
 class PublishedEntry(_Strict):
     style: str
     platform: str
@@ -110,6 +128,7 @@ class ObjectPub(_Strict):
     commons: CommonsSpec | None = None
     flickr: FlickrSpec | None = None
     reddit: RedditSpec | None = None
+    parts: list[PartSpec] = []
     published: list[PublishedEntry] = []
     pi: str | None = None                  # если в заголовках FITS нет (HST drz)
     jpeg_quality: int | None = Field(None, ge=50, le=100)   # качество JPEG всех версий объекта вместо sizes.*.quality
@@ -333,9 +352,12 @@ def _person(name: str) -> str:
     return name
 
 
-def commons_wikitext(f: Facts, pub: PublishConfig) -> str:
+def commons_wikitext(f: Facts, pub: PublishConfig, part: PartSpec | None = None,
+                     siblings: tuple[tuple[str, str], ...] = ()) -> str:
     """Текст страницы файла Wikimedia Commons: {{Information}} (описание EN и RU, дата наблюдений, {{own}} с программой,
-    репозиторием и тегом, автор и источник данных), лицензия {{cc-by-sa-4.0}}, категории из publish.yaml."""
+    репозиторием и тегом, автор и источник данных), лицензия {{cc-by-sa-4.0}}, категории из publish.yaml.
+    part — часть кадра (своё имя файла, строка о части в описании); siblings — (файл на Commons, подпись) других частей
+    и полного кадра для «other versions»."""
     po = pub.objects[f.slug]
     co = po.commons
     if co is None:
@@ -351,15 +373,20 @@ def commons_wikitext(f: Facts, pub: PublishConfig) -> str:
           f"data public since {f.release}. Filters (wavelength — colour in the image): {fl_en}. {st.shown_en}")
     ru = (f"{f.target}, {tel_ru}, {f.instrument}. Программа {f.program}{title_ru}, руководитель {pi}; наблюдения "
           f"{f.obs_start} (UTC), данные открыты {f.release}. Фильтры (длина волны — цвет на картинке): {fl_ru}. {st.shown_ru}")
+    if part is not None:
+        en += f" This file: {part.label_en}."
+        ru += f" Этот файл: {part.label_ru}."
     if co.others:
         en += " Other processings of the same data on Commons: " + ", ".join(f"[[:File:{o.file}|{o.en}]]" for o in co.others) + "."
         ru += " Другие обработки тех же данных на Commons: " + ", ".join(f"[[:File:{o.file}|{o.ru}]]" for o in co.others) + "."
     repo = f"{pub.repo}/tree/{f.tag}" if pub.repo else f"tag {f.tag}"
     data = pub.credit[f.mission]
-    other = " ".join(f"* [{e.url} {e.platform} ({e.date})]" for e in po.published
-                     if e.style == f.style and e.url and e.platform != "Wikimedia Commons")
+    other = " ".join([f"* [[:File:{fn}|{label}]]" for fn, label in siblings]
+                     + [f"* [{e.url} {e.platform} ({e.date})]" for e in po.published
+                        if e.style == f.style and e.url and e.platform != "Wikimedia Commons"])
+    filename = part.commons_filename if part is not None and part.commons_filename else co.filename
     lines = [
-        f"<!-- Имя файла при загрузке: {co.filename} — текст ниже вставляется целиком как описание страницы файла -->",
+        f"<!-- Имя файла при загрузке: {filename} — текст ниже вставляется целиком как описание страницы файла -->",
         "=={{int:filedesc}}==",
         "{{Information",
         f"|description={{{{en|1={en}}}}}",
@@ -380,7 +407,8 @@ def commons_wikitext(f: Facts, pub: PublishConfig) -> str:
     return "\n".join(lines) + "\n"
 
 
-def flickr_text(f: Facts, pub: PublishConfig, stem: str, master_size: tuple[int, int] = (0, 0), master_mb: float = 0.0) -> str:
+def flickr_text(f: Facts, pub: PublishConfig, stem: str, master_size: tuple[int, int] = (0, 0), master_mb: float = 0.0,
+                part: PartSpec | None = None) -> str:
     """Текст для загрузки на Flickr: файл, лицензия, альбом, заголовок, описание (абзацы-шаблоны из publish.yaml с фактами
     из данных), кредит и лицензия обработки, теги."""
     po = pub.objects[f.slug]
@@ -400,15 +428,18 @@ def flickr_text(f: Facts, pub: PublishConfig, stem: str, master_size: tuple[int,
     ext = "png" if fs.file == "master" else "jpg"
     head = f"FILE TO UPLOAD: {stem}_{fs.file}.{ext}" + (f"  {fs.file_note.format(**subs)}" if fs.file_note else "")
     paras = [p.format(**subs).strip() for p in fs.paragraphs]
+    part_para = ([f"This image: {part.label_en}; the full field (both modules with the no-data gap between them) is published separately as a diptych."] if part is not None else [])
+    paras[1:1] = part_para
     paras.append(f"Credit: {pub.credit[f.mission]}; processing: {f.author}. Processing licensed {pub.license}.")
     lines = [head,
              f"LICENSE ON FLICKR: set to \"{pub.flickr.license_label}\" in the photo's license settings",
-             f"ALBUM: {pub.flickr.album}", "", "=== TITLE ===", fs.title, "", "=== DESCRIPTION ===",
+             f"ALBUM: {pub.flickr.album}", "", "=== TITLE ===", (part.flickr_title if part is not None and part.flickr_title else fs.title), "",
+             "=== DESCRIPTION ===",
              "\n\n".join(paras), "", "=== TAGS (comma-separated) ===", ", ".join(fs.tags)]
     return "\n".join(lines) + "\n"
 
 
-def reddit_text(f: Facts, pub: PublishConfig, stem: str) -> str:
+def reddit_text(f: Facts, pub: PublishConfig, stem: str, part: PartSpec | None = None) -> str:
     """Текст для Reddit: файл, сабреддиты (правила каждого — проверить перед постом), заголовок, комментарий под постом
     в markdown: абзацы-шаблоны из publish.yaml, фильтры с цветами, кредит и лицензия, ссылки на репозиторий и публикации."""
     rs = pub.objects[f.slug].reddit
@@ -425,6 +456,8 @@ def reddit_text(f: Facts, pub: PublishConfig, stem: str) -> str:
             "filters": " · ".join(parts), "repo_line": f"{pub.repo} (tag {f.tag}, {f.config})" if pub.repo else f"tag {f.tag}"}
     ext = "png" if rs.file == "master" else "jpg"
     paras = [p.format(**subs).strip() for p in rs.paragraphs]
+    part_para = ([f"This image: {part.label_en}; the full field (both modules with the no-data gap between them) is published separately as a diptych."] if part is not None else [])
+    paras[1:1] = part_para
     paras.append(f"Credit: {pub.credit[f.mission]}; processing: {f.author}. Processing licensed {pub.license} "
                  f"({pub.license_url}).")
     links = [e for e in pub.objects[f.slug].published if e.style == f.style and e.url]
@@ -432,7 +465,9 @@ def reddit_text(f: Facts, pub: PublishConfig, stem: str) -> str:
         paras.append("Full resolution: " + " · ".join(f"[{e.platform}]({e.url})" for e in links))
     lines = [f"FILE TO UPLOAD: {stem}_{rs.file}.{ext}",
              "SUBREDDITS: " + ", ".join(rs.subreddits) + " — check each subreddit's rules (OC flair, processing details, "
-             "self-promotion) before posting", "", "=== TITLE ===", rs.title, "", "=== COMMENT UNDER THE POST (markdown) ===",
+             "self-promotion) before posting", "", "=== TITLE ===",
+             (part.reddit_title if part is not None and part.reddit_title else rs.title), "",
+             "=== COMMENT UNDER THE POST (markdown) ===",
              "\n\n".join(paras)]
     return "\n".join(lines) + "\n"
 
@@ -605,6 +640,85 @@ def _style_cfg(paths: Paths, name: str, style: str) -> Config:
     return Config.load(p, style)
 
 
+def part_slices(paths: Paths, cfg: Config, bin_: int, shape: tuple[int, int]) -> list[tuple[slice, slice]]:
+    """Прямоугольники областей покрытия (meta.regions этапа align при bin итога) → срезы картинки (строка 0 — верх),
+    слева направо."""
+    from skyforge.align import read_aligned_meta
+
+    meta = read_aligned_meta(cfg.model_copy(update={"bin": bin_}), paths)
+    if list(meta["shape"]) != list(shape):
+        raise SkyforgeError(f"{cfg.slug}: сетка align bin {bin_} {meta['shape']} не совпадает с принятым PNG {list(shape)}")
+    H = shape[0]
+    regs = sorted(meta.get("regions") or [], key=lambda r: r[2])
+    return [(slice(H - r1, H - r0), slice(c0, c1)) for r0, r1, c0, c1 in regs]
+
+
+def publish_part(paths: Paths, pub: PublishConfig, cfg: Config, f: Facts, part: PartSpec, parts: list[PartSpec],
+                 arr: np.ndarray, t16: np.ndarray, stem: Path) -> tuple[list[Path], str]:
+    """Комплект одной части кадра: вырезка из принятого PNG и TIFF без изменения пикселей, подпись с строкой о части,
+    тексты Commons / Flickr / Reddit со своими названиями; хеш пикселей — от вырезки."""
+    import dataclasses
+
+    sls = part_slices(paths, cfg, f.bin, arr.shape[:2])
+    if part.region >= len(sls):
+        raise SkyforgeError(f"{f.slug}: часть {part.name} — области {part.region} нет (областей покрытия {len(sls)})")
+    sl = sls[part.region]
+    a, t = np.ascontiguousarray(arr[sl]), np.ascontiguousarray(t16[sl])
+    pub = pub.model_copy(deep=True)                  # тексты части вместо текстов полного кадра
+    st_text = pub.objects[f.slug].styles[f.style]
+    st_text.shown_ru = part.shown_ru or st_text.shown_ru
+    st_text.shown_en = part.shown_en or st_text.shown_en
+    if part.flickr_paragraphs and pub.objects[f.slug].flickr is not None:
+        pub.objects[f.slug].flickr.paragraphs = part.flickr_paragraphs
+    if part.reddit_paragraphs and pub.objects[f.slug].reddit is not None:
+        pub.objects[f.slug].reddit.paragraphs = part.reddit_paragraphs
+    fp = dataclasses.replace(f, master_sha256=pixels_sha256(Image.fromarray(a)))
+    pstem = stem.with_name(f"{stem.name}_{part.name}")
+    po = pub.objects[f.slug]
+    caps = {}
+    for lang in ("ru", "en"):
+        line = (f"- **Часть кадра:** {part.label_ru}; полное поле из двух модулей с промежутком без данных — мастер диптиха "
+                f"`{stem.name}_master.png`" if lang == "ru" else
+                f"- **Part of the frame:** {part.label_en}; the full field (both modules with the no-data gap between them) "
+                f"is the diptych master `{stem.name}_master.png`")
+        caps[lang] = caption_md(fp, pub, lang).replace(f"{f.target} — ", f"{f.target} ({part.name}) — ", 1) + line + "\n"
+    meta = build_meta(fp, pub)
+    meta["title"] += f" — {part.label_en}"
+    meta["description"] += f" Part of the frame: {part.label_en}."
+    meta["description_ru"] += f" Часть кадра: {part.label_ru}."
+    files = [write_png(a, pstem.with_name(pstem.name + "_master.png"), meta),
+             write_tiff(t, pstem.with_name(pstem.name + "_master.tif"), meta)]
+    for k, spec in pub.sizes.items():
+        files.append(write_jpeg(a, pstem.with_name(f"{pstem.name}_{k}.jpg"), meta, spec.long, po.jpeg_quality or spec.quality))
+    cap = pstem.with_name(pstem.name + "_caption.md")
+    cap.write_text(caps["ru"] + "\n---\n\n" + caps["en"], encoding="utf-8")
+    files.append(cap)
+    texts = []
+    if po.commons is not None and po.commons.style == f.style:
+        sib = [(o.commons_filename, o.label_en) for o in parts if o is not part and o.commons_filename]
+        sib.append((po.commons.filename, "full field, both modules (diptych)"))
+        texts.append(("_commons.txt", commons_wikitext(fp, pub, part, tuple(sib))))
+    if po.flickr is not None and po.flickr.style == f.style:
+        mpng = pstem.with_name(pstem.name + "_master.png")
+        texts.append(("_flickr.txt", flickr_text(fp, pub, pstem.name, (a.shape[1], a.shape[0]), mpng.stat().st_size / 1e6, part)))
+    if po.reddit is not None and po.reddit.style == f.style:
+        texts.append(("_reddit.txt", reddit_text(fp, pub, pstem.name, part)))
+    for suffix, text in texts:
+        bad = find_stop_words(text + caps["ru"] + caps["en"], pub.stop_words)
+        if bad:
+            raise SkyforgeError(f"{f.slug}/{f.style}/{part.name}: слова из стоп-списка ({suffix}): {bad}")
+        path = pstem.with_name(pstem.name + suffix)
+        path.write_text(text, encoding="utf-8")
+        files.append(path)
+    man = {"part": part.name, "region": part.region, "pixels_sha256": fp.master_sha256,
+           "slice_rows_cols": [sl[0].start, sl[0].stop, sl[1].start, sl[1].stop],
+           "files": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in files}, "meta": meta}
+    mpath = pstem.with_name(pstem.name + "_publish.json")
+    mpath.write_text(json.dumps(man, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    console.print(f"  {f.slug}/{f.style}/{part.name}: {part.label_en}, {a.shape[1]}×{a.shape[0]} px")
+    return files + [mpath], fp.master_sha256
+
+
 def publish_object(paths: Paths, pub: PublishConfig, name: str, style: str | None, day: str) -> list[Path]:
     if name not in pub.objects:
         raise SkyforgeError(f"{name}: нет раздела в configs/publish.yaml (objects.{name})")
@@ -673,8 +787,16 @@ def publish_object(paths: Paths, pub: PublishConfig, name: str, style: str | Non
             ppath = stem.with_name(stem.name + "_published.md")
             ppath.write_text(pm, encoding="utf-8")
             files.append(ppath)
+        parts = [pt for pt in pub.objects[name].parts if pt.style == st]
+        part_hashes = {}
+        for pt in parts:
+            pfiles, psha = publish_part(paths, pub, cfg, f, pt, parts, arr, t16, stem)
+            part_hashes[pt.name] = psha
+            out_files += pfiles
         man = {"accepted_png": paths.rel(base_png), "tiff_from": paths.rel(run_tif),
                "files": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in files}, "meta": meta}
+        if part_hashes:
+            man["parts_pixels_sha256"] = part_hashes
         mpath = stem.with_name(stem.name + "_publish.json")
         mpath.write_text(json.dumps(man, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         out_files += files + [mpath]
@@ -687,7 +809,7 @@ GALLERY_TEXT = {
            "intro": ["Each section is an accepted result: preview, caption, config, tag and the command that reproduces the same file.",
                      "Generated by `skyforge gallery` from `configs/publish.yaml`, the accepted PNGs (`data/baselines/`) and the data headers;",
                      "not edited by hand. Русская версия: [GALLERY.ru.md](GALLERY.ru.md)."],
-           "style": "style", "program": "Program", "pi": "PI", "observed": "observed", "public": "data public since",
+           "style": "style", "parts": "Published on the platforms as two separate images —", "program": "Program", "pi": "PI", "observed": "observed", "public": "data public since",
            "filters": "Filters", "credit": "Credit", "license": "license of the processing", "config": "Config", "tag": "tag",
            "accepted": "accepted", "hash": "Final pixel hash (sha256)", "shown": "What is shown", "limits": "Limitations",
            "note": "Note", "published": "Published", "howto": "How to get the same file",
@@ -696,7 +818,7 @@ GALLERY_TEXT = {
            "intro": ["Каждый раздел — принятый результат: превью, подпись, конфиг, тег и команда, которой получить тот же файл.",
                      "Файл создаёт `skyforge gallery` из `configs/publish.yaml`, принятых PNG (`data/baselines/`) и заголовков данных;",
                      "руками не правится. English: [GALLERY.md](GALLERY.md)."],
-           "style": "стиль", "program": "Программа", "pi": "руководитель —", "observed": "наблюдения", "public": "данные открыты",
+           "style": "стиль", "parts": "На площадках — двумя отдельными картинками:", "program": "Программа", "pi": "руководитель —", "observed": "наблюдения", "public": "данные открыты",
            "filters": "Фильтры", "credit": "Указание источника", "license": "лицензия на обработку —", "config": "Конфиг",
            "tag": "тег", "accepted": "принято", "hash": "Хеш пикселей итога (sha256)", "shown": "Что показано",
            "limits": "Ограничения", "note": "Примечание", "published": "Опубликовано", "howto": "Как получить тот же файл",
@@ -720,6 +842,14 @@ def build_gallery(paths: Paths, pub: PublishConfig) -> Path:
             with Image.open(base_png) as im:
                 arr = np.asarray(im.convert("RGB"))
             jpg = write_jpeg(arr, gdir / f"{cfg.slug}_{st}.jpg", build_meta(f, pub), spec.long, po.jpeg_quality or spec.quality)
+            sparts = [pt for pt in po.parts if pt.style == st]
+            part_jpgs = []
+            if sparts:   # фаза 6: части кадра для площадок — превью под полным кадром
+                sls = part_slices(paths, cfg, f.bin, arr.shape[:2])
+                for pt in sparts:
+                    part_jpgs.append((pt, write_jpeg(np.ascontiguousarray(arr[sls[pt.region]]),
+                                                     gdir / f"{cfg.slug}_{st}_{pt.name}.jpg", build_meta(f, pub),
+                                                     spec.long // 2, po.jpeg_quality or spec.quality)))
             stt = po.styles[st]
             tag = f"[`{f.tag}`]({pub.repo}/tree/{f.tag})" if pub.repo else f"`{f.tag}`"
             pubd = [e for e in po.published if e.style == st and e.url]
@@ -729,7 +859,12 @@ def build_gallery(paths: Paths, pub: PublishConfig) -> Path:
                 shown, limits = (stt.shown_en, stt.limits_en) if lang == "en" else (stt.shown_ru, stt.limits_ru)
                 notes = po.notes_en if lang == "en" else po.notes_ru
                 parts[lang] += [f"## {f.target} — {f.telescope} {f.instrument}, {t['style']} {st}", "",
-                                f"![{f.target}, {st}](gallery/{jpg.name})", "",
+                                f"![{f.target}, {st}](gallery/{jpg.name})", ""]
+                if part_jpgs:
+                    parts[lang] += [t["parts"] + " " + " · ".join(
+                        f"{pt.label_en if lang == 'en' else pt.label_ru}" for pt, _ in part_jpgs) + ":", "",
+                        " ".join(f"![{pt.label_en}](gallery/{pj.name})" for pt, pj in part_jpgs), ""]
+                parts[lang] += [
                                 f"- **{t['program']}:** {f.program}, {t['pi']} {pi}; {t['observed']} {f.obs_start}; "
                                 f"{t['public']} {f.release}",
                                 f"- **{t['filters']}:** {fl}",

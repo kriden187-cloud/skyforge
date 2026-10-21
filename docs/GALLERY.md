@@ -90,6 +90,10 @@ not edited by hand. Русская версия: [GALLERY.ru.md](GALLERY.ru.md).
 
 ![W3, showcase](gallery/w3_2_showcase.jpg)
 
+Published on the platforms as two separate images — left half of field W3-JWST-2 — NIRCam module A · right half of field W3-JWST-2 — NIRCam module B:
+
+![left half of field W3-JWST-2 — NIRCam module A](gallery/w3_2_showcase_A.jpg) ![right half of field W3-JWST-2 — NIRCam module B](gallery/w3_2_showcase_B.jpg)
+
 - **Program:** 5437, PI William Best; observed 2024-10-29; data public since 2025-10-30
 - **Filters:** F140M 1.40 µm — violet-blue (#6030ff); F182M 1.82 µm — blue (#3050ff); F210M 2.10 µm — light blue (#40c0ff); F300M 3.00 µm — cyan (#30ffb0); F335M 3.35 µm — yellow-green (#c0ff40); F360M 3.60 µm — yellow (#ffd820); F405N 4.05 µm — orange (#ff9020); F444W 4.44 µm — red (#ff2020)
 - **Credit:** NASA, ESA, CSA, STScI; processing: Denis Krivosheev; license of the processing CC BY-SA 4.0

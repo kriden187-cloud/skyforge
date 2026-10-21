@@ -170,6 +170,86 @@ objects:
         limits_en: "F182M 1/f stripes visible at ×5; the bright star's core is saturated; F212N not included (1/f stripes at level 3); PAH filaments are nearly one hue — texture is in brightness."
   w3_2:
     accepted: 2026-10-22
+    parts:                    # решение владельца 2026-10-22: для площадок — две картинки по модулю; диптих — принятый результат
+      - name: A
+        region: 0
+        style: showcase
+        label_ru: "левая половина поля W3-JWST-2 — модуль A NIRCam"
+        label_en: "left half of field W3-JWST-2 — NIRCam module A"
+        flickr_title: "W3 (Westerhout 3) — dust lanes and globule, JWST NIRCam"
+        reddit_title: "W3 (Westerhout 3): dust lanes and a dark globule — my processing of public JWST NIRCam data [OC]"
+        commons_filename: "W3 Westerhout 3 JWST NIRCam module A dust lanes (Krivosheev).png"
+        shown_ru: "Левая половина поля (модуль A NIRCam): восемь фильтров (F140M, F182M, F210M и пять длинноволновых); палитра по длине волны с тёплым сдвигом; белая точка по туманности без звёзд в каждом фильтре; опорное небо по самым тёмным блокам; щели детекторов коротких фильтров заполнены соседним коротким фильтром."
+        shown_en: "Left half of the field (NIRCam module A): eight filters (F140M, F182M, F210M and five long-wavelength); wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks; short-wave detector gaps filled from the neighbouring short-wave filter."
+        flickr_paragraphs:
+          - >-
+            The W3 star-forming complex in Cassiopeia, imaged by the James Webb Space Telescope (NIRCam): field
+            W3-JWST-2 of program {program}, PI {pi}; observed {obs}, data public in MAST since {release}.
+          - >-
+            Eight filters, colours ordered by wavelength (shorter = bluer): {filters}. Dark dust lanes and a small dark
+            globule cross glowing violet-blue gas; the warmer, brighter region at the right edge leads towards the bright
+            cloud in the other half of the field.
+          - >-
+            My own processing of the public data, fully reproducible from a YAML config: every step and every number is in
+            the open-source pipeline at {repo_line}. The white point of each filter is set on the nebula with the stars
+            excluded, the sky level on the darkest measured blocks; nothing is painted by hand. The gaps between the
+            short-wave detectors are filled with the neighbouring short-wave filter scaled by a smooth ratio map (slightly
+            noisier strips at 3× zoom).
+          - >-
+            No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons,
+            Flickr; Reddit, AstroBin and X could not be checked). The neighbouring field W3-JWST-1A of the same program was
+            processed by Thomas Carpentier (Flickr, 2025-10-13).
+        reddit_paragraphs:
+          - >-
+            **What:** the W3 star-forming complex in Cassiopeia, JWST NIRCam field W3-JWST-2 of program {program}
+            (PI {pi}), observed {obs}, public in MAST since {release}. Dust lanes and a dark globule against glowing gas.
+          - "**Filters, ordered by wavelength (shorter = bluer):** {filters}."
+          - >-
+            **How:** my own open-source pipeline, every step in a YAML config: {repo_line}. White point of each filter on
+            the nebula with stars excluded, sky level on the darkest measured blocks, short-wave detector gaps filled from
+            the neighbouring short-wave filter; nothing painted by hand.
+          - >-
+            **Limits:** filled detector-gap strips are slightly noisier at 3×; faint 1/f striping of the short-wave
+            filters at 5×.
+      - name: B
+        region: 1
+        style: showcase
+        label_ru: "правая половина поля W3-JWST-2 — модуль B NIRCam"
+        label_en: "right half of field W3-JWST-2 — NIRCam module B"
+        flickr_title: "W3 (Westerhout 3) — bright cloud and dark sky, JWST NIRCam"
+        reddit_title: "W3 (Westerhout 3): a bright cloud against dark sky — my processing of public JWST NIRCam data [OC]"
+        commons_filename: "W3 Westerhout 3 JWST NIRCam module B bright cloud (Krivosheev).png"
+        shown_ru: "Правая половина поля (модуль B NIRCam): восемь фильтров (F140M, F182M, F210M и пять длинноволновых); палитра по длине волны с тёплым сдвигом; белая точка по туманности без звёзд в каждом фильтре; опорное небо по самым тёмным блокам; щели детекторов коротких фильтров заполнены соседним коротким фильтром."
+        shown_en: "Right half of the field (NIRCam module B): eight filters (F140M, F182M, F210M and five long-wavelength); wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks; short-wave detector gaps filled from the neighbouring short-wave filter."
+        flickr_paragraphs:
+          - >-
+            The W3 star-forming complex in Cassiopeia, imaged by the James Webb Space Telescope (NIRCam): field
+            W3-JWST-2 of program {program}, PI {pi}; observed {obs}, data public in MAST since {release}.
+          - >-
+            Eight filters, colours ordered by wavelength (shorter = bluer): {filters}. A bright cloud with fine streaks
+            fills the left side; towards the right it thins into olive filaments and dark sky with background stars.
+          - >-
+            My own processing of the public data, fully reproducible from a YAML config: every step and every number is in
+            the open-source pipeline at {repo_line}. The white point of each filter is set on the nebula with the stars
+            excluded, the sky level on the darkest measured blocks; nothing is painted by hand. The gaps between the
+            short-wave detectors are filled with the neighbouring short-wave filter scaled by a smooth ratio map (slightly
+            noisier strips at 3× zoom).
+          - >-
+            No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons,
+            Flickr; Reddit, AstroBin and X could not be checked). The neighbouring field W3-JWST-1A of the same program was
+            processed by Thomas Carpentier (Flickr, 2025-10-13).
+        reddit_paragraphs:
+          - >-
+            **What:** the W3 star-forming complex in Cassiopeia, JWST NIRCam field W3-JWST-2 of program {program}
+            (PI {pi}), observed {obs}, public in MAST since {release}. A bright cloud next to dark sky with background stars.
+          - "**Filters, ordered by wavelength (shorter = bluer):** {filters}."
+          - >-
+            **How:** my own open-source pipeline, every step in a YAML config: {repo_line}. White point of each filter on
+            the nebula with stars excluded, sky level on the darkest measured blocks, short-wave detector gaps filled from
+            the neighbouring short-wave filter; nothing painted by hand.
+          - >-
+            **Limits:** no empty sky in the field (the sky level sits on the faintest nebula); filled detector-gap strips
+            are slightly noisier at 3×; faint 1/f striping of the short-wave filters at 5× on dark sky.
     flickr:
       style: showcase
       file: web

@@ -232,3 +232,48 @@ def test_reddit_text():
               "Credit: NASA, ESA, CSA, STScI; processing: Denis Krivosheev. Processing licensed CC BY-SA 4.0"):
         assert s in t, s
     assert not find_stop_words(t, pub.stop_words)
+
+
+def test_publish_part_is_exact_crop_and_repeatable(tmp_path, monkeypatch):
+    """Фаза 6: часть кадра — вырезка из принятого PNG и TIFF без изменения пикселей, хеш пикселей части в publish.json,
+    повтор публикации даёт те же файлы (хеши)."""
+    import json
+
+    import numpy as np
+    from PIL import Image
+
+    import skyforge.publish as P
+    from skyforge.config import Config
+    from skyforge.paths import Paths
+    from skyforge.publish import load_publish, pixels_sha256
+
+    pub = load_publish(ROOT / "configs" / "publish.yaml")
+    rng = np.random.default_rng(7)
+    arr = rng.integers(0, 256, (120, 300, 4), dtype=np.uint8)
+    arr[..., 3] = 255
+    t16 = arr.astype(np.uint16) * 257
+    slices = [(slice(10, 110), slice(0, 120)), (slice(5, 120), slice(170, 300))]
+    monkeypatch.setattr(P, "part_slices", lambda *a, **k: slices)
+    f = _sh_facts(slug="w3_2", pi="Best, William", program="5437", tag="phase-6", config="configs/w3_2/showcase.yaml",
+                  filters=[("F140M", 1.40, "#6030ff"), ("F444W", 4.44, "#ff2020")])
+    cfg = Config(target="W3", filters=["F140M", "F444W"])
+    parts = pub.objects["w3_2"].parts
+    hashes = []
+    for run in ("a", "b"):
+        stem = tmp_path / run / "w3_2_showcase"
+        stem.parent.mkdir()
+        for pt in parts:
+            files, sha = P.publish_part(Paths(tmp_path), pub, cfg, f, pt, parts, arr, t16, stem)
+            crop = arr[slices[pt.region]]
+            png = stem.with_name(f"{stem.name}_{pt.name}_master.png")
+            got = np.asarray(Image.open(png))
+            assert np.array_equal(got, crop), pt.name
+            assert sha == pixels_sha256(Image.fromarray(np.ascontiguousarray(crop)))
+            man = json.loads(stem.with_name(f"{stem.name}_{pt.name}_publish.json").read_text(encoding="utf-8"))
+            assert man["pixels_sha256"] == sha
+            hashes.append(man["files"])
+            cap = stem.with_name(f"{stem.name}_{pt.name}_caption.md").read_text(encoding="utf-8")
+            assert pt.label_ru in cap and pt.label_en in cap and "w3_2_showcase_master.png" in cap
+    assert hashes[:2] == hashes[2:]                                      # повтор — те же файлы
+    a_commons = (tmp_path / "a" / "w3_2_showcase_A_commons.txt").read_text(encoding="utf-8")
+    assert "module B bright cloud" in a_commons and "8 filters (Krivosheev).png|full field" in a_commons

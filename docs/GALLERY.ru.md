@@ -90,6 +90,10 @@
 
 ![W3, showcase](gallery/w3_2_showcase.jpg)
 
+На площадках — двумя отдельными картинками: левая половина поля W3-JWST-2 — модуль A NIRCam · правая половина поля W3-JWST-2 — модуль B NIRCam:
+
+![left half of field W3-JWST-2 — NIRCam module A](gallery/w3_2_showcase_A.jpg) ![right half of field W3-JWST-2 — NIRCam module B](gallery/w3_2_showcase_B.jpg)
+
 - **Программа:** 5437, руководитель — Best, William; наблюдения 2024-10-29; данные открыты 2025-10-30
 - **Фильтры:** F140M 1,40 мкм — фиолетово-синий (#6030ff); F182M 1,82 мкм — синий (#3050ff); F210M 2,10 мкм — голубой (#40c0ff); F300M 3,00 мкм — бирюзовый (#30ffb0); F335M 3,35 мкм — жёлто-зелёный (#c0ff40); F360M 3,60 мкм — жёлтый (#ffd820); F405N 4,05 мкм — оранжевый (#ff9020); F444W 4,44 мкм — красный (#ff2020)
 - **Указание источника:** NASA, ESA, CSA, STScI; обработка: Denis Krivosheev; лицензия на обработку — CC BY-SA 4.0
