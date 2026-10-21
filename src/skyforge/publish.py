@@ -84,6 +84,18 @@ class FlickrSpec(_Strict):
     tags: list[str]
 
 
+class RedditSpec(_Strict):
+    # Фаза 6: пост на Reddit — картинка, заголовок и комментарий под постом с подробностями (markdown). Абзацы — шаблоны,
+    # как у Flickr ({program}, {pi}, {obs}, {release}, {filters}, {repo_line}); кредит и лицензия дописываются сами.
+    style: str
+    file: str = "social"                   # web / social / preview / master
+    subreddits: list[str]
+    title: str
+    paragraphs: list[str]
+    filter_labels: dict[str, str] = {}
+    filter_notes: dict[str, str] = {}
+
+
 class PublishedEntry(_Strict):
     style: str
     platform: str
@@ -97,6 +109,7 @@ class ObjectPub(_Strict):
     accepted: str
     commons: CommonsSpec | None = None
     flickr: FlickrSpec | None = None
+    reddit: RedditSpec | None = None
     published: list[PublishedEntry] = []
     pi: str | None = None                  # если в заголовках FITS нет (HST drz)
     jpeg_quality: int | None = Field(None, ge=50, le=100)   # качество JPEG всех версий объекта вместо sizes.*.quality
@@ -245,7 +258,8 @@ def color_name(hexc: str, lang: str) -> str:
     if s < 0.15:
         return "белый" if lang == "ru" else "white"
     names = [(15, "красный", "red"), (45, "оранжевый", "orange"), (70, "жёлтый", "yellow"), (100, "жёлто-зелёный", "yellow-green"),
-             (150, "зелёный", "green"), (190, "бирюзовый", "cyan"), (215, "голубой", "light blue"), (260, "синий", "blue"),
+             (150, "зелёный", "green"), (190, "бирюзовый", "cyan"), (215, "голубой", "light blue"), (245, "синий", "blue"),
+             (260, "фиолетово-синий", "violet-blue"),     # фаза 6: F140M W3-2 (254°) отличается от синего F182M (231°)
              (300, "фиолетовый", "violet"), (345, "пурпурный", "magenta"), (361, "красный", "red")]
     deg = h * 360
     for lim, ru, en in names:
@@ -391,6 +405,35 @@ def flickr_text(f: Facts, pub: PublishConfig, stem: str, master_size: tuple[int,
              f"LICENSE ON FLICKR: set to \"{pub.flickr.license_label}\" in the photo's license settings",
              f"ALBUM: {pub.flickr.album}", "", "=== TITLE ===", fs.title, "", "=== DESCRIPTION ===",
              "\n\n".join(paras), "", "=== TAGS (comma-separated) ===", ", ".join(fs.tags)]
+    return "\n".join(lines) + "\n"
+
+
+def reddit_text(f: Facts, pub: PublishConfig, stem: str) -> str:
+    """Текст для Reddit: файл, сабреддиты (правила каждого — проверить перед постом), заголовок, комментарий под постом
+    в markdown: абзацы-шаблоны из publish.yaml, фильтры с цветами, кредит и лицензия, ссылки на репозиторий и публикации."""
+    rs = pub.objects[f.slug].reddit
+    if rs is None:
+        raise SkyforgeError(f"{f.slug}: нет раздела reddit в configs/publish.yaml")
+    parts = []
+    for n, w, c in f.filters:
+        s = f"{n} {rs.filter_labels[n]}" if n in rs.filter_labels else f"{n} {w:.2f} µm"
+        s += f" {color_name(c, 'en')}"
+        if n in rs.filter_notes:
+            s += f" ({rs.filter_notes[n]})"
+        parts.append(s)
+    subs = {"program": f.program, "pi": _person(f.pi), "obs": f.obs_start, "release": f.release,
+            "filters": " · ".join(parts), "repo_line": f"{pub.repo} (tag {f.tag}, {f.config})" if pub.repo else f"tag {f.tag}"}
+    ext = "png" if rs.file == "master" else "jpg"
+    paras = [p.format(**subs).strip() for p in rs.paragraphs]
+    paras.append(f"Credit: {pub.credit[f.mission]}; processing: {f.author}. Processing licensed {pub.license} "
+                 f"({pub.license_url}).")
+    links = [e for e in pub.objects[f.slug].published if e.style == f.style and e.url]
+    if links:
+        paras.append("Full resolution: " + " · ".join(f"[{e.platform}]({e.url})" for e in links))
+    lines = [f"FILE TO UPLOAD: {stem}_{rs.file}.{ext}",
+             "SUBREDDITS: " + ", ".join(rs.subreddits) + " — check each subreddit's rules (OC flair, processing details, "
+             "self-promotion) before posting", "", "=== TITLE ===", rs.title, "", "=== COMMENT UNDER THE POST (markdown) ===",
+             "\n\n".join(paras)]
     return "\n".join(lines) + "\n"
 
 
@@ -616,6 +659,15 @@ def publish_object(paths: Paths, pub: PublishConfig, name: str, style: str | Non
             fpath = stem.with_name(stem.name + "_flickr.txt")
             fpath.write_text(ft, encoding="utf-8")
             files.append(fpath)
+        rsp = pub.objects[name].reddit
+        if rsp is not None and rsp.style == st:
+            rt = reddit_text(f, pub, stem.name)
+            bad = find_stop_words(rt, pub.stop_words)
+            if bad:
+                raise SkyforgeError(f"{cfg.slug}/{st}: в тексте для Reddit слова из стоп-списка: {bad}")
+            rpath = stem.with_name(stem.name + "_reddit.txt")
+            rpath.write_text(rt, encoding="utf-8")
+            files.append(rpath)
         pm = published_md(f, pub)
         if pm:
             ppath = stem.with_name(stem.name + "_published.md")

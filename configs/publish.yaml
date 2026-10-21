@@ -168,3 +168,65 @@ objects:
         shown_en: "Five NIRCam filters (F182M and four long-wavelength), wavelength-ordered palette with a warm shift, sky reference from the darkest blocks, sky level 16."
         limits_ru: "Полосы 1/f F182M видны при ×5; ядро яркой звезды насыщено; F212N не вошёл (полосы 1/f на уровне 3); волокна PAH почти одного оттенка — фактура по яркости."
         limits_en: "F182M 1/f stripes visible at ×5; the bright star's core is saturated; F212N not included (1/f stripes at level 3); PAH filaments are nearly one hue — texture is in brightness."
+  w3_2:
+    accepted: 2026-10-22
+    flickr:
+      style: showcase
+      file: web
+      file_note: "(or {stem}_master.png for full size, {master_mb} MB)"
+      title: "W3 (Westerhout 3) — JWST NIRCam, eight filters"
+      filter_notes: { F335M: PAH emission, F405N: Brackett-alpha }
+      paragraphs:
+        - >-
+          The W3 star-forming complex in Cassiopeia, imaged by the James Webb Space Telescope (NIRCam): field
+          W3-JWST-2 of program {program}, PI {pi}; observed {obs}, data public in MAST since {release}. The two
+          squares are NIRCam's two detector modules; the dark gap between them is where the camera has no pixels.
+        - >-
+          Eight filters, colours ordered by wavelength (shorter = bluer): {filters}. Dust lanes and a dark globule
+          stand out against glowing gas on the left; on the right a bright cloud borders dark sky with background stars.
+        - >-
+          My own processing of the public data, fully reproducible from a YAML config: every step and every number is in
+          the open-source pipeline at {repo_line}. The white point of each filter is set on the nebula with the stars
+          excluded, the sky level on the darkest measured blocks; nothing is painted by hand. The gaps between the
+          short-wave detectors are filled with the neighbouring short-wave filter scaled by a smooth ratio map (slightly
+          noisier strips at 3× zoom).
+        - >-
+          No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons,
+          Flickr; Reddit, AstroBin and X could not be checked). The neighbouring field W3-JWST-1A of the same program was
+          processed by Thomas Carpentier (Flickr, 2025-10-13).
+      tags: [JWST, Webb, James Webb Space Telescope, NIRCam, W3, Westerhout 3, Cassiopeia, star formation, molecular cloud,
+             dust lanes, PAH, nebula, astrophotography, MAST, JWST program 5437, Skyforge]
+    reddit:
+      style: showcase
+      file: social
+      subreddits: [r/jwst, r/spaceporn, r/astrophotography]
+      title: "W3 (Westerhout 3) in Cassiopeia — my processing of public JWST NIRCam data, eight filters [OC]"
+      filter_notes: { F335M: PAH emission, F405N: Brackett-alpha }
+      paragraphs:
+        - >-
+          **What:** the W3 star-forming complex in Cassiopeia, JWST NIRCam field W3-JWST-2 of program {program}
+          (PI {pi}), observed {obs}, public in MAST since {release}. Two detector modules side by side; the dark gap is
+          real (no pixels there).
+        - "**Filters, ordered by wavelength (shorter = bluer):** {filters}."
+        - >-
+          **How:** my own open-source pipeline, every step in a YAML config: {repo_line}. White point of each filter on
+          the nebula with stars excluded, sky level on the darkest measured blocks, short-wave detector gaps filled from
+          the neighbouring short-wave filter; nothing painted by hand.
+        - >-
+          **Limits:** no empty sky in the field (the sky level sits on the faintest nebula); filled detector-gap strips
+          are slightly noisier at 3×; faint 1/f striping of the short-wave filters at 5× on dark sky.
+    published: []
+    commons:
+      style: showcase
+      filename: "W3 Westerhout 3 JWST NIRCam 8 filters (Krivosheev).png"
+      categories: [Images by NIRCam, James Webb Space Telescope images of nebulae, Star-forming regions, Cassiopeia (constellation)]
+    notes_ru:
+      - "Поле W3-JWST-2 программы 5437 (центр кадра RA 36,80°, Dec +62,00°) — в комплексе W3 между IC 1795 и W3(OH). Данные открыты 2025-10-30. Более ранних публичных цветных обработок этого поля не найдено (поиск 2026-10-21: поиск в сети, Wikimedia Commons, Flickr; Reddit, AstroBin и X не проверялись). Соседнее поле той же программы W3-JWST-1A обработал Thomas Carpentier (Flickr, 2025-10-13)."
+    notes_en:
+      - "Field W3-JWST-2 of program 5437 (frame centre RA 36.80°, Dec +62.00°), in the W3 complex between IC 1795 and W3(OH). Data public since 2025-10-30. No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons, Flickr; Reddit, AstroBin and X not checked). The neighbouring field W3-JWST-1A of the same program was processed by Thomas Carpentier (Flickr, 2025-10-13)."
+    styles:
+      showcase:
+        shown_ru: "Восемь фильтров NIRCam (F140M, F182M, F210M и пять длинноволновых), два модуля с честным промежутком; палитра по длине волны с тёплым сдвигом; белая точка по туманности без звёзд в каждом фильтре; опорное небо по самым тёмным блокам; щели детекторов коротких фильтров заполнены соседним коротким фильтром."
+        shown_en: "Eight NIRCam filters (F140M, F182M, F210M and five long-wavelength), both detector modules with the real gap between them; wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks; short-wave detector gaps filled from the neighbouring short-wave filter."
+        limits_ru: "Пустого неба в поле нет: опора по слабейшей туманности, небо 18 вместо 16, абсолютный уровень условный; в полосах щелей коротких фильтров (13% площади модуля) цветовой шум ×1,7 — виден при ×3; около дюжины квадратов 4″ на пересечениях щелей (0,2% площади) заполнены F300M и отличаются по тону; пунктирные швы по краям полос — из исходных i2d; полосы 1/f коротких фильтров видны на небе при ×5."
+        limits_en: "No empty sky in the field: the reference is the faintest nebula, sky at 18 instead of 16, the absolute level is nominal; short-wave detector-gap strips (13% of a module) have ×1.7 colour noise, visible at 3×; about a dozen 4″ squares where gaps cross (0.2% of the area) are filled from F300M and differ in tone; dotted seams along the strip edges come from the source i2d; short-wave 1/f stripes visible on the sky at 5×."

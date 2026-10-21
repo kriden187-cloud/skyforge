@@ -85,3 +85,23 @@ not edited by hand. Русская версия: [GALLERY.ru.md](GALLERY.ru.md).
   skyforge run sh2305 -s showcase --bin 1        # downloads from MAST if the data is not on disk
   skyforge publish sh2305 -s showcase
   ```
+
+## W3 — JWST NIRCam, style showcase
+
+![W3, showcase](gallery/w3_2_showcase.jpg)
+
+- **Program:** 5437, PI William Best; observed 2024-10-29; data public since 2025-10-30
+- **Filters:** F140M 1.40 µm — violet-blue (#6030ff); F182M 1.82 µm — blue (#3050ff); F210M 2.10 µm — light blue (#40c0ff); F300M 3.00 µm — cyan (#30ffb0); F335M 3.35 µm — yellow-green (#c0ff40); F360M 3.60 µm — yellow (#ffd820); F405N 4.05 µm — orange (#ff9020); F444W 4.44 µm — red (#ff2020)
+- **Credit:** NASA, ESA, CSA, STScI; processing: Denis Krivosheev; license of the processing CC BY-SA 4.0
+- **Config:** [configs/w3_2/showcase.yaml](../configs/w3_2/showcase.yaml), tag [`phase-6`](https://github.com/kriden187-cloud/skyforge/tree/phase-6), accepted 2026-10-22
+- **Final pixel hash (sha256):** `6cfce60e995bc5fbef7e12c89d1e8c194c360cd3f1aa65e7d9c996e7007d8a11`
+- **What is shown:** Eight NIRCam filters (F140M, F182M, F210M and five long-wavelength), both detector modules with the real gap between them; wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks; short-wave detector gaps filled from the neighbouring short-wave filter.
+- **Limitations:** No empty sky in the field: the reference is the faintest nebula, sky at 18 instead of 16, the absolute level is nominal; short-wave detector-gap strips (13% of a module) have ×1.7 colour noise, visible at 3×; about a dozen 4″ squares where gaps cross (0.2% of the area) are filled from F300M and differ in tone; dotted seams along the strip edges come from the source i2d; short-wave 1/f stripes visible on the sky at 5×.
+- **Note:** Field W3-JWST-2 of program 5437 (frame centre RA 36.80°, Dec +62.00°), in the W3 complex between IC 1795 and W3(OH). Data public since 2025-10-30. No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons, Flickr; Reddit, AstroBin and X not checked). The neighbouring field W3-JWST-1A of the same program was processed by Thomas Carpentier (Flickr, 2025-10-13).
+- **How to get the same file:**
+
+  ```
+  git checkout phase-6
+  skyforge run w3_2 -s showcase --bin 1        # downloads from MAST if the data is not on disk
+  skyforge publish w3_2 -s showcase
+  ```

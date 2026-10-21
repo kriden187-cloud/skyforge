@@ -27,6 +27,7 @@ How the pipeline is built and what it promises — [docs/OVERVIEW.en.md](docs/OV
 | NGC 3132 (Southern Ring) | JWST NIRCam, program 2733 (ERO), 6 filters, built from level-2 exposures | `configs/ngc3132/` (styles measured and showcase) | `phase-3k` |
 | NGC 3132 | Hubble WFPC2 1995, program 6221, [O III], Hα, [N II] | `configs/ngc3132hst/` | `phase-3b` |
 | Sh2-305 | JWST NIRCam, program 4547, F182M and 4 long-wavelength filters | `configs/sh2305/` | `phase-4` |
+| W3 (Westerhout 3) | JWST NIRCam, program 5437, field W3-JWST-2: F140M, F182M, F210M and 5 long-wavelength filters, both detector modules | `configs/w3_2/` | `phase-6` |
 
 Previews, captions and reproduction commands are in [docs/GALLERY.md](docs/GALLERY.md). The project plan is
 [docs/PLAN.md](docs/PLAN.md), the history of decisions and limitations is [docs/HANDOFF.md](docs/HANDOFF.md) (both in

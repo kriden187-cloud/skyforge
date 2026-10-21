@@ -25,6 +25,7 @@ English: [README.md](README.md).
 | NGC 3132 (Южное кольцо) | JWST NIRCam, программа 2733 (ERO), 6 фильтров, сборка из экспозиций уровня 2 | `configs/ngc3132/` (стили measured и showcase) | `phase-3k` |
 | NGC 3132 | Hubble WFPC2 1995, программа 6221, [O III], Hα, [N II] | `configs/ngc3132hst/` | `phase-3b` |
 | Sh2-305 | JWST NIRCam, программа 4547, F182M и 4 длинноволновых фильтра | `configs/sh2305/` | `phase-4` |
+| W3 (Westerhout 3) | JWST NIRCam, программа 5437, поле W3-JWST-2: F140M, F182M, F210M и 5 длинноволновых, оба модуля детектора | `configs/w3_2/` | `phase-6` |
 
 Превью, подписи и команды воспроизведения — в [docs/GALLERY.ru.md](docs/GALLERY.ru.md). План проекта — [docs/PLAN.md](docs/PLAN.md),
 история решений и ограничения — [docs/HANDOFF.md](docs/HANDOFF.md). Краткий обзор на английском —

@@ -46,4 +46,5 @@ After acceptance, `skyforge publish` makes the master PNG/TIFF, JPEG versions fo
 - **NGC 3132, JWST showcase:** the same steps; three background details visible at ×2–×5; outer halo fainter than in the NASA release; one field star with a greenish core.
 - **NGC 3132, Hubble WFPC2:** final at bin 2; 65 cosmic-ray traces on the sky; 0.25% zeros in the blue sky channel; seams ≤ 6 px filled linearly.
 - **Sh2-305, JWST:** F182M 1/f stripes visible at ×5; the bright star's core is saturated; F212N not included; PAH filaments are nearly one hue.
-- **Object search:** `skyforge discover` checks candidates against official press releases only, not against amateur processings.
+- **W3, JWST (field W3-JWST-2):** no empty sky in the field (the sky reference is the faintest nebula); short-wave detector-gap strips filled from a neighbouring filter are noisier at 3×, and about a dozen 4″ squares where the gaps cross differ in tone; short-wave 1/f stripes on the sky at 5×.
+- **Object search:** `skyforge discover` checks press releases; `skyforge untouched` checks web search, Wikimedia Commons and Flickr (Reddit, AstroBin and X are not reachable from the pipeline; on a known object it found 6 of 7 public processings).

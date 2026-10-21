@@ -212,3 +212,23 @@ def test_find_stop_words_word_stems(words):
     from skyforge.publish import find_stop_words
 
     assert find_stop_words("ПЕРВОЕ", words) == ["перв"]
+
+
+def test_reddit_text():
+    """Фаза 6: текст Reddit — файл, сабреддиты с напоминанием о правилах, заголовок, комментарий с фактами из данных,
+    фильтрами с цветами (F140M — фиолетово-синий, отличается от синего F182M), ссылкой на репозиторий, кредитом и
+    лицензией; без стоп-слов (служебные заголовки тоже проверяются)."""
+    from skyforge.publish import find_stop_words, load_publish, reddit_text
+
+    pub = load_publish(ROOT / "configs" / "publish.yaml")
+    f = _sh_facts(slug="w3_2", pi="Best, William", program="5437", obs_start="2024-10-29", release="2025-10-30",
+                  tag="phase-6", config="configs/w3_2/showcase.yaml",
+                  filters=[("F140M", 1.40, "#6030ff"), ("F182M", 1.82, "#3050ff"), ("F405N", 4.05, "#ff9020")])
+    t = reddit_text(f, pub, "w3_2_showcase")
+    for s in ("FILE TO UPLOAD: w3_2_showcase_social.jpg", "r/jwst", "check each subreddit's rules", "=== TITLE ===",
+              "[OC]", "program 5437 (PI William Best), observed 2024-10-29, public in MAST since 2025-10-30",
+              "F140M 1.40 µm violet-blue", "F182M 1.82 µm blue", "F405N 4.05 µm orange (Brackett-alpha)",
+              "https://github.com/kriden187-cloud/skyforge (tag phase-6, configs/w3_2/showcase.yaml)",
+              "Credit: NASA, ESA, CSA, STScI; processing: Denis Krivosheev. Processing licensed CC BY-SA 4.0"):
+        assert s in t, s
+    assert not find_stop_words(t, pub.stop_words)
