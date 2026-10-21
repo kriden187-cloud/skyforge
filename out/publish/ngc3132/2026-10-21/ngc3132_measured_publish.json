@@ -1,0 +1,27 @@
+{
+  "accepted_png": "data/baselines/ngc3132/phase-3k/measured_bin1.png",
+  "files": {
+    "ngc3132_measured_caption.md": "e1b2a13cfd595cfec1c11fb786fc5779dd43dd2eab20e7c1765a84bab6cf7a33",
+    "ngc3132_measured_master.png": "148d5d550b4c372dc36973a890dd5573fc67259693e001aa4793f49ad2349efb",
+    "ngc3132_measured_master.tif": "cdd149eac331eb0c58eb3c15ec3dd41078f69adb104cc7dc9ee525a427cf9bf3",
+    "ngc3132_measured_preview.jpg": "452b22e62bc982fb68f7002c92d63cff3714093f42cd384f5b930d14de1a8d13",
+    "ngc3132_measured_social.jpg": "cc86628acac3f8584ab745af5f0b04198820eab0915dd727e72fdfdfa1ecadac",
+    "ngc3132_measured_web.jpg": "d2c06eec04ae9dc618f045dad78a98d7c94998adaf7b70336d4bab93c0380964"
+  },
+  "meta": {
+    "config": "configs/ngc3132/measured.yaml",
+    "config_digest": "309313b6c385f6f3",
+    "copyright": "© 2026 Denis Krivosheev. CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Data: NASA, ESA, CSA, STScI.",
+    "credit": "NASA, ESA, CSA, STScI; processing: Denis Krivosheev",
+    "credit_ru": "NASA, ESA, CSA, STScI; обработка: Denis Krivosheev",
+    "description": "NGC 3132, JWST NIRCam, filters F090W, F187N, F212N, F356W, F405N, F470N; program 2733 (PI Pontoppidan, Klaus M.), observed 2022-06-03. Config configs/ngc3132/measured.yaml @ phase-3k, digest 309313b6c385f6f3, pixels sha256 0f556d7667dbccca.",
+    "description_ru": "NGC 3132, JWST NIRCam, фильтры F090W, F187N, F212N, F356W, F405N, F470N; программа 2733 (руководитель Pontoppidan, Klaus M.), наблюдения 2022-06-03. Конфиг configs/ngc3132/measured.yaml, тег phase-3k, хеш 309313b6c385f6f3, пиксели sha256 0f556d7667dbccca.",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "pixels_sha256": "0f556d7667dbccca8ca49a82923d9bc79af94471caa7576f2c1fc1a49356f3b2",
+    "software": "skyforge 0.1.0 (publish v1)",
+    "tag": "phase-3k",
+    "title": "NGC 3132 — JWST NIRCam (measured)"
+  },
+  "tiff_from": "out/ngc3132/2026-10-21_15-04-36_styles/measured/ngc3132_measured.tif"
+}

@@ -1,0 +1,27 @@
+{
+  "accepted_png": "data/baselines/ngc3132hst/phase-3b/showcase_bin2.png",
+  "files": {
+    "ngc3132hst_showcase_caption.md": "ca1729e7ed797156e7eea796296f49c43557ca28449b6a7fd04530fc518cda21",
+    "ngc3132hst_showcase_master.png": "265ae7d81680e061622ad2314ae9408dfa0b11987cc1f599deaf9fa5a6f63835",
+    "ngc3132hst_showcase_master.tif": "74dcb74ac29f292d06e7f69020a6637f9a54723989408768e3ae0f37b56e8fbf",
+    "ngc3132hst_showcase_preview.jpg": "998cbf802312208cdcdb17d6323b25e5b872115b3a760dce95db628b006214cf",
+    "ngc3132hst_showcase_social.jpg": "51876ffdfb59fc986639dd2541b7cdd3fb13f5925569f87ea553e5f873c70910",
+    "ngc3132hst_showcase_web.jpg": "51876ffdfb59fc986639dd2541b7cdd3fb13f5925569f87ea553e5f873c70910"
+  },
+  "meta": {
+    "config": "configs/ngc3132hst/showcase.yaml",
+    "config_digest": "75e63fd95e324e77",
+    "copyright": "© 2026 Denis Krivosheev. CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Data: NASA, ESA, STScI.",
+    "credit": "NASA, ESA, STScI; processing: Denis Krivosheev",
+    "credit_ru": "NASA, ESA, STScI; обработка: Denis Krivosheev",
+    "description": "NGC 3132, HST WFPC2, filters F502N, F656N, F658N; program 6221 (PI Trauger, John), observed 1995-12-07. Config configs/ngc3132hst/showcase.yaml @ phase-3b, digest 75e63fd95e324e77, pixels sha256 827ebc2ecbb4149c.",
+    "description_ru": "NGC 3132, HST WFPC2, фильтры F502N, F656N, F658N; программа 6221 (руководитель Trauger, John), наблюдения 1995-12-07. Конфиг configs/ngc3132hst/showcase.yaml, тег phase-3b, хеш 75e63fd95e324e77, пиксели sha256 827ebc2ecbb4149c.",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "pixels_sha256": "827ebc2ecbb4149c77133c62679fc60f6f51640d3d2376147645e0e2afa82b26",
+    "software": "skyforge 0.1.0 (publish v1)",
+    "tag": "phase-3b",
+    "title": "NGC 3132 — HST WFPC2 (showcase)"
+  },
+  "tiff_from": "out/ngc3132hst/2026-10-21_15-06-08_showcase/ngc3132hst_showcase_bin2.tif"
+}

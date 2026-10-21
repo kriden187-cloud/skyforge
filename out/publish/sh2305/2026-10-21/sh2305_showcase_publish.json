@@ -1,0 +1,27 @@
+{
+  "accepted_png": "data/baselines/sh2305/phase-4/showcase_bin1.png",
+  "files": {
+    "sh2305_showcase_caption.md": "28aee29c88d8869c9fd4bdd9c24ff6d0078d8fcd4aa17c3d47ec303d7f4f1574",
+    "sh2305_showcase_master.png": "e3b67ca9ec7c12df2ed9076a490a29fd5b62634935b420708d74a0c8b2076a7e",
+    "sh2305_showcase_master.tif": "d653047a946efa6868f2362014a75b19f62f9b5c8020bf807d0c61f68f1dff24",
+    "sh2305_showcase_preview.jpg": "f7fdd788f3deb92866a3c666a64a81f96a20df18196425fa4c3609cac26cb98c",
+    "sh2305_showcase_social.jpg": "77bca6c1bdeed23d64d469cce6d0df8d87cb3831ab2b304542e5d06b0da48956",
+    "sh2305_showcase_web.jpg": "81fe8d1aa6d3b48e8c4e64270a300b4ec297a7f189039232ad29497614cf696c"
+  },
+  "meta": {
+    "config": "configs/sh2305/showcase.yaml",
+    "config_digest": "676fb71874f17f51",
+    "copyright": "© 2026 Denis Krivosheev. CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Data: NASA, ESA, CSA, STScI.",
+    "credit": "NASA, ESA, CSA, STScI; processing: Denis Krivosheev",
+    "credit_ru": "NASA, ESA, CSA, STScI; обработка: Denis Krivosheev",
+    "description": "Sh 2-305, JWST NIRCam, filters F182M, F300M, F335M, F360M, F444W; program 4547 (PI McCaughrean, Mark J.), observed 2025-03-31. Config configs/sh2305/showcase.yaml @ phase-4, digest 676fb71874f17f51, pixels sha256 439762383405fb55.",
+    "description_ru": "Sh 2-305, JWST NIRCam, фильтры F182M, F300M, F335M, F360M, F444W; программа 4547 (руководитель McCaughrean, Mark J.), наблюдения 2025-03-31. Конфиг configs/sh2305/showcase.yaml, тег phase-4, хеш 676fb71874f17f51, пиксели sha256 439762383405fb55.",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "pixels_sha256": "439762383405fb558353f75843485ff6bc04ae64279ee0b53e3e390ba270fe50",
+    "software": "skyforge 0.1.0 (publish v1)",
+    "tag": "phase-4",
+    "title": "Sh 2-305 — JWST NIRCam (showcase)"
+  },
+  "tiff_from": "out/sh2305/2026-10-21_15-01-17_showcase/sh2305_showcase.tif"
+}

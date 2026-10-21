@@ -1,0 +1,27 @@
+{
+  "accepted_png": "data/baselines/ngc3132/phase-3k/showcase_bin1.png",
+  "files": {
+    "ngc3132_showcase_caption.md": "76606a0c94ac8acb8a472f98ae2bdf76607c3ed81dcca586a38960beadba9f67",
+    "ngc3132_showcase_master.png": "6de2625e3430977ec1a1424d25ecd1c5c42b81d7ffe9e63b76cc516af83b77ff",
+    "ngc3132_showcase_master.tif": "08a39a203ee7dd02a26070da1fa1c3f6b583ade447133014d621b5e2f7d8bdf4",
+    "ngc3132_showcase_preview.jpg": "706f7e028cdcd8d3fb2ee2a6a18d99262a379aa6783b98ff5e3242dd2b9d07ee",
+    "ngc3132_showcase_social.jpg": "2219284ea78f41b1b6d4a34cdc2be196833ae3d7a5231df3c89a24b7df9bdebb",
+    "ngc3132_showcase_web.jpg": "2cb8129da496571ca74f97d360474b21a55c810b01f60ddedf2330a52dd62f63"
+  },
+  "meta": {
+    "config": "configs/ngc3132/showcase.yaml",
+    "config_digest": "7aab67cfa5b15f69",
+    "copyright": "© 2026 Denis Krivosheev. CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Data: NASA, ESA, CSA, STScI.",
+    "credit": "NASA, ESA, CSA, STScI; processing: Denis Krivosheev",
+    "credit_ru": "NASA, ESA, CSA, STScI; обработка: Denis Krivosheev",
+    "description": "NGC 3132, JWST NIRCam, filters F090W, F187N, F212N, F356W, F405N, F470N; program 2733 (PI Pontoppidan, Klaus M.), observed 2022-06-03. Config configs/ngc3132/showcase.yaml @ phase-3k, digest 7aab67cfa5b15f69, pixels sha256 2e72fc9c06d71b12.",
+    "description_ru": "NGC 3132, JWST NIRCam, фильтры F090W, F187N, F212N, F356W, F405N, F470N; программа 2733 (руководитель Pontoppidan, Klaus M.), наблюдения 2022-06-03. Конфиг configs/ngc3132/showcase.yaml, тег phase-3k, хеш 7aab67cfa5b15f69, пиксели sha256 2e72fc9c06d71b12.",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "pixels_sha256": "2e72fc9c06d71b12f33fc5eea9fc9f8dc03233b59476679ead8d7236e87c053f",
+    "software": "skyforge 0.1.0 (publish v1)",
+    "tag": "phase-3k",
+    "title": "NGC 3132 — JWST NIRCam (showcase)"
+  },
+  "tiff_from": "out/ngc3132/2026-10-21_15-04-36_styles/showcase/ngc3132_showcase.tif"
+}

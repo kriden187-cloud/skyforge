@@ -1,0 +1,72 @@
+# Фаза 5: публикация принятых результатов (skyforge publish, skyforge gallery).
+# Факты подписи — из конфига объекта, заголовков FITS (программа, руководитель, даты наблюдений), манифеста (дата открытия
+# данных) и метаданных принятого PNG (цвета фильтров, хеш конфига); здесь — только то, чего в данных нет.
+
+# Решения владельца 2026-10-21 (фаза 5, п. 4): лицензия CC BY-SA 4.0, автор Denis Krivosheev, без водяного знака.
+# Имя автора публикации — только здесь: в конфигах объектов (author: Denis) и в метаданных принятых прогонов оно прежнее,
+# пиксели те же; publish и gallery берут имя отсюда.
+author: Denis Krivosheev
+license: CC BY-SA 4.0
+license_url: https://creativecommons.org/licenses/by-sa/4.0/
+watermark: false            # подпись только в тексте и метаданных, на картинке — ничего
+
+# Формула источника для производных работ из архивных данных MAST (проверка 2026-10-21, ссылки — docs/PLAN.md, фаза 5):
+# NASA — «NASA should be acknowledged as the source»; ESA/Webb — кредит без изменений, свои правки — после него.
+credit:
+  jwst: NASA, ESA, CSA, STScI
+  hst: NASA, ESA, STScI
+
+# Версии под площадки: длинная сторона, px; JPEG, sRGB, Lanczos, без резкости сверх финала; только полный кадр.
+sizes:
+  web: { long: 2048, quality: 92 }
+  social: { long: 1600, quality: 92 }
+  preview: { long: 800, quality: 92 }
+
+# Слова, которых не должно быть в подписи (проверка при publish и в тестах), по основе слова, без учёта регистра.
+stop_words: [перв, уникальн, единствен, first, unique, only one, never before, впервые]
+
+objects:
+  ngc3132:
+    accepted: 2026-10-20
+    notes_ru:
+      - "Программа ERO 2733 (Early Release Observations); официальный снимок NIRCam — 12 июля 2022 (ESA/Webb weic2207b, NASA/STScI «Southern Ring Nebula (NIRCam Image)»)."
+    notes_en:
+      - "Program ERO 2733 (Early Release Observations); official NIRCam image released 12 July 2022 (ESA/Webb weic2207b, NASA/STScI “Southern Ring Nebula (NIRCam Image)”)."
+    styles:
+      measured:
+        shown_ru: "Шесть фильтров NIRCam в порядке длины волны, вес F212N 0,25 (ореол H₂ настоящий)."
+        shown_en: "Six NIRCam filters in wavelength order, F212N weight 0.25 (the H₂ halo is real)."
+        limits_ru: "Ступеньки фона по границам числа экспозиций до ~0,6σ; ядра трёх насыщенных звёзд — белые пятна; лучи ярких звёзд вне маски звёзд."
+        limits_en: "Background steps along exposure-count boundaries up to ~0.6σ; cores of three saturated stars are white; bright-star spikes are outside the star mask."
+      showcase:
+        shown_ru: "Витрина в духе релиза NASA: пьедестал и носок неба, полином неба с гашением к туманности, подъём теней 2, насыщенность 1,2."
+        shown_en: "Showcase in the spirit of the NASA release: sky pedestal and toe, sky polynomial tapered towards the nebula, shadows 2, saturation 1.2."
+        limits_ru: "Ступеньки по границам числа экспозиций; три детали фона видны при ×2–×5; внешний ореол слабее, чем у NASA; одна звезда поля с зеленоватым ядром."
+        limits_en: "Steps along exposure-count boundaries; three background details visible at ×2–×5; outer halo fainter than NASA's; one field star with a greenish core."
+  ngc3132hst:
+    accepted: 2026-10-20
+    jpeg_quality: 98          # все версии: шумный синий канал F502N — при 92 медиана |Δ| к мастеру в синем 2 уровня (шум сжатия,
+                              # сдвига тона нет), при 98 — 1; файл ~665 КБ против 211 КБ (лист out/publish/проверка_5/90_тон_версий.tsv)
+    pi: "Trauger, John"       # в заголовке drz нет — MAST, Observations.query_criteria(proposal_id=6221).proposal_pi
+    notes_ru:
+      - "Те же данные WFPC2 легли в основу снимка Hubble Heritage 1998 года (STScI-1998-39)."
+    notes_en:
+      - "The same WFPC2 data underlie the 1998 Hubble Heritage image (STScI-1998-39)."
+    styles:
+      showcase:
+        shown_ru: "WFPC2 1995 года, три узкополосных фильтра ([O III], Hα, [N II]), итог при bin 2."
+        shown_en: "WFPC2 data from 1995, three narrow-band filters ([O III], Hα, [N II]), final at bin 2."
+        limits_ru: "Bin 2 (bin 1 — передискретизация drizzle); 65 следов космических лучей на небе; 0,25% нулей в синем канале неба; швы ≤ 6 px заполнены линейно, углы — уровнем неба."
+        limits_en: "Bin 2 (bin 1 is drizzle oversampling); 65 cosmic-ray traces on the sky; 0.25% zeros in the blue sky channel; seams ≤ 6 px filled linearly, corners at sky level."
+  sh2305:
+    accepted: 2026-10-21
+    notes_ru:
+      - "Данные открыты 2026-04-02. Известные более ранние обработки этих данных: Мелина Тевено (Wikimedia Commons, 2026-04-03); Томас Карпантье (Flickr, 2026-04-03); Исраэль Веласкес Родригес (Flickr, 2026-04-03); Андреа Лук (Flickr, 2026-04-11); Марк Маккохрейн, руководитель программы (Flickr, 2026-04-15, копия на Wikimedia Commons); Мехмет Хакан Озсарач (Flickr, 2026-05-18); Picturavis (Pixelfed, около 2026-05-22)."
+    notes_en:
+      - "Data public since 2026-04-02. Known earlier processings of these data: Melina Thévenot (Wikimedia Commons, 2026-04-03); Thomas Carpentier (Flickr, 2026-04-03); Israel Velázquez Rodríguez (Flickr, 2026-04-03); Andrea Luck (Flickr, 2026-04-11); Mark McCaughrean, program PI (Flickr, 2026-04-15, copy on Wikimedia Commons); Mehmet Hakan Özsaraç (Flickr, 2026-05-18); Picturavis (Pixelfed, around 2026-05-22)."
+    styles:
+      showcase:
+        shown_ru: "Пять фильтров NIRCam (F182M и четыре длинноволновых), палитра по длине волны с тёплым сдвигом, опорное небо по самым тёмным блокам, небо 16."
+        shown_en: "Five NIRCam filters (F182M and four long-wavelength), wavelength-ordered palette with a warm shift, sky reference from the darkest blocks, sky level 16."
+        limits_ru: "Полосы 1/f F182M видны при ×5; ядро яркой звезды насыщено; F212N не вошёл (полосы 1/f на уровне 3); волокна PAH почти одного оттенка — фактура по яркости."
+        limits_en: "F182M 1/f stripes visible at ×5; the bright star's core is saturated; F212N not included (1/f stripes at level 3); PAH filaments are nearly one hue — texture is in brightness."

@@ -339,6 +339,31 @@ def baseline(config: ConfigArg,
         console.print(f"  {paths.rel(p)}")
 
 
+@app.command()
+@_handle
+def publish(target: Annotated[str, typer.Argument(help="Объект: папка configs/<объект>/ и раздел objects в configs/publish.yaml")],
+            style: StyleOpt = None) -> None:
+    """Публикация принятого результата (report.baseline): мастер PNG и TIFF, версии JPEG под площадки, подпись RU/EN."""
+    from datetime import date
+
+    from skyforge.publish import load_publish, publish_object
+
+    paths = _paths()
+    pub = load_publish(paths.root / "configs" / "publish.yaml")
+    for p in publish_object(paths, pub, target, style, date.today().isoformat()):
+        console.print(f"  {paths.rel(p)}")
+
+
+@app.command()
+@_handle
+def gallery() -> None:
+    """Галерея конфигов: docs/GALLERY.md и превью docs/gallery/ — по разделу на объект и стиль из configs/publish.yaml."""
+    from skyforge.publish import build_gallery, load_publish
+
+    paths = _paths()
+    console.print(f"  {paths.rel(build_gallery(paths, load_publish(paths.root / 'configs' / 'publish.yaml')))}")
+
+
 @cache_app.command("list")
 @_handle
 def cache_list() -> None:
