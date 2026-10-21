@@ -17,7 +17,7 @@ from PIL import Image
 from skyforge.align import load_aligned, stats_field, with_resolved_crops
 from skyforge.clean import (load_input, load_nebula_sd, load_saturated_stars, load_sky_mask, load_star_weight,
                             load_star_weight_map)
-from skyforge.compose import base_color, tail_color
+from skyforge.compose import base_color, fill_gaps, tail_color
 from skyforge.config import Config
 from skyforge.cosmics import fill_gaps_linear
 from skyforge.finish import finish_array, finish_masks
@@ -41,6 +41,7 @@ def render(c: Config, P: Paths, arrays: dict, ctx: dict, gains: dict | None = No
     a, _, _ = apply_sky_poly(c, P, a)
     masks = load_masks(c, P)
     layers = {f: stretch_array(v, c.stretch.for_filter(f), masks=masks, field=ctx["field"])[0] for f, v in a.items()}
+    layers, _ = fill_gaps(c, layers)                   # фаза 6: щели детекторов (color.fill_gaps), как в compose
     lvl = (c.stretch.sky_level or 0) / 255
     for f, g in (gains or {}).items():
         L = layers[f]
