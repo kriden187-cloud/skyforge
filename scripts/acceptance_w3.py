@@ -3,8 +3,9 @@
 30 — целиком при обычной яркости и ×5.
 31 — восемь кропов из конфига при 100%.
 32 — sky, sky2, gap при ×5 и рядом карта областей CON F444W и F182M (границы дизеринга).
-33 — числа: опорное небо R/G/B, нули неба, выжжено в туманности всего и по модулям, зелень звёзд, прозрачные пиксели.
-34 — полосы 1/f: растянутые слои F182M и F210M и итог при 100% в кропах sky, sky2 и cloud (как F182M у Sh2-305:
+33 — числа: опорное небо R/G/B, нули неба, выжжено в туманности всего и по модулям (без звёзд: маска clean и, при
+     stretch.exclude_point_sources, точечные источники всех фильтров), зелень звёзд, прозрачные пиксели.
+34 — полосы 1/f: растянутые слои F140M, F182M и F210M и итог при 100% в кропах sky, sky2 и cloud (как F182M у Sh2-305:
      видны ли полосы при 100% после растяжки); мера — σ медиан строк и столбцов / шум (scripts/stripes_s305.py).
 
 Запуск: uv run python scripts/acceptance_w3.py <png итога> <папка> [bin]
@@ -90,6 +91,12 @@ def main() -> None:
     gx = st[:, 1] - np.maximum(st[:, 0], st[:, 2])
     green = [float(np.percentile(gx, q)) for q in (50, 75, 95)] if st.size else [float("nan")] * 3
     neb = sd > 0
+    ps_cfg = c.stretch.exclude_point_sources
+    if ps_cfg is not None:   # фаза 6: выжжено — по туманности без звёзд, и тех, что маска clean пропускает
+        from skyforge.stretch import point_sources
+
+        for a in arrays.values():
+            neb = neb & ~point_sources(a, ps_cfg, meta["pixel_scale_arcsec"])[0]
 
     def burned(m: np.ndarray) -> float:
         v = img[m & neb]
@@ -114,7 +121,7 @@ def main() -> None:
             f"опорное небо: {json.dumps(info, ensure_ascii=False)}\t\t"]
 
     sdir = stretched_dir(c, P)
-    layers = {f: np.load(sdir / f"{f}.npy") for f in ("F182M", "F210M") if (sdir / f"{f}.npy").exists()}
+    layers = {f: np.load(sdir / f"{f}.npy") for f in ("F140M", "F182M", "F210M") if (sdir / f"{f}.npy").exists()}
     stars = ndimage.binary_dilation(sw > 0.01, iterations=3)
     tiles, labels = [], []
     for name in ("sky", "sky2", "cloud"):
@@ -130,7 +137,7 @@ def main() -> None:
         v, h = stripes(lum, ~stars[sl])
         tiles.append(img[sl][::-1]); labels.append(f"{name} · итог 100%\nполосы верт./гориз. {v:.1f} / {h:.1f}")
         rows.append(f"полосы итога (яркость) в {name}: верт. / гориз.\t{v:.1f} / {h:.1f}\t—")
-    contact_sheet(tiles, labels, out / "34_полосы_F182M_F210M.png", cols=len(layers) + 1, tile_inches=4.2,
+    contact_sheet(tiles, labels, out / "34_полосы_коротких.png", cols=len(layers) + 1, tile_inches=4.2,
                   interpolation="nearest", title=f"W3-2 bin {b}: полосы 1/f коротковолновых при 100% после растяжки")
     (out / "33_числа.tsv").write_text("\n".join(rows) + "\n", encoding="utf-8")
     print("\n".join(rows))

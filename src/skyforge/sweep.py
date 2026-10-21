@@ -18,7 +18,7 @@ from skyforge.config import Config, SweepAxis
 from skyforge.log import console
 from skyforge.paths import Paths
 from skyforge.preview import contact_sheet, shrink
-from skyforge.stretch import load_masks, stretch_array
+from skyforge.stretch import filter_masks, load_masks, stretch_array
 
 
 def _fmt(v: float) -> str:
@@ -39,10 +39,12 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
     needs_nebula = any(c.color.shadows.scope == "nebula" and c.color.shadows.value > 0 for c in _variants(cfg, x, y))
     sd = load_nebula_sd(cfg, paths, required=True) if needs_nebula else None
     sky = load_sky_mask(cfg, paths)
-    from skyforge.align import stats_field
+    from skyforge.align import read_aligned_meta, stats_field
 
     masks = load_masks(cfg, paths)  # статистика растяжки — по полному кадру и полным маскам
     field = stats_field(cfg, paths, list(arrays.values()))
+    scale = read_aligned_meta(cfg, paths).get("pixel_scale_arcsec")
+    fmasks = {f: filter_masks(cfg, a, masks, scale)[0] for f, a in arrays.items()}   # фаза 6: свои точечные источники
     sd = sd if sd is not None else load_nebula_sd(cfg, paths)
     if crop:
         cx, cy, side = crop
@@ -76,7 +78,7 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
                 label += f" · {y.param.split('.')[-1]}={_fmt(yv)}"
             layers = {}
             for f, a in arrays.items():
-                layers[f], _ = stretch_array(small[f], c.stretch.for_filter(f), stats_from=a, masks=masks, field=field)
+                layers[f], _ = stretch_array(small[f], c.stretch.for_filter(f), stats_from=a, masks=fmasks[f], field=field)
             rgb, _ = compose_layers(c, layers, weight, sd, sky)
             if with_finish:
                 from skyforge.finish import finish_array

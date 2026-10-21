@@ -153,6 +153,8 @@ def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
         exclude |= {"sky_reference", "sky_reference_block_px", "sky_reference_n_blocks", "sky_reference_min_free"}
     if cfg.stretch.sky_reference_crop is None:
         exclude.add("sky_reference_crop")
+    if cfg.stretch.exclude_point_sources is None:
+        exclude.add("exclude_point_sources")
     st = cfg.stretch.model_dump(mode="json", exclude=exclude)
     key = {"input": in_key, "stretch": st}   # фаза 4: новые поля в ключе только когда заданы — кеши прежних объектов те же
     if cfg.stretch.sky_reference == "crop":   # фаза 6: координаты кропа опоры (report в хеш не входит)
@@ -243,12 +245,62 @@ def load_masks(cfg: Config, paths: Paths) -> tuple[np.ndarray, np.ndarray] | Non
     return sky, neb
 
 
+def point_sources(a: np.ndarray, ps: Any, scale_arcsec: float) -> tuple[np.ndarray, dict[str, Any]]:
+    """stretch.exclude_point_sources: круги вокруг резких локальных максимумов (звёзд) до радиуса, где кольцо уходит
+    в местный фон. Возвращает маску и {stars, max_radius_arcsec, noise}."""
+    from scipy import ndimage
+
+    from skyforge.field import block_median_map
+
+    ok = np.isfinite(a)
+    bg = block_median_map(a, max(16, int(round(ps.window_arcsec / scale_arcsec))), fill_empty=True)
+    r = np.where(ok, a - bg, 0).astype(np.float32)
+    d = np.diff(np.where(ok, a, np.nan), axis=1)
+    d = d[np.isfinite(d)]
+    noise = float(1.4826 * np.median(np.abs(d - np.median(d))) / np.sqrt(2)) if d.size else 0.0
+    peaks = np.argwhere((r == ndimage.maximum_filter(r, 5)) & (r > ps.sigma * noise)
+                        & (r > ps.sharpness * np.maximum(ndimage.uniform_filter(r, 5), 1e-12)))
+    H, W = a.shape
+    rmax = max(2, int(ps.max_radius_arcsec / scale_arcsec))
+    out = np.zeros(a.shape, dtype=bool)
+    biggest = 0
+    for y, x in peaks:
+        y0, y1, x0, x1 = max(y - rmax, 0), min(y + rmax + 1, H), max(x - rmax, 0), min(x + rmax + 1, W)
+        yy, xx = np.ogrid[y0 - y:y1 - y, x0 - x:x1 - x]
+        rr = np.sqrt(yy ** 2 + xx ** 2).astype(np.int32)
+        sub = r[y0:y1, x0:x1]
+        rad = rmax
+        for q in range(1, rmax + 1):               # первое кольцо, где медиана остатка — уже фон
+            ring = sub[rr == q]
+            if ring.size and np.median(ring) < ps.ring_sigma * noise:
+                rad = q
+                break
+        biggest = max(biggest, rad)
+        out[y0:y1, x0:x1] |= rr <= rad + 1
+    return out, {"stars": int(len(peaks)), "max_radius_arcsec": round(biggest * scale_arcsec, 2),
+                 "noise": round(noise, 6)}
+
+
+def filter_masks(cfg: Config, a: np.ndarray, masks: tuple[np.ndarray, np.ndarray] | None,
+                 scale_arcsec: float | None) -> tuple[tuple[np.ndarray, np.ndarray] | None, dict[str, Any]]:
+    """Маски растяжки одного фильтра: при stretch.exclude_point_sources — туманность без его точечных источников."""
+    ps = cfg.stretch.exclude_point_sources
+    if ps is None or masks is None or not scale_arcsec:
+        return masks, {}
+    src, info = point_sources(a, ps, scale_arcsec)
+    info["nebula_excluded_percent"] = round(float((masks[1] & src).sum() / max(masks[1].sum(), 1) * 100), 1)
+    return (masks[0], masks[1] & ~src), info
+
+
 def stretch_all(cfg: Config, arrays: dict[str, np.ndarray],
                 masks: tuple[np.ndarray, np.ndarray] | None = None,
-                field: Any = None) -> tuple[dict[str, np.ndarray], dict[str, dict]]:
+                field: Any = None, scale_arcsec: float | None = None) -> tuple[dict[str, np.ndarray], dict[str, dict]]:
     out, stats = {}, {}
     for f, a in arrays.items():
-        out[f], stats[f] = stretch_array(a, cfg.stretch.for_filter(f), masks=masks, field=field)
+        mf, ps_info = filter_masks(cfg, a, masks, scale_arcsec)
+        out[f], stats[f] = stretch_array(a, cfg.stretch.for_filter(f), masks=mf, field=field)
+        if ps_info:
+            stats[f]["point_sources"] = ps_info
     return out, stats
 
 
@@ -288,10 +340,11 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     masks = load_masks(cfg, paths) if cfg.stretch.anchor == "masks" else None
     if cfg.stretch.anchor == "masks" and masks is None:
         console.print("[yellow]  stretch.anchor: masks — масок нет (clean выключен), растяжка по всему кадру[/]")
-    from skyforge.align import stats_field
+    from skyforge.align import read_aligned_meta, stats_field
 
     field = stats_field(cfg, paths, list(arrays.values()))
-    stretched, stats = stretch_all(cfg, arrays, masks, field)
+    scale = read_aligned_meta(cfg, paths).get("pixel_scale_arcsec")
+    stretched, stats = stretch_all(cfg, arrays, masks, field, scale)
     ss = cfg.stretch.saturated_stars
     sinfo: list = []
     if ss.enabled:
@@ -303,7 +356,8 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
             lin, disp, sinfo = star_layers(arrays, {f: stats[f]["white_value"] for f in arrays}, stars, ss, cfg.bin)
             for f, a in arrays.items():
                 # туманность без звезды, точки растяжки — по исходному кадру (не меняются)
-                neb, _ = stretch_array(a - lin[f], cfg.stretch.for_filter(f), stats_from=a, masks=masks, field=field)
+                mf, _ = filter_masks(cfg, a, masks, scale)
+                neb, _ = stretch_array(a - lin[f], cfg.stretch.for_filter(f), stats_from=a, masks=mf, field=field)
                 stretched[f] = screen(neb, disp[f])
             console.print(f"  звёзды с насыщенным ядром отдельно от туманности: {len(sinfo)}")
     for f, y in stretched.items():
@@ -312,7 +366,10 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
         s = cfg.stretch.for_filter(f)
         console.print(f"  {f}: фон {stats[f]['black_value']:.4g} → 0, белая точка {stats[f]['white_value']:.4g} → 1, "
                       f"{s.method} a={s.a}, по {'маскам' if stats[f]['anchor'].startswith('masks') else 'кадру'}, "
-                      f"выжжено {stats[f]['white_clipped_percent']}%")
+                      f"выжжено {stats[f]['white_clipped_percent']}%"
+                      + (f"; точечных источников {stats[f]['point_sources']['stars']} (до "
+                         f"{stats[f]['point_sources']['max_radius_arcsec']}″), из выборки туманности исключено "
+                         f"{stats[f]['point_sources']['nebula_excluded_percent']}%" if "point_sources" in stats[f] else ""))
     (d / "meta.json").write_text(json.dumps({"key": stretch_key(cfg, in_key), "filters": list(stretched), "stats": stats,
                                              "saturated_stars": sinfo},
                                             ensure_ascii=False, indent=2), encoding="utf-8")

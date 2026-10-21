@@ -14,7 +14,7 @@ import sys
 import numpy as np
 from PIL import Image
 
-from skyforge.align import load_aligned, stats_field, with_resolved_crops
+from skyforge.align import load_aligned, read_aligned_meta, stats_field, with_resolved_crops
 from skyforge.clean import (load_input, load_nebula_sd, load_saturated_stars, load_sky_mask, load_star_weight,
                             load_star_weight_map)
 from skyforge.compose import base_color, fill_gaps, tail_color
@@ -24,7 +24,7 @@ from skyforge.finish import finish_array, finish_masks
 from skyforge.paths import Paths
 from skyforge.preview import contact_sheet, shrink, to_display, to_uint8
 from skyforge.skymodel import apply_sky_poly
-from skyforge.stretch import load_masks, stretch_array
+from skyforge.stretch import load_masks, stretch_all
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from clean_report_3b import reference_on_grid  # noqa: E402
@@ -40,7 +40,7 @@ def render(c: Config, P: Paths, arrays: dict, ctx: dict, gains: dict | None = No
     a = {f: fill_gaps_linear(v, c.clean.fill_gaps_px)[0] for f, v in arrays.items()} if c.clean.fill_gaps_px else dict(arrays)
     a, _, _ = apply_sky_poly(c, P, a)
     masks = load_masks(c, P)
-    layers = {f: stretch_array(v, c.stretch.for_filter(f), masks=masks, field=ctx["field"])[0] for f, v in a.items()}
+    layers, _ = stretch_all(c, a, masks, ctx["field"], read_aligned_meta(c, P).get("pixel_scale_arcsec"))
     layers, _ = fill_gaps(c, layers)                   # фаза 6: щели детекторов (color.fill_gaps), как в compose
     lvl = (c.stretch.sky_level or 0) / 255
     for f, g in (gains or {}).items():

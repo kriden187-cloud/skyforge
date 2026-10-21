@@ -325,6 +325,20 @@ class SaturatedStarsConfig(_Strict):
     core_feather_px: float = Field(10.0, gt=0, description="переход от ядра к радиальной модели, px")
 
 
+class PointSourcesConfig(_Strict):
+    # Фаза 6 (W3-2): точечные источники вне выборки белой точки — в каждом фильтре по его кадру, одним правилом.
+    # Маска звёзд clean их пропускает там, где звезда на яркой туманности сливается с ней в «плотную туманность»
+    # (кольцо без ядра или звезда без маски): у W3-2 99,8-й процентиль коротких фильтров ставили ядра звёзд.
+    # Звезда — локальный максимум остатка над местной медианой (окно window_arcsec) выше sigma·σ шума (σ — по
+    # разностям соседних пикселей) и резкий: пик ≥ sharpness × среднее остатка в окне 5×5. Исключается круг до
+    # радиуса, где медиана остатка по кольцу падает ниже ring_sigma·σ (не дальше max_radius_arcsec).
+    sigma: float = Field(20.0, gt=0)
+    sharpness: float = Field(3.0, gt=1)
+    window_arcsec: float = Field(6.0, gt=0)
+    ring_sigma: float = Field(2.0, gt=0)
+    max_radius_arcsec: float = Field(8.0, gt=0)
+
+
 class StretchConfig(_Strict):
     method: Literal["asinh", "log", "sqrt", "linear"] = "asinh"
     # masks — black считается по маске пустого неба, white — по маске туманности (этап clean):
@@ -375,6 +389,7 @@ class StretchConfig(_Strict):
     saturated_stars: SaturatedStarsConfig = SaturatedStarsConfig()
 
     exclude_radius_px: float = Field(150.0, ge=0, description="радиус диска вокруг звезды с насыщенным ядром, px при bin 1")
+    exclude_point_sources: PointSourcesConfig | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -701,7 +716,8 @@ class Config(_Strict):
 # из плоского конфига и из стиля measured дала бы разные файлы (хеш пишется в метаданные).
 NON_PROCESSING = ("style", "reference_image", "sweep", "preview", "report")
 # Поля фазы 6: в хеш — только если заданы (иначе хеши и ключи кеша принятых объектов поменялись бы).
-OPTIONAL_WHEN_SET = (("mast_target",), ("stretch", "sky_reference_crop"), ("color", "fill_gaps"))
+OPTIONAL_WHEN_SET = (("mast_target",), ("stretch", "sky_reference_crop"), ("stretch", "exclude_point_sources"),
+                     ("color", "fill_gaps"))
 
 
 def deep_merge(base: dict, over: dict) -> dict:

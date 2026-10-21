@@ -718,3 +718,25 @@ def test_fill_gaps_crossing_from_third_filter():
     assert np.isfinite(out["F182M"]).all() and np.isfinite(out["F210M"]).all()
     assert np.allclose(out["F182M"][60:70, 60:70], 0.36, atol=1e-4)   # из F300M × (1,2 / 0,8)
     assert "F300M" not in filled
+
+
+def test_point_sources_stars_not_filaments():
+    """Фаза 6: точечные источники — звёзды (резкие пики), а не волокно туманности; у яркой звезды круг шире."""
+    from skyforge.config import PointSourcesConfig
+    from skyforge.stretch import point_sources
+
+    rng = np.random.default_rng(5)
+    yy, xx = np.mgrid[0:300, 0:300]
+    a = 1.0 + 0.5 * np.exp(-((xx - 150) ** 2) / (2 * 6 ** 2))            # волокно шириной ~14 px
+    a = a + rng.normal(0, 0.01, a.shape)
+    for (y, x, amp) in ((60, 60, 50.0), (200, 220, 3.0), (100, 150, 20.0)):   # звезда и на волокне
+        a = a + amp * np.exp(-((xx - x) ** 2 + (yy - y) ** 2) / (2 * 1.0 ** 2))
+    mask, info = point_sources(a.astype(np.float32), PointSourcesConfig(), scale_arcsec=0.25)
+    assert info["stars"] == 3
+    assert mask[60, 60] and mask[200, 220] and mask[100, 150]
+    assert not mask[250, 150] and not mask[20, 150]                      # волокно вдали от звёзд — не исключено
+    from scipy import ndimage
+
+    lab, _ = ndimage.label(mask)
+    area = np.bincount(lab.ravel())
+    assert area[lab[60, 60]] > area[lab[200, 220]]                        # яркая звезда — круг шире
