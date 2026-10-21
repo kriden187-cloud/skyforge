@@ -740,3 +740,81 @@ def test_point_sources_stars_not_filaments():
     lab, _ = ndimage.label(mask)
     area = np.bincount(lab.ravel())
     assert area[lab[60, 60]] > area[lab[200, 220]]                        # яркая звезда — круг шире
+
+
+def test_split_ranges():
+    from skyforge.fetch import split_ranges
+
+    assert split_ranges(1000, 250) == [(0, 249), (250, 499), (500, 749), (750, 999)]
+    assert split_ranges(150, 250) == [(0, 149)]                                 # меньше куска — целиком
+    r = split_ranges(1003, 100)
+    assert len(r) == 11 and r[0][0] == 0 and r[-1][1] == 1002 and all(b + 1 == c for (_, b), (c, _) in zip(r, r[1:]))
+
+
+def _fake_range_server(monkeypatch, body: bytes, fail_once: set | None = None):
+    """Поддельный MAST: HEAD — размер и Accept-Ranges; GET с Range — нужный кусок (206). fail_once — начала диапазонов,
+    на которых первый ответ обрывается после половины."""
+    import requests as rq
+
+    import skyforge.fetch as fetch
+
+    failed = set()
+
+    class Head:
+        ok = True
+        headers = {"Content-Length": str(len(body)), "Accept-Ranges": "bytes"}
+
+    class Get:
+        def __init__(self, a, b):
+            self.a, self.b, self.status_code = a, b, 206
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *x):
+            return False
+
+        def raise_for_status(self):
+            pass
+
+        def iter_content(self, n):
+            chunk = body[self.a:self.b + 1]
+            if fail_once is not None and self.a in fail_once and self.a not in failed:
+                failed.add(self.a)
+                yield chunk[:len(chunk) // 2]
+                raise rq.ConnectionError("обрыв")
+            yield chunk
+
+    def get(url, params=None, headers=None, stream=False, timeout=None):
+        a, b = headers["Range"].split("=")[1].split("-")
+        return Get(int(a), int(b) if b else len(body) - 1)
+
+    monkeypatch.setattr(fetch.requests, "head", lambda *a, **k: Head())
+    monkeypatch.setattr(fetch.requests, "get", get)
+    monkeypatch.setattr(fetch.time, "sleep", lambda s: None)
+    monkeypatch.setattr(fetch, "PIECE", 1000)
+
+
+def test_download_in_parallel_ranges_with_resume(tmp_path, monkeypatch):
+    """Фаза 6: большой файл — частями параллельно (Range), обрыв одной части докачивается, склейка байт-в-байт."""
+    import skyforge.fetch as fetch
+
+    body = bytes(np.random.default_rng(1).integers(0, 256, 10000, dtype=np.uint8))
+    _fake_range_server(monkeypatch, body, fail_once={2000, 7000})
+    dest = tmp_path / "f.fits"
+    assert fetch.download("mast:JWST/product/f.fits", dest, len(body), parts=4) == len(body)
+    assert dest.read_bytes() == body and not list(tmp_path.glob("f.fits.part*"))
+    assert len(fetch.split_ranges(len(body))) == 10                            # 10 кусков по 1000 из очереди
+
+
+def test_download_many_parallel_files(tmp_path, monkeypatch):
+    """Несколько файлов одновременно: каждый целиком, on_done — по разу на файл."""
+    import skyforge.fetch as fetch
+
+    body = bytes(np.random.default_rng(2).integers(0, 256, 5000, dtype=np.uint8))
+    _fake_range_server(monkeypatch, body)
+    done = []
+    jobs = [("mast:x", tmp_path / f"f{i}.fits", len(body)) for i in range(3)]
+    fetch.download_many(jobs, workers=3, parts=2, on_done=lambda i, size: done.append((i, size)))
+    assert sorted(done) == [(0, 5000), (1, 5000), (2, 5000)]
+    assert all((tmp_path / f"f{i}.fits").read_bytes() == body for i in range(3))

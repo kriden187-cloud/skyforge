@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import stat
 import time
 from dataclasses import asdict, dataclass, field
@@ -27,6 +28,10 @@ from skyforge.paths import Paths
 MAST_DOWNLOAD_URL = "https://mast.stsci.edu/api/v0.1/Download/file"
 DOWNLOAD_RETRIES = 5
 CHUNK = 1 << 20
+# Замер 2026-10-22 (300 МБ): одно соединение до MAST ~1 МБ/с и с прокси, и без; скорость соединений сильно разная
+# (4 соединения: 18, 16 и 4 МБ/с), поэтому файл режется на куски PIECE, а соединения берут их из очереди —
+# медленное задерживает один кусок, а не четверть файла.
+PIECE = 32 << 20
 
 INSTRUMENTS = {
     "jwst": {"nircam": "NIRCAM/IMAGE", "miri": "MIRI/IMAGE", "niriss": "NIRISS/IMAGE"},
@@ -192,30 +197,101 @@ def product_lists(obsids: list[str]) -> list[dict[str, Any]]:
     return _table_rows(Observations.get_product_list(obsids))
 
 
-def _server_size(uri: str) -> int | None:
-    """Размер, который отдаёт сервер (Content-Length на HEAD); None — если не узнать."""
+def _server_info(uri: str) -> tuple[int | None, bool]:
+    """(размер, который отдаёт сервер — Content-Length на HEAD; отдаёт ли диапазоны — Accept-Ranges: bytes).
+    (None, False) — если не узнать."""
     try:
         r = requests.head(MAST_DOWNLOAD_URL, params={"uri": uri}, timeout=(30, 60), allow_redirects=True)
-        return int(r.headers["Content-Length"]) if r.ok and r.headers.get("Content-Length") else None
+        if not r.ok:
+            return None, False
+        size = int(r.headers["Content-Length"]) if r.headers.get("Content-Length") else None
+        return size, r.headers.get("Accept-Ranges", "").lower() == "bytes"
     except (requests.RequestException, ValueError):
-        return None
+        return None, False
 
 
-def download(uri: str, dest: Path, expected_size: int | None) -> None:
-    """Скачивание с докачкой оборванного файла (.part + Range) и проверкой размера."""
+def split_ranges(size: int, piece: int | None = None) -> list[tuple[int, int]]:
+    """Куски байтов [начало, конец] (конец включительно) по piece (по умолчанию PIECE) для очереди соединений."""
+    step = piece or PIECE
+    return [(a, min(a + step, size) - 1) for a in range(0, size, step)]
+
+
+def _fetch_range(uri: str, path: Path, start: int, end: int, progress: Progress, task: Any) -> None:
+    """Один диапазон в свой файл с докачкой: уже скачанное (размер файла) не повторяется."""
+    total = end - start + 1
+    last: Exception | None = None
+    for attempt in range(1, DOWNLOAD_RETRIES + 1):
+        have = path.stat().st_size if path.exists() else 0
+        if have > total:
+            path.unlink()
+            have = 0
+        if have == total:
+            return
+        try:
+            with requests.get(MAST_DOWNLOAD_URL, params={"uri": uri}, headers={"Range": f"bytes={start + have}-{end}"},
+                              stream=True, timeout=(30, 120)) as r:
+                if r.status_code != 206:
+                    raise IOError(f"сервер не отдал диапазон (HTTP {r.status_code})")
+                with path.open("ab") as fh:
+                    for chunk in r.iter_content(CHUNK):
+                        fh.write(chunk)
+                        progress.advance(task, len(chunk))
+        except (requests.RequestException, IOError) as e:
+            last = e
+            console.print(f"  [yellow]{path.name}: обрыв ({e.__class__.__name__}), попытка {attempt}/{DOWNLOAD_RETRIES}[/]")
+            time.sleep(min(30, 2 ** attempt))
+    raise SkyforgeError(f"не удалось скачать {path.name}: {last}")
+
+
+def _download_ranges(uri: str, dest: Path, size: int, ranges: list[tuple[int, int]], parallel: int,
+                     progress: Progress, task: Any) -> None:
+    """Куски файла из очереди в parallel соединений (<имя>.partN), затем склейка в <имя>.part, проверка размера и
+    переименование."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    pieces = [dest.with_name(f"{dest.name}.part{k}") for k in range(len(ranges))]
+    progress.update(task, completed=sum(p.stat().st_size for p in pieces if p.exists()))
+    with ThreadPoolExecutor(max(1, min(parallel, len(ranges)))) as ex:     # пул — очередь кусков
+        list(ex.map(lambda k: _fetch_range(uri, pieces[k], *ranges[k], progress, task), range(len(ranges))))
+    joined = dest.with_name(dest.name + ".part")
+    with joined.open("wb") as out:
+        for p in pieces:
+            with p.open("rb") as fh:
+                shutil.copyfileobj(fh, out, CHUNK)
+    got = joined.stat().st_size
+    if got != size:
+        joined.unlink()
+        raise SkyforgeError(f"{dest.name}: после склейки {got} байт вместо {size} — части оставлены для докачки")
+    joined.replace(dest)
+    os.chmod(dest, stat.S_IREAD)
+    for p in pieces:
+        p.unlink()
+
+
+def download(uri: str, dest: Path, expected_size: int | None, parts: int = 1, progress: Progress | None = None) -> int:
+    """Скачивание с докачкой и проверкой размера; возвращает размер файла. parts > 1 и сервер с Accept-Ranges — файл
+    частями параллельно (одно соединение до MAST ~1 МБ/с, замер 2026-10-22). progress — общая полоса для нескольких
+    файлов сразу; без неё — своя."""
     dest.parent.mkdir(parents=True, exist_ok=True)
+    if progress is None:
+        with Progress(TextColumn("{task.description}"), BarColumn(), DownloadColumn(), TransferSpeedColumn(),
+                      TimeRemainingColumn(), console=console, transient=True) as own:
+            return download(uri, dest, expected_size, parts, own)
     part = dest.with_name(dest.name + ".part")
     # Фаза 6: размер в списке продуктов MAST бывает старым — файл перепроцессирован (W3 F182M, CAL_VER 3.0.0, на 5760
     # байт больше), и проверка по нему отбрасывала целый файл пять раз подряд. Мерило — размер, который отдаёт сервер.
-    server = _server_size(uri) if expected_size else None
-    if server and server != expected_size:
+    server, ranges_ok = _server_info(uri) if (expected_size or parts > 1) else (None, False)
+    if server and expected_size and server != expected_size:
         console.print(f"  [yellow]{dest.name}: в списке продуктов MAST {expected_size} байт, сервер отдаёт {server} — "
                       f"проверяю по серверу[/]")
-        expected_size = server
-    last_error: Exception | None = None
-    with Progress(TextColumn("{task.description}"), BarColumn(), DownloadColumn(), TransferSpeedColumn(),
-                  TimeRemainingColumn(), console=console, transient=True) as progress:
-        task = progress.add_task(dest.name, total=expected_size)
+    expected_size = server or expected_size
+    task = progress.add_task(dest.name, total=expected_size)
+    try:
+        ranges = split_ranges(expected_size) if (parts > 1 and ranges_ok and expected_size) else []
+        if len(ranges) > 1:
+            _download_ranges(uri, dest, expected_size, ranges, parts, progress, task)
+            return dest.stat().st_size
+        last_error: Exception | None = None
         for attempt in range(1, DOWNLOAD_RETRIES + 1):
             have = part.stat().st_size if part.exists() else 0
             if expected_size and have > expected_size:
@@ -246,13 +322,33 @@ def download(uri: str, dest: Path, expected_size: int | None) -> None:
             if expected_size is None or size == expected_size:
                 part.replace(dest)
                 os.chmod(dest, stat.S_IREAD)
-                return
+                return dest.stat().st_size
             last_error = IOError(f"размер {size} вместо {expected_size}")
             console.print(f"  [yellow]файл неполный ({size}/{expected_size} байт), докачиваю[/]")
-    raise SkyforgeError(
-        f"не удалось скачать {dest.name}: {last_error}. Можно скачать вручную с mast.stsci.edu "
-        f"и положить в data/inbox/<объект>/"
-    )
+        raise SkyforgeError(
+            f"не удалось скачать {dest.name}: {last_error}. Можно скачать вручную с mast.stsci.edu "
+            f"и положить в data/inbox/<объект>/"
+        )
+    finally:
+        progress.remove_task(task)
+
+
+def download_many(jobs: list[tuple[str, Path, int | None]], workers: int, parts: int,
+                  on_done: Any = None) -> None:
+    """Несколько файлов одновременно (до workers), каждый — частями (parts); общая полоса прогресса. on_done(i, размер)
+    вызывается в главном потоке после каждого готового файла (манифест — после каждого: обрыв не теряет прогресс)."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    if not jobs:
+        return
+    with Progress(TextColumn("{task.description}"), BarColumn(), DownloadColumn(), TransferSpeedColumn(),
+                  TimeRemainingColumn(), console=console, transient=True) as progress, \
+            ThreadPoolExecutor(max(1, min(workers, len(jobs)))) as ex:
+        futs = {ex.submit(download, uri, dest, size, parts, progress): i for i, (uri, dest, size) in enumerate(jobs)}
+        for fut in as_completed(futs):
+            got = fut.result()
+            if on_done is not None:
+                on_done(futs[fut], got)
 
 
 # --- inbox и манифест ---
@@ -404,18 +500,28 @@ def fetch(cfg: Config, paths: Paths, *, offline: bool = False, list_only: bool =
             console.print(f"Скачать: {len(picks)} файл(ов), {total_gb:.2f} ГБ")
             if max_gb is not None and total_gb > max_gb:
                 raise SkyforgeError(f"{total_gb:.1f} ГБ больше лимита --max-gb {max_gb}; укажи --filters или подними лимит")
-            for f, p in picks.items():
-                a = avail[f]
-                dest = paths.raw / cfg.mission / a.obs_id / p["productFilename"]
-                if not dest.exists():
-                    console.print(f"  {f}: {p['productFilename']} ({int(p['size']) / 1e6:.0f} МБ)")
-                    download(p["dataURI"], dest, int(p["size"]) if p.get("size") else None)
+            order = list(picks)
+            dests = {f: paths.raw / cfg.mission / avail[f].obs_id / picks[f]["productFilename"] for f in order}
+
+            def record(f: str) -> None:
+                a, p, dest = avail[f], picks[f], dests[f]
                 prod = Product(filter=f, path=paths.rel(dest), source="mast", obs_id=a.obs_id,
                                filename=p["productFilename"], size=dest.stat().st_size, exptime=a.exptime,
                                release=a.release, proposal_id=a.proposal_id, data_uri=p["dataURI"])
                 found[f] = prod
                 manifest["products"][f] = asdict(prod)
                 save_manifest(cfg, paths, manifest)  # после каждого файла: обрыв не теряет прогресс
+
+            jobs = [f for f in order if not dests[f].exists()]
+            for f in order:
+                if f not in jobs:
+                    record(f)
+            for f in jobs:
+                console.print(f"  {f}: {picks[f]['productFilename']} ({int(picks[f]['size']) / 1e6:.0f} МБ)")
+            if jobs:
+                console.print(f"  одновременно файлов: {min(cfg.fetch.workers, len(jobs))}, частей на файл: до {cfg.fetch.parts}")
+            download_many([(picks[f]["dataURI"], dests[f], int(picks[f]["size"]) if picks[f].get("size") else None)
+                           for f in jobs], cfg.fetch.workers, cfg.fetch.parts, lambda i, _size: record(jobs[i]))
 
     save_manifest(cfg, paths, manifest)
     missing = [f for f in want if f not in found]
@@ -491,14 +597,15 @@ def fetch_level2(cfg: Config, paths: Paths, *, list_only: bool = False, max_gb: 
     mp = level2_manifest(cfg, paths)
     man = json.loads(mp.read_text(encoding="utf-8")) if mp.exists() else {"files": {}}
     for f in want:
-        items = []
-        for name, p in sorted(picks[f].items()):
-            dest = d / name
-            if not (dest.exists() and dest.stat().st_size == int(p["size"])):
-                console.print(f"  {f}: {name} ({int(p['size']) / 1e6:.0f} МБ)")
-                download(p["dataURI"], dest, int(p["size"]))
-            items.append({"path": paths.rel(dest), "size": int(p["size"])})
-        man["files"][f] = items
+        # готовый файл появляется только после проверки размера по серверу — есть файл, значит скачан; размер в манифест —
+        # фактический (в списке продуктов MAST бывает старый, фаза 6)
+        names = sorted(picks[f])
+        jobs = [n for n in names if not (d / n).exists()]
+        for n in jobs:
+            console.print(f"  {f}: {n} ({int(picks[f][n]['size']) / 1e6:.0f} МБ)")
+        download_many([(picks[f][n]["dataURI"], d / n, int(picks[f][n]["size"])) for n in jobs],
+                      cfg.fetch.workers, cfg.fetch.parts)
+        man["files"][f] = [{"path": paths.rel(d / n), "size": (d / n).stat().st_size} for n in names]
         mp.parent.mkdir(parents=True, exist_ok=True)
         mp.write_text(json.dumps(man, ensure_ascii=False, indent=2), encoding="utf-8")
     return {"files": {f: len(v) for f, v in man["files"].items()}, "gb": round(total / 1e9, 2)}

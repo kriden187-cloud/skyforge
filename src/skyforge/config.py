@@ -597,6 +597,13 @@ class SweepConfig(_Strict):
     y: SweepAxis = SweepAxis(param="stretch.white", values=[99.5, 99.8, 99.95])
 
 
+class FetchConfig(_Strict):
+    # Скачивание из MAST (замер 2026-10-22: одно соединение ~1 МБ/с и с прокси, и напрямую; 4 диапазона одного файла
+    # параллельно через прокси — 18 МБ/с). На пиксели не влияет — в хеш обработки не входит (NON_PROCESSING).
+    workers: int = Field(3, ge=1, le=8, description="сколько файлов качать одновременно")
+    parts: int = Field(4, ge=1, le=16, description="соединений на файл: куски по 32 МБ из очереди (Range)")
+
+
 class Config(_Strict):
     target: str
     slug: str | None = None  # имя папок; по умолчанию из target: "NGC 3132" → ngc3132
@@ -626,6 +633,7 @@ class Config(_Strict):
     preview: PreviewConfig = PreviewConfig()
     sweep: SweepConfig = SweepConfig()
     report: ReportConfig = ReportConfig()
+    fetch: FetchConfig = FetchConfig()
     credit: str = "NASA, ESA, CSA, STScI (MAST)"
     author: str = "Denis"
     # Картинка для сравнения (пресс-релиз): в sweep и в отчёте по стилям — в соседней клетке.
@@ -717,7 +725,7 @@ class Config(_Strict):
 
 # Поля, которые не влияют на пиксели: в хеш обработки не входят, иначе одна и та же картинка
 # из плоского конфига и из стиля measured дала бы разные файлы (хеш пишется в метаданные).
-NON_PROCESSING = ("style", "reference_image", "sweep", "preview", "report")
+NON_PROCESSING = ("style", "reference_image", "sweep", "preview", "report", "fetch")
 # Поля фазы 6: в хеш — только если заданы (иначе хеши и ключи кеша принятых объектов поменялись бы).
 OPTIONAL_WHEN_SET = (("mast_target",), ("stretch", "sky_reference_crop"), ("stretch", "exclude_point_sources"),
                      ("color", "fill_gaps"))
