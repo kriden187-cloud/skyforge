@@ -1,20 +1,47 @@
-# skyforge
+# Skyforge
 
-Консольный конвейер: название объекта → кадры JWST/Hubble из MAST → цветная картинка (PNG + 16-битный TIFF) и HTML-отчёт со всеми промежуточными стадиями. План и архитектура: [docs/PLAN.md](docs/PLAN.md).
+Конвейер, который превращает открытые научные данные телескопов JWST и Hubble из архива MAST в цветную картинку —
+воспроизводимо: каждый результат задаётся YAML-конфигом, повторный прогон даёт тот же файл байт в байт.
 
-## Установка
+*A reproducible pipeline that turns public JWST and Hubble science data from the MAST archive into colour images:
+every result is defined by a YAML config, and a rerun reproduces the same file byte for byte. Docs are in Russian.*
 
-```
-uv sync
-copy .env.example .env      # если MAST открывается только через прокси
-```
+![Sh2-305, JWST NIRCam](docs/gallery/sh2305_showcase.jpg)
+
+## Что внутри
+
+- **Загрузка** из MAST (`skyforge fetch`), совмещение фильтров на общей сетке (`align`), очистка — ядра насыщенных звёзд,
+  швы и следы космических лучей (`clean`), растяжка с опорой на пустое небо (`stretch`), смешивание в цвет (`compose`),
+  финиш и экспорт 16-битного TIFF и PNG с метаданными (`finish`). Весь путь — `skyforge run <объект> -s <стиль>`.
+- **Поиск объектов** (`skyforge discover`): недавно открытые наблюдения NIRCam, сверка с пресс-релизами ESA/Webb и NASA/STScI.
+- **Публикация** (`skyforge publish`, `skyforge gallery`): мастер PNG/TIFF принятого результата, версии под площадки,
+  подпись на русском и английском, галерея конфигов `docs/GALLERY.md`.
+- **Приёмка по картинкам**: каждый этап пишет превью и отчёт; принятые результаты хранятся как baseline, отчёт
+  показывает разность с ними.
+
+## Объекты
+
+| Объект | Данные | Конфиг | Тег |
+|---|---|---|---|
+| NGC 3132 (Южное кольцо) | JWST NIRCam, программа 2733 (ERO), 6 фильтров, сборка из экспозиций уровня 2 | `configs/ngc3132/` (стили measured и showcase) | `phase-3k` |
+| NGC 3132 | Hubble WFPC2 1995, программа 6221, [O III], Hα, [N II] | `configs/ngc3132hst/` | `phase-3b` |
+| Sh2-305 | JWST NIRCam, программа 4547, F182M и 4 длинноволновых фильтра | `configs/sh2305/` | `phase-4` |
+
+Превью, подписи и команды воспроизведения — в [docs/GALLERY.md](docs/GALLERY.md). План проекта — [docs/PLAN.md](docs/PLAN.md),
+история решений и ограничения — [docs/HANDOFF.md](docs/HANDOFF.md).
 
 ## Быстрый старт
 
+```bash
+uv sync
+uv run skyforge --help
+uv run pytest
+uv run skyforge run sh2305 -s showcase --bin 4      # данные из MAST при первом запуске (~45 ГБ для Sh2-305)
+uv run skyforge publish sh2305 -s showcase
 ```
-uv run skyforge run ngc3132                 # всё целиком, bin 4 из конфига → out/ngc3132/<дата-время>/report.html
-uv run skyforge run ngc3132 --bin 1         # финал в полном разрешении
-```
+
+Данные (`data/`) и результаты (`out/`) в git не хранятся, кроме референсов и листов приёмки. Если MAST не открывается
+напрямую, прокси задаётся в `.env` (пример — `.env.example`).
 
 ## Стили
 
@@ -56,6 +83,9 @@ uv run skyforge sweep ngc3132 --style showcase --x color.weights.F212N=0.15,0.08
 | `skyforge report` | пересобрать HTML для последнего запуска | `report.html` |
 | `skyforge baseline ngc3132 --name phase-3d --from out/ngc3132/<папка>` | сохранить итог как принятый: с ним сравнивает отчёт (`report.baseline`) | `baseline_diff.png`, `crops_compare.png` |
 | `skyforge cache list` / `prune` | место на диске, чистка `data/work/` | — |
+| `skyforge discover` | недавно открытые наблюдения NIRCam, сверка с пресс-релизами, 10 кандидатов с превью | `candidates.png`, `candidates.md` |
+| `skyforge publish sh2305` | мастер PNG/TIFF принятого результата, JPEG web / social / preview, подпись RU/EN | `out/publish/<объект>/<дата>/` |
+| `skyforge gallery` | галерея конфигов: превью, подпись, команда воспроизведения | `docs/GALLERY.md` |
 
 Отдельные команды пишут в `out/<объект>/current/` (у стилей — `current/<стиль>/`), `run` — в новую папку с датой. Для папки стилей нужен `--style`; вместо имени можно указать путь к любому YAML.
 
@@ -68,3 +98,13 @@ uv run pytest
 ```
 
 Синтетическое небо из трёх фильтров с разной сеткой: проверяется, что после совмещения звёзды стоят там, где их предсказывает WCS, что два прогона дают байт-в-байт одинаковые файлы и что сырые файлы не меняются.
+
+## Лицензии и указание источника
+
+- **Код** — MIT (`LICENSE`).
+- **Наши картинки** (`out/publish/`, `docs/gallery/`, листы приёмки) — CC BY-SA 4.0, автор Denis Krivosheev.
+  Указание источника данных: «NASA, ESA, CSA, STScI» для JWST, «NASA, ESA, STScI» для Hubble; обработка — Denis Krivosheev.
+- **Данные** — архив MAST (STScI); на них распространяются условия NASA, ESA, CSA и STScI.
+- **Чужие изображения для сравнения** в `data/reference/`: снимок Hubble Heritage 1998 (STScI-1998-39, ESA/Hubble opo9839a,
+  CC BY 4.0, Hubble Heritage Team (STScI/AURA/NASA/ESA)); обработки Sh2-305 Мелины Тевено и Марка Маккохрейна
+  (Wikimedia Commons, CC BY-SA 4.0) — авторы и ссылки в `data/reference/sh2305/sources.md`.

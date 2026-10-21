@@ -96,6 +96,7 @@ def test_caption_has_required_lines_and_no_stop_words():
         for s in ("Sh 2-305", "4547", "McCaughrean", "2025-03-31", "F182M", "#3050ff", "MAST", "NASA, ESA, CSA, STScI",
                   pub.license, "configs/sh2305/showcase.yaml", "phase-4", "2026-04-02", *early):
             assert s in md, (lang, s)
+        assert f"{pub.repo}/tree/phase-4" in md and f"{pub.repo}/blob/phase-4/configs/sh2305/showcase.yaml" in md
     hst = Facts(**{**f.__dict__, "mission": "hst", "slug": "ngc3132hst"})
     md = caption_md(hst, pub, "en")
     assert "NASA, ESA, STScI; processing: Denis" in md and "NASA, ESA, CSA, STScI" not in md   # у Hubble нет CSA

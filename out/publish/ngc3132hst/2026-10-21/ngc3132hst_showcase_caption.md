@@ -8,7 +8,7 @@
 - **Источник данных:** MAST (Mikulski Archive for Space Telescopes, STScI)
 - **Указание источника:** NASA, ESA, STScI; обработка: Denis Krivosheev
 - **Лицензия на обработку:** CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/); данные — на условиях NASA, ESA, STScI
-- **Воспроизведение:** конфиг `configs/ngc3132hst/showcase.yaml`, тег `phase-3b` (принято 2026-10-20); `git checkout phase-3b`, `skyforge run ngc3132hst -s showcase --bin 2`; хеш конфига `75e63fd95e324e77`, хеш пикселей итога (sha256) `827ebc2ecbb4149c77133c62679fc60f6f51640d3d2376147645e0e2afa82b26`
+- **Воспроизведение:** конфиг [`configs/ngc3132hst/showcase.yaml`](https://github.com/kriden187-cloud/skyforge/blob/phase-3b/configs/ngc3132hst/showcase.yaml), тег [`phase-3b`](https://github.com/kriden187-cloud/skyforge/tree/phase-3b) (принято 2026-10-20); `git checkout phase-3b`, `skyforge run ngc3132hst -s showcase --bin 2`; хеш конфига `75e63fd95e324e77`, хеш пикселей итога (sha256) `827ebc2ecbb4149c77133c62679fc60f6f51640d3d2376147645e0e2afa82b26`
 - **Что показано:** WFPC2 1995 года, три узкополосных фильтра ([O III], Hα, [N II]), итог при bin 2.
 - **Ограничения:** Bin 2 (bin 1 — передискретизация drizzle); 65 следов космических лучей на небе; 0,25% нулей в синем канале неба; швы ≤ 6 px заполнены линейно, углы — уровнем неба.
 - **Примечание:** Те же данные WFPC2 легли в основу снимка Hubble Heritage 1998 года (STScI-1998-39).
@@ -25,7 +25,7 @@
 - **Data source:** MAST (Mikulski Archive for Space Telescopes, STScI)
 - **Credit:** NASA, ESA, STScI; processing: Denis Krivosheev
 - **License of the processing:** CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/); data under NASA, ESA, STScI terms
-- **Reproduction:** config `configs/ngc3132hst/showcase.yaml`, tag `phase-3b` (accepted 2026-10-20); `git checkout phase-3b`, `skyforge run ngc3132hst -s showcase --bin 2`; config digest `75e63fd95e324e77`, final pixel hash (sha256) `827ebc2ecbb4149c77133c62679fc60f6f51640d3d2376147645e0e2afa82b26`
+- **Reproduction:** config [`configs/ngc3132hst/showcase.yaml`](https://github.com/kriden187-cloud/skyforge/blob/phase-3b/configs/ngc3132hst/showcase.yaml), tag [`phase-3b`](https://github.com/kriden187-cloud/skyforge/tree/phase-3b) (accepted 2026-10-20); `git checkout phase-3b`, `skyforge run ngc3132hst -s showcase --bin 2`; config digest `75e63fd95e324e77`, final pixel hash (sha256) `827ebc2ecbb4149c77133c62679fc60f6f51640d3d2376147645e0e2afa82b26`
 - **What is shown:** WFPC2 data from 1995, three narrow-band filters ([O III], Hα, [N II]), final at bin 2.
 - **Limitations:** Bin 2 (bin 1 is drizzle oversampling); 65 cosmic-ray traces on the sky; 0.25% zeros in the blue sky channel; seams ≤ 6 px filled linearly, corners at sky level.
 - **Note:** The same WFPC2 data underlie the 1998 Hubble Heritage image (STScI-1998-39).

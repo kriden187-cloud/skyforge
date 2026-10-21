@@ -1,12 +1,12 @@
 {
   "accepted_png": "data/baselines/ngc3132hst/phase-3b/showcase_bin2.png",
   "files": {
-    "ngc3132hst_showcase_caption.md": "ca1729e7ed797156e7eea796296f49c43557ca28449b6a7fd04530fc518cda21",
-    "ngc3132hst_showcase_master.png": "265ae7d81680e061622ad2314ae9408dfa0b11987cc1f599deaf9fa5a6f63835",
-    "ngc3132hst_showcase_master.tif": "74dcb74ac29f292d06e7f69020a6637f9a54723989408768e3ae0f37b56e8fbf",
-    "ngc3132hst_showcase_preview.jpg": "998cbf802312208cdcdb17d6323b25e5b872115b3a760dce95db628b006214cf",
-    "ngc3132hst_showcase_social.jpg": "51876ffdfb59fc986639dd2541b7cdd3fb13f5925569f87ea553e5f873c70910",
-    "ngc3132hst_showcase_web.jpg": "51876ffdfb59fc986639dd2541b7cdd3fb13f5925569f87ea553e5f873c70910"
+    "ngc3132hst_showcase_caption.md": "15e7eb3c9cbaa8a86e85f3d696126b75db6fcfa921c3bff58e1eb5ea9414d5f7",
+    "ngc3132hst_showcase_master.png": "f55f32e378867bd65d1b6e6edabae8d1920e3c45f0f1680ba7a747744a8c1789",
+    "ngc3132hst_showcase_master.tif": "ac0efe2775a38347a8c179035dc52d8510c4a271db5b406e96701eae492b3ee1",
+    "ngc3132hst_showcase_preview.jpg": "c343e0476ae00dc4c654aa85ffc708233c86317d5eddbf3ff0abf01a5bfa4065",
+    "ngc3132hst_showcase_social.jpg": "80177e72714dabf2816a09831073d15dbba87683e95611947227ea67b79953e6",
+    "ngc3132hst_showcase_web.jpg": "80177e72714dabf2816a09831073d15dbba87683e95611947227ea67b79953e6"
   },
   "meta": {
     "config": "configs/ngc3132hst/showcase.yaml",
@@ -19,6 +19,7 @@
     "license": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "pixels_sha256": "827ebc2ecbb4149c77133c62679fc60f6f51640d3d2376147645e0e2afa82b26",
+    "repo": "https://github.com/kriden187-cloud/skyforge/tree/phase-3b",
     "software": "skyforge 0.1.0 (publish v1)",
     "tag": "phase-3b",
     "title": "NGC 3132 — HST WFPC2 (showcase)"

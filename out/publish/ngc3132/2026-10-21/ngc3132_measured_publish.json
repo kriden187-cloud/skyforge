@@ -1,12 +1,12 @@
 {
   "accepted_png": "data/baselines/ngc3132/phase-3k/measured_bin1.png",
   "files": {
-    "ngc3132_measured_caption.md": "e1b2a13cfd595cfec1c11fb786fc5779dd43dd2eab20e7c1765a84bab6cf7a33",
-    "ngc3132_measured_master.png": "148d5d550b4c372dc36973a890dd5573fc67259693e001aa4793f49ad2349efb",
-    "ngc3132_measured_master.tif": "cdd149eac331eb0c58eb3c15ec3dd41078f69adb104cc7dc9ee525a427cf9bf3",
-    "ngc3132_measured_preview.jpg": "452b22e62bc982fb68f7002c92d63cff3714093f42cd384f5b930d14de1a8d13",
-    "ngc3132_measured_social.jpg": "cc86628acac3f8584ab745af5f0b04198820eab0915dd727e72fdfdfa1ecadac",
-    "ngc3132_measured_web.jpg": "d2c06eec04ae9dc618f045dad78a98d7c94998adaf7b70336d4bab93c0380964"
+    "ngc3132_measured_caption.md": "77e1476bbef177aee8dce769a3ae543a404e413e98843a23742f9c28c231296a",
+    "ngc3132_measured_master.png": "dd053e1d746e3f31a873ea9edb33335961c66b09d4d282551bcf90f4a0f97696",
+    "ngc3132_measured_master.tif": "ff5540e9a5bba99591d7ed24800d61926c3f30081661ad9fc683de7e510af5e9",
+    "ngc3132_measured_preview.jpg": "d3a994154323bb3dc44159eaa23d1682d03b9f03a06626b4186ba77a463b390e",
+    "ngc3132_measured_social.jpg": "e2a1e1cceae81452b0fbe9f5082ee0cb6c0bf354c8f777fc25fecc01ce776468",
+    "ngc3132_measured_web.jpg": "7aa4774b46a4d38c4685978ec2542f903c39cbfabdc647fc3a6c6394b14222e5"
   },
   "meta": {
     "config": "configs/ngc3132/measured.yaml",
@@ -19,6 +19,7 @@
     "license": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "pixels_sha256": "0f556d7667dbccca8ca49a82923d9bc79af94471caa7576f2c1fc1a49356f3b2",
+    "repo": "https://github.com/kriden187-cloud/skyforge/tree/phase-3k",
     "software": "skyforge 0.1.0 (publish v1)",
     "tag": "phase-3k",
     "title": "NGC 3132 — JWST NIRCam (measured)"

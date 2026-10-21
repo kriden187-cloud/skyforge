@@ -8,10 +8,10 @@
 - **Источник данных:** MAST (Mikulski Archive for Space Telescopes, STScI)
 - **Указание источника:** NASA, ESA, CSA, STScI; обработка: Denis Krivosheev
 - **Лицензия на обработку:** CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/); данные — на условиях NASA, ESA, CSA, STScI
-- **Воспроизведение:** конфиг `configs/ngc3132/measured.yaml`, тег `phase-3k` (принято 2026-10-20); `git checkout phase-3k`, `skyforge run ngc3132 -s measured --bin 1`; хеш конфига `309313b6c385f6f3`, хеш пикселей итога (sha256) `0f556d7667dbccca8ca49a82923d9bc79af94471caa7576f2c1fc1a49356f3b2`
+- **Воспроизведение:** конфиг [`configs/ngc3132/measured.yaml`](https://github.com/kriden187-cloud/skyforge/blob/phase-3k/configs/ngc3132/measured.yaml), тег [`phase-3k`](https://github.com/kriden187-cloud/skyforge/tree/phase-3k) (принято 2026-10-20); `git checkout phase-3k`, `skyforge run ngc3132 -s measured --bin 1`; хеш конфига `309313b6c385f6f3`, хеш пикселей итога (sha256) `0f556d7667dbccca8ca49a82923d9bc79af94471caa7576f2c1fc1a49356f3b2`
 - **Что показано:** Шесть фильтров NIRCam в порядке длины волны, вес F212N 0,25 (ореол H₂ настоящий).
 - **Ограничения:** Ступеньки фона по границам числа экспозиций до ~0,6σ; ядра трёх насыщенных звёзд — белые пятна; лучи ярких звёзд вне маски звёзд.
-- **Примечание:** Программа ERO 2733 (Early Release Observations); официальный снимок NIRCam — 12 июля 2022 (ESA/Webb weic2207b, NASA/STScI «Southern Ring Nebula (NIRCam Image)»).
+- **Примечание:** Программа ERO 2733 (Early Release Observations); официальный снимок NIRCam — 12 июля 2022 (STScI 2022-033b, ESA/Webb weic2207b, «Southern Ring Nebula (NIRCam Image)»).
 
 ---
 
@@ -25,7 +25,7 @@
 - **Data source:** MAST (Mikulski Archive for Space Telescopes, STScI)
 - **Credit:** NASA, ESA, CSA, STScI; processing: Denis Krivosheev
 - **License of the processing:** CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/); data under NASA, ESA, CSA, STScI terms
-- **Reproduction:** config `configs/ngc3132/measured.yaml`, tag `phase-3k` (accepted 2026-10-20); `git checkout phase-3k`, `skyforge run ngc3132 -s measured --bin 1`; config digest `309313b6c385f6f3`, final pixel hash (sha256) `0f556d7667dbccca8ca49a82923d9bc79af94471caa7576f2c1fc1a49356f3b2`
+- **Reproduction:** config [`configs/ngc3132/measured.yaml`](https://github.com/kriden187-cloud/skyforge/blob/phase-3k/configs/ngc3132/measured.yaml), tag [`phase-3k`](https://github.com/kriden187-cloud/skyforge/tree/phase-3k) (accepted 2026-10-20); `git checkout phase-3k`, `skyforge run ngc3132 -s measured --bin 1`; config digest `309313b6c385f6f3`, final pixel hash (sha256) `0f556d7667dbccca8ca49a82923d9bc79af94471caa7576f2c1fc1a49356f3b2`
 - **What is shown:** Six NIRCam filters in wavelength order, F212N weight 0.25 (the H₂ halo is real).
 - **Limitations:** Background steps along exposure-count boundaries up to ~0.6σ; cores of three saturated stars are white; bright-star spikes are outside the star mask.
-- **Note:** Program ERO 2733 (Early Release Observations); official NIRCam image released 12 July 2022 (ESA/Webb weic2207b, NASA/STScI “Southern Ring Nebula (NIRCam Image)”).
+- **Note:** Program ERO 2733 (Early Release Observations); official NIRCam image released 12 July 2022 (STScI 2022-033b, ESA/Webb weic2207b, “Southern Ring Nebula (NIRCam Image)”).

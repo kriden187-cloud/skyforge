@@ -9,6 +9,7 @@ author: Denis Krivosheev
 license: CC BY-SA 4.0
 license_url: https://creativecommons.org/licenses/by-sa/4.0/
 watermark: false            # подпись только в тексте и метаданных, на картинке — ничего
+repo: https://github.com/kriden187-cloud/skyforge   # ссылки на конфиг и тег в подписи и галерее
 
 # Формула источника для производных работ из архивных данных MAST (проверка 2026-10-21, ссылки — docs/PLAN.md, фаза 5):
 # NASA — «NASA should be acknowledged as the source»; ESA/Webb — кредит без изменений, свои правки — после него.
@@ -29,9 +30,9 @@ objects:
   ngc3132:
     accepted: 2026-10-20
     notes_ru:
-      - "Программа ERO 2733 (Early Release Observations); официальный снимок NIRCam — 12 июля 2022 (ESA/Webb weic2207b, NASA/STScI «Southern Ring Nebula (NIRCam Image)»)."
+      - "Программа ERO 2733 (Early Release Observations); официальный снимок NIRCam — 12 июля 2022 (STScI 2022-033b, ESA/Webb weic2207b, «Southern Ring Nebula (NIRCam Image)»)."
     notes_en:
-      - "Program ERO 2733 (Early Release Observations); official NIRCam image released 12 July 2022 (ESA/Webb weic2207b, NASA/STScI “Southern Ring Nebula (NIRCam Image)”)."
+      - "Program ERO 2733 (Early Release Observations); official NIRCam image released 12 July 2022 (STScI 2022-033b, ESA/Webb weic2207b, “Southern Ring Nebula (NIRCam Image)”)."
     styles:
       measured:
         shown_ru: "Шесть фильтров NIRCam в порядке длины волны, вес F212N 0,25 (ореол H₂ настоящий)."

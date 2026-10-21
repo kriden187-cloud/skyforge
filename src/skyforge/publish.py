@@ -72,6 +72,7 @@ class PublishConfig(_Strict):
     license: str
     license_url: str
     watermark: bool = False
+    repo: str | None = None                 # адрес репозитория: ссылки на конфиг и тег
     credit: dict[str, str]
     sizes: dict[str, SizeSpec]
     stop_words: list[str]
@@ -224,6 +225,8 @@ def caption_md(f: Facts, pub: PublishConfig, lang: str) -> str:
     prog = f"{f.program}" + (f" «{f.program_title}»" if ru and f.program_title else f" “{f.program_title}”" if f.program_title else "")
     fl = "; ".join(f"{n} {_um(w, lang)} — {color_name(c, lang)} ({c})" for n, w, c in f.filters)
     run = f"skyforge run {f.slug} -s {f.style} --bin {f.bin}"
+    cfg_ref = f"[`{f.config}`]({pub.repo}/blob/{f.tag}/{f.config})" if pub.repo else f"`{f.config}`"
+    tag_ref = f"[`{f.tag}`]({pub.repo}/tree/{f.tag})" if pub.repo else f"`{f.tag}`"
     if ru:
         lines = [f"# {f.target} — {f.telescope} {f.instrument}, стиль {f.style}", "",
                  f"- **Объект:** {f.target}",
@@ -234,7 +237,7 @@ def caption_md(f: Facts, pub: PublishConfig, lang: str) -> str:
                  "- **Источник данных:** MAST (Mikulski Archive for Space Telescopes, STScI)",
                  f"- **Указание источника:** {credit_line(f, pub, 'ru')}",
                  f"- **Лицензия на обработку:** {pub.license} ({pub.license_url}); данные — на условиях {pub.credit[f.mission]}",
-                 f"- **Воспроизведение:** конфиг `{f.config}`, тег `{f.tag}` (принято {f.accepted}); `git checkout {f.tag}`, "
+                 f"- **Воспроизведение:** конфиг {cfg_ref}, тег {tag_ref} (принято {f.accepted}); `git checkout {f.tag}`, "
                  f"`{run}`; хеш конфига `{f.config_digest}`, хеш пикселей итога (sha256) `{f.master_sha256}`"]
         if st.shown_ru:
             lines.append(f"- **Что показано:** {st.shown_ru}")
@@ -251,7 +254,7 @@ def caption_md(f: Facts, pub: PublishConfig, lang: str) -> str:
                  "- **Data source:** MAST (Mikulski Archive for Space Telescopes, STScI)",
                  f"- **Credit:** {credit_line(f, pub, 'en')}",
                  f"- **License of the processing:** {pub.license} ({pub.license_url}); data under {pub.credit[f.mission]} terms",
-                 f"- **Reproduction:** config `{f.config}`, tag `{f.tag}` (accepted {f.accepted}); `git checkout {f.tag}`, "
+                 f"- **Reproduction:** config {cfg_ref}, tag {tag_ref} (accepted {f.accepted}); `git checkout {f.tag}`, "
                  f"`{run}`; config digest `{f.config_digest}`, final pixel hash (sha256) `{f.master_sha256}`"]
         if st.shown_en:
             lines.append(f"- **What is shown:** {st.shown_en}")
@@ -276,6 +279,7 @@ def build_meta(f: Facts, pub: PublishConfig) -> dict[str, Any]:
                           f"пиксели sha256 {f.master_sha256[:16]}.",
         "copyright": f"© {year} {f.author}. {pub.license} ({pub.license_url}). Data: {pub.credit[f.mission]}.",
         "license": pub.license, "license_url": pub.license_url, "config": f.config, "tag": f.tag,
+        "repo": f"{pub.repo}/tree/{f.tag}" if pub.repo else "",
         "config_digest": f.config_digest, "pixels_sha256": f.master_sha256,
         "software": f"skyforge {__version__} (publish v{PUBLISH_VERSION})",
     }
@@ -487,7 +491,8 @@ def build_gallery(paths: Paths, pub: PublishConfig) -> Path:
                       f"- **Программа:** {f.program}, руководитель — {f.pi}; наблюдения {f.obs_start}; данные открыты {f.release}",
                       f"- **Фильтры:** {fl}",
                       f"- **Указание источника:** {credit_line(f, pub, 'ru')}; лицензия на обработку — {pub.license}",
-                      f"- **Конфиг:** [{f.config}](../{f.config}), тег `{f.tag}`, принято {f.accepted}",
+                      f"- **Конфиг:** [{f.config}](../{f.config}), тег "
+                      + (f"[`{f.tag}`]({pub.repo}/tree/{f.tag})" if pub.repo else f"`{f.tag}`") + f", принято {f.accepted}",
                       f"- **Хеш пикселей итога (sha256):** `{f.master_sha256}`",
                       f"- **Что показано:** {stt.shown_ru}", f"- **Ограничения:** {stt.limits_ru}"]
             parts += [f"- **Примечание:** {n}" for n in po.notes_ru]
