@@ -148,8 +148,11 @@ def stretched_dir(cfg: Config, paths: Paths) -> Path:
 
 
 def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
-    st = cfg.stretch.model_dump(mode="json", exclude={"sky_toe_max_p"} if cfg.stretch.sky_toe_max_p is None else set())
-    key = {"input": in_key, "stretch": st}   # фаза 4: sky_toe_max_p в ключе только когда задан — кеши прежних объектов те же
+    exclude = set() if cfg.stretch.sky_toe_max_p is not None else {"sky_toe_max_p"}
+    if cfg.stretch.sky_reference == "mask":   # шаг 4d: поля опоры — только когда она не по умолчанию
+        exclude |= {"sky_reference", "sky_reference_block_px", "sky_reference_n_blocks", "sky_reference_min_free"}
+    st = cfg.stretch.model_dump(mode="json", exclude=exclude)
+    key = {"input": in_key, "stretch": st}   # фаза 4: новые поля в ключе только когда заданы — кеши прежних объектов те же
     if cfg.clean.fill_gaps_px > 0:
         key["fill_gaps_px"] = cfg.clean.fill_gaps_px
     if cfg.stretch.sky_poly_order > 0:
@@ -161,13 +164,60 @@ def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
     return key
 
 
+def darkest_blocks(a: np.ndarray, ok: np.ndarray, block: int, n: int, min_free: float) -> tuple[np.ndarray, dict]:
+    """Шаг 4d: n блоков block×block с самой низкой медианой a по пикселям ok (доля ok в блоке ≥ min_free).
+    Возвращает маску опорного неба (ok внутри выбранных блоков) и {blocks: [[строка, столбец, медиана]], eligible, total}."""
+    H, W = a.shape
+    cand, total = [], 0
+    for y in range(0, H - block + 1, block):
+        for x in range(0, W - block + 1, block):
+            total += 1
+            m = ok[y:y + block, x:x + block]
+            if m.mean() >= min_free:
+                cand.append((float(np.median(a[y:y + block, x:x + block][m])), y, x))
+    if len(cand) < n:
+        raise SkyforgeError(f"stretch.sky_reference: блоков с долей чистых пикселей ≥ {min_free} — {len(cand)} из {total}, "
+                            f"нужно {n}: уменьши sky_reference_block_px или sky_reference_min_free")
+    cand.sort()
+    ref = np.zeros((H, W), dtype=bool)
+    for _, y, x in cand[:n]:
+        ref[y:y + block, x:x + block] = ok[y:y + block, x:x + block]
+    return ref, {"blocks": [[y, x, round(v, 6)] for v, y, x in cand[:n]], "eligible": len(cand), "total": total}
+
+
+def reference_sky(cfg: Config, paths: Paths, shape: tuple[int, int]) -> tuple[np.ndarray, dict]:
+    """Опорное небо по самым тёмным блокам опорного фильтра (cfg.reference) после clean: чистые пиксели — поле всех
+    фильтров вне маски звёзд clean (с отступом 3 px)."""
+    from scipy import ndimage
+
+    from skyforge.clean import clean_dir
+
+    d = clean_dir(cfg, paths)
+    if not cfg.reference:
+        raise SkyforgeError("stretch.sky_reference: darkest_blocks — нужен reference (опорный фильтр) в конфиге")
+    full = np.ones(shape, dtype=bool)
+    for f in cfg.filters:
+        full &= np.isfinite(np.load(d / f"{f}.npy", mmap_mode="r"))
+    stars = ndimage.binary_dilation(np.load(d / "star_weight.npy") > 0.01, iterations=3)
+    s = cfg.stretch
+    ref, info = darkest_blocks(np.load(d / f"{cfg.reference}.npy", mmap_mode="r"), full & ~stars,
+                               max(16, s.sky_reference_block_px // cfg.bin), s.sky_reference_n_blocks, s.sky_reference_min_free)
+    if info["eligible"] < 0.25 * info["total"]:
+        console.print(f"[yellow]  опорное небо: блоков без звёзд {info['eligible']} из {info['total']} — опора может уйти "
+                      f"в туманность (шаг 4d); уменьши sky_reference_min_free[/]")
+    return ref, info
+
+
 def load_masks(cfg: Config, paths: Paths) -> tuple[np.ndarray, np.ndarray] | None:
-    """(пустое небо, туманность) с этапа clean; None, если масок нет."""
+    """(пустое небо, туманность) с этапа clean; None, если масок нет. stretch.sky_reference: darkest_blocks —
+    вместо маски неба опора по самым тёмным блокам (шаг 4d)."""
     from skyforge.clean import load_nebula_sd, load_sky_mask
 
     sky, sd = load_sky_mask(cfg, paths), load_nebula_sd(cfg, paths)
     if sky is None or sd is None:
         return None
+    if cfg.stretch.sky_reference == "darkest_blocks":
+        sky, _ = reference_sky(cfg, paths, sd.shape)
     neb = sd > 0
     if cfg.stretch.exclude_stars:
         from skyforge.clean import star_exclusion

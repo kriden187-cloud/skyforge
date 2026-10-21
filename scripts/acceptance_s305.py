@@ -67,9 +67,17 @@ def main() -> None:
     gx = st[:, 1] - np.maximum(st[:, 0], st[:, 2])
     green = [float(np.percentile(gx, q)) for q in (50, 75, 95)]   # шаг 7: медиана скрывает хвост зелёных звёзд
     burned = float((img[sd > 0].max(-1) >= 254 / 255).mean() * 100)
-    rows = ["критерий\tзначение\tпорог",
-            f"небо R / G / B (медиана, уровни)\t{' / '.join(f'{np.median(sk[:, k]):.0f}' for k in range(3))}"
-            f"\t{c.stretch.sky_level:g} (stretch.sky_level)",
+    rows = ["критерий\tзначение\tпорог"]
+    if c.stretch.sky_reference == "darkest_blocks":   # шаг 4d: sky_level ставится на опорное небо, не на маску неба
+        from skyforge.stretch import reference_sky
+
+        ref, _ = reference_sky(c, P, sd.shape)
+        rk = img[ref & full] * 255
+        rows.append(f"опорное небо (тёмные блоки) R / G / B, медиана\t{' / '.join(f'{np.median(rk[:, k]):.0f}' for k in range(3))}"
+                    f"\t{c.stretch.sky_level:g} (stretch.sky_level)")
+    rows += [f"{'фон вне туманности' if c.stretch.sky_reference == 'darkest_blocks' else 'небо'} R / G / B (медиана, уровни)"
+             f"\t{' / '.join(f'{np.median(sk[:, k]):.0f}' for k in range(3))}"
+             + ("\t—" if c.stretch.sky_reference == "darkest_blocks" else f"\t{c.stretch.sky_level:g} (stretch.sky_level)"),
             f"нулей на небе R / G / B, %\t{' / '.join(f'{(sk[:, k] <= 0).mean() * 100:.2f}' for k in range(3))}\t< 0,5",
             f"выжжено в туманности (канал ≥ 254), %\t{burned:.2f}\t≤ 0,5",
             f"зелень звёзд неба: G − max(R, B), p50 / p75 / p95, уровни\t{' / '.join(f'{g:+.0f}' for g in green)}"

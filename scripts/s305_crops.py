@@ -1,7 +1,7 @@
 """Фаза 4, Sh2-305: кропы по фильтрам после align или clean — asinh по общим процентилям фильтра (все кропы одного
 фильтра в одной растяжке), NaN (насыщенные ядра, пустоты) — красным. Для неба: ×k и рядом карта областей CON.
 
-Запуск: uv run python scripts/s305_crops.py <align|clean> <лист.png> <кроп>[:k] [<кроп>[:k] ...] [--con F212N] [--cfg путь]
+Запуск: uv run python scripts/s305_crops.py <align|clean> <лист.png> <кроп>[:k] [<кроп>[:k] ...] [--con F212N] [--cfg путь] [--bin 1]
   k — усиление яркости (небо ×5); --con F — добавить к каждому кропу карту областей CON фильтра F;
   --cfg — другой конфиг (по умолчанию configs/sh2305/base.yaml).
 """
@@ -30,8 +30,14 @@ def main() -> None:
     if "--cfg" in args:                                   # другой конфиг (проба в отдельной папке)
         i = args.index("--cfg")
         cfg_path, args = args[i + 1], args[:i] + args[i + 2:]
+    bin_ = None
+    if "--bin" in args:                                   # шаг 4d: кропы при bin 1 (по умолчанию — bin из конфига)
+        i = args.index("--bin")
+        bin_, args = int(args[i + 1]), args[:i] + args[i + 2:]
     P = Paths(pathlib.Path(".").resolve())
     c = Config.load(cfg_path)
+    if bin_:
+        c = c.model_copy(update={"bin": bin_})
     arrays = load_input(c, P)[0] if stage == "clean" else load_aligned(c, P)[0]
     crops = {k.name: k for k in with_resolved_crops(c, P).report.crops}
     shape = next(iter(arrays.values())).shape

@@ -552,3 +552,67 @@ def test_sky_toe_max_p_no_zeros_under_strong_stretch():
     assert abs(np.median(new[sky]) * 255 - 6) < 0.6
     above = a > np.median(a[sky])
     assert np.array_equal(new[above], old[above])                          # выше неба — без изменений
+
+
+def _nebula_with_empty_corner(seed: int, n: int = 768, block: int = 128):
+    """Градиентная туманность на весь кадр, кроме левого верхнего блока: там пустое небо (медиана 2, σ 1)."""
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    yy, xx = np.indices((n, n))
+    a = (6 + 40 * (xx + yy) / (2 * n) + rng.normal(0, 1.0, (n, n))).astype(np.float32)
+    a[:block, :block] = 2 + rng.normal(0, 1.0, (block, block))
+    corner = np.zeros((n, n), bool)
+    corner[:block, :block] = True
+    return a, corner
+
+
+def test_sky_reference_darkest_blocks_finds_empty_corner():
+    """Фаза 4 шаг 4d: на сплошной туманности маска «пустого неба» лежит на слабой туманности; опора по самым тёмным
+    блокам находит пустой угол, и медиана угла после растяжки — на sky_level (а не туманность на нём)."""
+    import numpy as np
+
+    from skyforge.config import StretchConfig
+    from skyforge.stretch import darkest_blocks, stretch_array
+
+    a, corner = _nebula_with_empty_corner(11)
+    ok = np.ones(a.shape, bool)
+    ref, info = darkest_blocks(a, ok, block=128, n=1, min_free=0.5)
+    assert info["blocks"][0][:2] == [0, 0] and ref[corner].all() and not ref[~corner].any()
+    neb = a > np.percentile(a, 60)
+    s = StretchConfig(anchor="masks", black_mode="pedestal", black_k=3, sky_level=16, a=0.02, white=99.8,
+                      noise_block_px=32, sky_toe_max_p=4)
+    y, _ = stretch_array(a, s, masks=(ref, neb))
+    assert abs(np.median(y[corner]) * 255 - 16) < 1.0
+    # прежняя опора — вся «не туманность»: её медиана выше пустого угла, угол уходит под пол
+    y_old, _ = stretch_array(a, s, masks=(~neb, neb))
+    assert np.median(y_old[corner]) * 255 < 16 - 4
+
+
+def test_sky_reference_min_free_too_strict_moves_into_nebula():
+    """Ошибка шага 4d, первый запуск: при доле чистых пикселей 0,9 и маске звёзд ~20% кадра пустой угол не проходит,
+    и опора уходит в туманность (медиана опоры выше угла); при 0,5 — угол находится."""
+    import numpy as np
+
+    from skyforge.stretch import darkest_blocks
+
+    a, corner = _nebula_with_empty_corner(12)
+    rng = np.random.default_rng(13)
+    stars = rng.random(a.shape) < 0.2
+    stars[384:512, 384:512] = False                         # один чистый блок посреди туманности (по сетке блоков)
+    ok = ~stars
+    strict, si = darkest_blocks(a, ok, block=128, n=1, min_free=0.9)
+    loose, li = darkest_blocks(a, ok, block=128, n=1, min_free=0.5)
+    assert si["eligible"] == 1 and np.median(a[strict]) > np.median(a[corner]) + 10
+    assert li["blocks"][0][:2] == [0, 0] and li["eligible"] > si["eligible"]
+
+
+def test_sky_reference_default_keeps_stretch_key():
+    """По умолчанию (mask) поля опоры в ключ растяжки не входят — кеши NGC 3132 и Hubble прежние."""
+    from skyforge.config import Config
+    from skyforge.stretch import stretch_key
+
+    k = stretch_key(Config.model_validate({"target": "t"}), {})["stretch"]
+    assert not any(f.startswith("sky_reference") for f in k)
+    on = Config.model_validate({"target": "t", "stretch": {"sky_reference": "darkest_blocks"}})
+    assert stretch_key(on, {})["stretch"]["sky_reference"] == "darkest_blocks"
