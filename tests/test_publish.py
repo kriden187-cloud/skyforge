@@ -102,6 +102,31 @@ def test_caption_has_required_lines_and_no_stop_words():
     assert "NASA, ESA, STScI; processing: Denis" in md and "NASA, ESA, CSA, STScI" not in md   # у Hubble нет CSA
 
 
+def test_commons_wikitext():
+    """Шаг 2 публикации: текст страницы файла Commons — {{Information}} с описанием EN и RU, датой наблюдений, {{own}} с
+    программой, репозиторием и тегом, автором и источником данных, {{cc-by-sa-4.0}}, категориями из publish.yaml и
+    предложенным именем файла; для Sh2-305 — ссылки на другие обработки; без стоп-слов; у Hubble нет CSA."""
+    from skyforge.publish import Facts, commons_wikitext, find_stop_words, load_publish
+
+    pub = load_publish(ROOT / "configs" / "publish.yaml")
+    f = Facts(slug="sh2305", style="showcase", target="Sh 2-305", mission="jwst", telescope="JWST", instrument="NIRCam",
+              program="4547", program_title="The stellar & sub-stellar initial mass function in Sharpless 305: imaging",
+              pi="McCaughrean, Mark J.", obs_start="2025-03-31", obs_end="2025-03-31", release="2026-04-02",
+              filters=[("F182M", 1.82, "#3050ff"), ("F444W", 4.40, "#ff2020")], config="configs/sh2305/showcase.yaml",
+              tag="phase-4", config_digest="676fb71874f17f51", bin=1, master_sha256="0" * 64, author="Denis Krivosheev",
+              accepted="2026-10-21")
+    w = commons_wikitext(f, pub)
+    for s in ("{{Information", "{{en|1=", "{{ru|1=", "|date=2025-03-31", "{{own}}", "4547", "Mark J. McCaughrean",
+              "https://github.com/kriden187-cloud/skyforge", "phase-4", "|author=Denis Krivosheev", "NASA, ESA, CSA, STScI",
+              "{{cc-by-sa-4.0", "[[Category:Sh 2-305]]", "[[Category:Images by NIRCam]]",
+              "Sharpless 305 JWST NIRCam 5 filters (Krivosheev).png", "[[:File:Sharpless 305 JWST NIRCam (long wavelength).jpg"):
+        assert s in w, s
+    assert not find_stop_words(w, pub.stop_words)
+    hst = Facts(**{**f.__dict__, "slug": "ngc3132hst", "mission": "hst", "obs_start": "1995-12-07", "obs_end": "1995-12-07"})
+    wh = commons_wikitext(hst, pub)
+    assert "NASA, ESA, STScI" in wh and "CSA" not in wh and "[[Category:Hubble images of nebulae]]" in wh
+
+
 def test_owner_decisions_in_publish_yaml():
     """Решения владельца 2026-10-21: CC BY-SA 4.0, автор Denis Krivosheev, без водяного знака; Hubble — JPEG 98."""
     from skyforge.publish import load_publish

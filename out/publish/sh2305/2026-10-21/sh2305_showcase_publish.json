@@ -2,6 +2,7 @@
   "accepted_png": "data/baselines/sh2305/phase-4/showcase_bin1.png",
   "files": {
     "sh2305_showcase_caption.md": "a0d7790ba184e7d4158b92198257efc8c2d5c105237cc9208013797648915caf",
+    "sh2305_showcase_commons.txt": "4db90a783eed4dc7a54d186fcbbfa941c4347191e8675d6d85fd2434afc311b9",
     "sh2305_showcase_master.png": "86f3680915bd8a95247650174109e7e48fd0f6f2cc432948e50c78381f5a7cec",
     "sh2305_showcase_master.tif": "c4b0a0a0599089d6a39ead9bf05003ae3bafac49cbd4ef15752fd9fa5a30309b",
     "sh2305_showcase_preview.jpg": "576920665fcc3b62e47142fb83ee579071e9b0f5d90fa661c5a50d939e6df14a",

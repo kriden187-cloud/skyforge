@@ -26,9 +26,15 @@ sizes:
 # Слова, которых не должно быть в подписи (проверка при publish и в тестах), по основе слова, без учёта регистра.
 stop_words: [перв, уникальн, единствен, first, unique, only one, never before, впервые]
 
+# Wikimedia Commons (шаг 2 публикации): имя файла (на 2026-10-21 на Commons свободно), категории — существующие, как у файлов
+# тех же объектов на Commons (проверено через API 2026-10-21: «Sharpless 305» и «Hubble Space Telescope images» не существуют).
 objects:
   ngc3132:
     accepted: 2026-10-20
+    commons:
+      style: showcase
+      filename: "NGC 3132 JWST NIRCam (Krivosheev).png"
+      categories: [NGC 3132, Images by NIRCam, James Webb Space Telescope images of nebulae]
     notes_ru:
       - "Программа ERO 2733 (Early Release Observations); официальный снимок NIRCam — 12 июля 2022 (STScI 2022-033b, ESA/Webb weic2207b, «Southern Ring Nebula (NIRCam Image)»)."
     notes_en:
@@ -46,6 +52,10 @@ objects:
         limits_en: "Steps along exposure-count boundaries; three background details visible at ×2–×5; outer halo fainter than NASA's; one field star with a greenish core."
   ngc3132hst:
     accepted: 2026-10-20
+    commons:
+      style: showcase
+      filename: "NGC 3132 HST WFPC2 1995 (Krivosheev).png"
+      categories: [NGC 3132, Hubble images of nebulae]
     jpeg_quality: 98          # все версии: шумный синий канал F502N — при 92 медиана |Δ| к мастеру в синем 2 уровня (шум сжатия,
                               # сдвига тона нет), при 98 — 1; файл ~665 КБ против 211 КБ (лист out/publish/проверка_5/90_тон_версий.tsv)
     pi: "Trauger, John"       # в заголовке drz нет — MAST, Observations.query_criteria(proposal_id=6221).proposal_pi
@@ -61,6 +71,14 @@ objects:
         limits_en: "Bin 2 (bin 1 is drizzle oversampling); 65 cosmic-ray traces on the sky; 0.25% zeros in the blue sky channel; seams ≤ 6 px filled linearly, corners at sky level."
   sh2305:
     accepted: 2026-10-21
+    commons:
+      style: showcase
+      filename: "Sharpless 305 JWST NIRCam 5 filters (Krivosheev).png"
+      categories: [Sh 2-305, Images by NIRCam, James Webb Space Telescope images of nebulae]
+      others:                 # другие обработки тех же данных на Commons
+        - { file: "Sharpless 305 JWST NIRCam (long wavelength).jpg", ru: "Мелина Тевено", en: "Melina Thévenot" }
+        - { file: "The star-forming region Sharpless 305 (Sh 2-305) & RAFGL5232 as seen with JWST (55209728128).jpg",
+            ru: "Марк Маккохрейн, руководитель программы", en: "Mark McCaughrean, program PI" }
     notes_ru:
       - "Данные открыты 2026-04-02. Известные более ранние обработки этих данных: Мелина Тевено (Wikimedia Commons, 2026-04-03); Томас Карпантье (Flickr, 2026-04-03); Исраэль Веласкес Родригес (Flickr, 2026-04-03); Андреа Лук (Flickr, 2026-04-11); Марк Маккохрейн, руководитель программы (Flickr, 2026-04-15, копия на Wikimedia Commons); Мехмет Хакан Озсарач (Flickr, 2026-05-18); Picturavis (Pixelfed, около 2026-05-22)."
     notes_en:

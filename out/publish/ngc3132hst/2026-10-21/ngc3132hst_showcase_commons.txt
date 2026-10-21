@@ -1,0 +1,17 @@
+<!-- Имя файла при загрузке: NGC 3132 HST WFPC2 1995 (Krivosheev).png — текст ниже вставляется целиком как описание страницы файла -->
+=={{int:filedesc}}==
+{{Information
+|description={{en|1=NGC 3132, Hubble Space Telescope (HST), WFPC2. Program 6221, PI John Trauger; observed 1995-12-07 (UTC), data public since 1996-12-08. Filters (wavelength — colour in the image): F502N 0.502 µm — blue; F656N 0.656 µm — green; F658N 0.658 µm — red. WFPC2 data from 1995, three narrow-band filters ([O III], Hα, [N II]), final at bin 2.}}
+{{ru|1=NGC 3132, космический телескоп «Хаббл» (HST), WFPC2. Программа 6221, руководитель John Trauger; наблюдения 1995-12-07 (UTC), данные открыты 1996-12-08. Фильтры (длина волны — цвет на картинке): F502N 0,502 мкм — синий; F656N 0,656 мкм — зелёный; F658N 0,658 мкм — красный. WFPC2 1995 года, три узкополосных фильтра ([O III], Hα, [N II]), итог при bin 2.}}
+|date=1995-12-07
+|source={{own}}: processing of public HST data from MAST (Mikulski Archive for Space Telescopes, STScI), program 6221. Pipeline and configuration: https://github.com/kriden187-cloud/skyforge/tree/phase-3b (configs/ngc3132hst/showcase.yaml)
+|author=Denis Krivosheev; data: NASA, ESA, STScI
+|permission=
+|other versions=
+}}
+
+=={{int:license-header}}==
+{{cc-by-sa-4.0|1=Denis Krivosheev; data: NASA, ESA, STScI}}
+
+[[Category:NGC 3132]]
+[[Category:Hubble images of nebulae]]

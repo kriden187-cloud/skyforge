@@ -1,0 +1,18 @@
+<!-- Имя файла при загрузке: NGC 3132 JWST NIRCam (Krivosheev).png — текст ниже вставляется целиком как описание страницы файла -->
+=={{int:filedesc}}==
+{{Information
+|description={{en|1=NGC 3132, James Webb Space Telescope (JWST), NIRCam. Program 2733 “JWST Early Release Observation 7”, PI Klaus M. Pontoppidan; observed 2022-06-03 (UTC), data public since 2022-07-13. Filters (wavelength — colour in the image): F090W 0.900 µm — blue; F187N 1.87 µm — cyan; F212N 2.12 µm — green; F356W 3.56 µm — orange; F405N 4.05 µm — red; F470N 4.70 µm — red. Showcase in the spirit of the NASA release: sky pedestal and toe, sky polynomial tapered towards the nebula, shadows 2, saturation 1.2.}}
+{{ru|1=NGC 3132, космический телескоп «Джеймс Уэбб» (JWST), NIRCam. Программа 2733 «JWST Early Release Observation 7», руководитель Klaus M. Pontoppidan; наблюдения 2022-06-03 (UTC), данные открыты 2022-07-13. Фильтры (длина волны — цвет на картинке): F090W 0,900 мкм — синий; F187N 1,87 мкм — бирюзовый; F212N 2,12 мкм — зелёный; F356W 3,56 мкм — оранжевый; F405N 4,05 мкм — красный; F470N 4,70 мкм — красный. Витрина в духе релиза NASA: пьедестал и носок неба, полином неба с гашением к туманности, подъём теней 2, насыщенность 1,2.}}
+|date=2022-06-03
+|source={{own}}: processing of public JWST data from MAST (Mikulski Archive for Space Telescopes, STScI), program 2733. Pipeline and configuration: https://github.com/kriden187-cloud/skyforge/tree/phase-3k (configs/ngc3132/showcase.yaml)
+|author=Denis Krivosheev; data: NASA, ESA, CSA, STScI
+|permission=
+|other versions=
+}}
+
+=={{int:license-header}}==
+{{cc-by-sa-4.0|1=Denis Krivosheev; data: NASA, ESA, CSA, STScI}}
+
+[[Category:NGC 3132]]
+[[Category:Images by NIRCam]]
+[[Category:James Webb Space Telescope images of nebulae]]

@@ -58,8 +58,22 @@ class StyleText(_Strict):
     limits_en: str = ""
 
 
+class CommonsOther(_Strict):
+    file: str                              # имя файла на Commons без «File:»
+    ru: str
+    en: str
+
+
+class CommonsSpec(_Strict):
+    style: str                             # какой стиль загружается на Commons
+    filename: str
+    categories: list[str]
+    others: list[CommonsOther] = []        # другие обработки тех же данных на Commons
+
+
 class ObjectPub(_Strict):
     accepted: str
+    commons: CommonsSpec | None = None
     pi: str | None = None                  # если в заголовках FITS нет (HST drz)
     jpeg_quality: int | None = Field(None, ge=50, le=100)   # качество JPEG всех версий объекта вместо sizes.*.quality
     notes_ru: list[str] = []
@@ -264,6 +278,59 @@ def caption_md(f: Facts, pub: PublishConfig, lang: str) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _person(name: str) -> str:
+    """«McCaughrean, Mark J.» → «Mark J. McCaughrean» (как в тексте)."""
+    if "," in name:
+        last, first = (x.strip() for x in name.split(",", 1))
+        return f"{first} {last}"
+    return name
+
+
+def commons_wikitext(f: Facts, pub: PublishConfig) -> str:
+    """Текст страницы файла Wikimedia Commons: {{Information}} (описание EN и RU, дата наблюдений, {{own}} с программой,
+    репозиторием и тегом, автор и источник данных), лицензия {{cc-by-sa-4.0}}, категории из publish.yaml."""
+    po = pub.objects[f.slug]
+    co = po.commons
+    if co is None:
+        raise SkyforgeError(f"{f.slug}: нет раздела commons в configs/publish.yaml")
+    st = po.styles.get(f.style, StyleText())
+    tel_en, tel_ru = TELESCOPE[f.mission][2], TELESCOPE[f.mission][1]
+    pi = _person(f.pi)
+    fl_en = "; ".join(f"{n} {_um(w, 'en')} — {color_name(c, 'en')}" for n, w, c in f.filters)
+    fl_ru = "; ".join(f"{n} {_um(w, 'ru')} — {color_name(c, 'ru')}" for n, w, c in f.filters)
+    title_en = f" “{f.program_title}”" if f.program_title else ""
+    title_ru = f" «{f.program_title}»" if f.program_title else ""
+    en = (f"{f.target}, {tel_en}, {f.instrument}. Program {f.program}{title_en}, PI {pi}; observed {f.obs_start} (UTC), "
+          f"data public since {f.release}. Filters (wavelength — colour in the image): {fl_en}. {st.shown_en}")
+    ru = (f"{f.target}, {tel_ru}, {f.instrument}. Программа {f.program}{title_ru}, руководитель {pi}; наблюдения "
+          f"{f.obs_start} (UTC), данные открыты {f.release}. Фильтры (длина волны — цвет на картинке): {fl_ru}. {st.shown_ru}")
+    if co.others:
+        en += " Other processings of the same data on Commons: " + ", ".join(f"[[:File:{o.file}|{o.en}]]" for o in co.others) + "."
+        ru += " Другие обработки тех же данных на Commons: " + ", ".join(f"[[:File:{o.file}|{o.ru}]]" for o in co.others) + "."
+    repo = f"{pub.repo}/tree/{f.tag}" if pub.repo else f"tag {f.tag}"
+    data = pub.credit[f.mission]
+    lines = [
+        f"<!-- Имя файла при загрузке: {co.filename} — текст ниже вставляется целиком как описание страницы файла -->",
+        "=={{int:filedesc}}==",
+        "{{Information",
+        f"|description={{{{en|1={en}}}}}",
+        f"{{{{ru|1={ru}}}}}",
+        f"|date={f.obs_start}",
+        f"|source={{{{own}}}}: processing of public {f.telescope} data from MAST (Mikulski Archive for Space Telescopes, STScI), "
+        f"program {f.program}. Pipeline and configuration: {repo} ({f.config})",
+        f"|author={f.author}; data: {data}",
+        "|permission=",
+        "|other versions=",
+        "}}",
+        "",
+        "=={{int:license-header}}==",
+        f"{{{{cc-by-sa-4.0|1={f.author}; data: {data}}}}}",
+        "",
+        *[f"[[Category:{c}]]" for c in co.categories],
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def build_meta(f: Facts, pub: PublishConfig) -> dict[str, Any]:
     tel, inst = f.telescope, f.instrument
     fl = ", ".join(n for n, _, _ in f.filters)
@@ -457,6 +524,15 @@ def publish_object(paths: Paths, pub: PublishConfig, name: str, style: str | Non
         cap = stem.with_name(stem.name + "_caption.md")
         cap.write_text(caps["ru"] + "\n---\n\n" + caps["en"], encoding="utf-8")
         files.append(cap)
+        co = pub.objects[name].commons
+        if co is not None and co.style == st:
+            wt = commons_wikitext(f, pub)
+            bad = find_stop_words(wt, pub.stop_words)
+            if bad:
+                raise SkyforgeError(f"{cfg.slug}/{st}: в тексте для Commons слова из стоп-списка: {bad}")
+            cpath = stem.with_name(stem.name + "_commons.txt")
+            cpath.write_text(wt, encoding="utf-8")
+            files.append(cpath)
         man = {"accepted_png": paths.rel(base_png), "tiff_from": paths.rel(run_tif),
                "files": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in files}, "meta": meta}
         mpath = stem.with_name(stem.name + "_publish.json")

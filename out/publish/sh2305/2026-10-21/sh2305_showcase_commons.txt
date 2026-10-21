@@ -1,0 +1,18 @@
+<!-- Имя файла при загрузке: Sharpless 305 JWST NIRCam 5 filters (Krivosheev).png — текст ниже вставляется целиком как описание страницы файла -->
+=={{int:filedesc}}==
+{{Information
+|description={{en|1=Sh 2-305, James Webb Space Telescope (JWST), NIRCam. Program 4547 “The stellar & sub-stellar initial mass function in Sharpless 305: imaging”, PI Mark J. McCaughrean; observed 2025-03-31 (UTC), data public since 2026-04-02. Filters (wavelength — colour in the image): F182M 1.82 µm — blue; F300M 3.00 µm — light blue; F335M 3.35 µm — yellow-green; F360M 3.60 µm — orange; F444W 4.44 µm — red. Five NIRCam filters (F182M and four long-wavelength), wavelength-ordered palette with a warm shift, sky reference from the darkest blocks, sky level 16. Other processings of the same data on Commons: [[:File:Sharpless 305 JWST NIRCam (long wavelength).jpg|Melina Thévenot]], [[:File:The star-forming region Sharpless 305 (Sh 2-305) & RAFGL5232 as seen with JWST (55209728128).jpg|Mark McCaughrean, program PI]].}}
+{{ru|1=Sh 2-305, космический телескоп «Джеймс Уэбб» (JWST), NIRCam. Программа 4547 «The stellar & sub-stellar initial mass function in Sharpless 305: imaging», руководитель Mark J. McCaughrean; наблюдения 2025-03-31 (UTC), данные открыты 2026-04-02. Фильтры (длина волны — цвет на картинке): F182M 1,82 мкм — синий; F300M 3,00 мкм — голубой; F335M 3,35 мкм — жёлто-зелёный; F360M 3,60 мкм — оранжевый; F444W 4,44 мкм — красный. Пять фильтров NIRCam (F182M и четыре длинноволновых), палитра по длине волны с тёплым сдвигом, опорное небо по самым тёмным блокам, небо 16. Другие обработки тех же данных на Commons: [[:File:Sharpless 305 JWST NIRCam (long wavelength).jpg|Мелина Тевено]], [[:File:The star-forming region Sharpless 305 (Sh 2-305) & RAFGL5232 as seen with JWST (55209728128).jpg|Марк Маккохрейн, руководитель программы]].}}
+|date=2025-03-31
+|source={{own}}: processing of public JWST data from MAST (Mikulski Archive for Space Telescopes, STScI), program 4547. Pipeline and configuration: https://github.com/kriden187-cloud/skyforge/tree/phase-4 (configs/sh2305/showcase.yaml)
+|author=Denis Krivosheev; data: NASA, ESA, CSA, STScI
+|permission=
+|other versions=
+}}
+
+=={{int:license-header}}==
+{{cc-by-sa-4.0|1=Denis Krivosheev; data: NASA, ESA, CSA, STScI}}
+
+[[Category:Sh 2-305]]
+[[Category:Images by NIRCam]]
+[[Category:James Webb Space Telescope images of nebulae]]
