@@ -17,18 +17,18 @@ from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths, find_root
 from skyforge.pipeline import fetch_stage, prepare_out, run_all, run_stage, run_styles
 
-app = typer.Typer(help="Конвейер обработки снимков JWST и Hubble: от MAST до цветной картинки.",
+app = typer.Typer(help="Pipeline for JWST and Hubble images: from the MAST archive to a colour picture.",
                   no_args_is_help=True, add_completion=False, pretty_exceptions_show_locals=False)
-cache_app = typer.Typer(help="Кеш скачанных и промежуточных данных.", no_args_is_help=True)
+cache_app = typer.Typer(help="Cache of downloaded and intermediate data.", no_args_is_help=True)
 app.add_typer(cache_app, name="cache")
 
-TargetArg = Annotated[str, typer.Argument(help="Имя объекта (\"NGC 3132\") или путь к YAML-конфигу")]
-ConfigArg = Annotated[str, typer.Argument(help="YAML-конфиг: путь или имя из configs/ (ngc3132)")]
-BinOpt = Annotated[Optional[int], typer.Option("--bin", min=1, help="Переопределить bin из конфига")]
-MissionOpt = Annotated[Optional[str], typer.Option("--mission", "-m", help="jwst или hst")]
+TargetArg = Annotated[str, typer.Argument(help="Object name (\"NGC 3132\") or path to a YAML config")]
+ConfigArg = Annotated[str, typer.Argument(help="YAML config: a path or a name from configs/ (ngc3132)")]
+BinOpt = Annotated[Optional[int], typer.Option("--bin", min=1, help="Override bin from the config")]
+MissionOpt = Annotated[Optional[str], typer.Option("--mission", "-m", help="jwst or hst")]
 InstrOpt = Annotated[Optional[str], typer.Option("--instrument", "-i", help="nircam, miri, wfc3_uvis, acs…")]
-FiltersOpt = Annotated[Optional[str], typer.Option("--filters", "-f", help="Через запятую: F090W,F187N")]
-StyleOpt = Annotated[Optional[str], typer.Option("--style", "-s", help="Стиль из configs/<объект>/ (measured, showcase…)")]
+FiltersOpt = Annotated[Optional[str], typer.Option("--filters", "-f", help="Comma-separated: F090W,F187N")]
+StyleOpt = Annotated[Optional[str], typer.Option("--style", "-s", help="Style from configs/<object>/ (measured, showcase…)")]
 
 
 def _paths() -> Paths:
@@ -115,10 +115,10 @@ def _stage(cfg: Config, paths: Paths, name: str, fn: Callable[[Path], dict]) -> 
 @app.command()
 @_handle
 def fetch(target: TargetArg, mission: MissionOpt = None, instrument: InstrOpt = None, filters: FiltersOpt = None,
-          list_only: Annotated[bool, typer.Option("--list", help="Только показать, что есть в архиве")] = False,
-          offline: Annotated[bool, typer.Option(help="Не ходить в сеть, только кеш и inbox")] = False,
-          max_gb: Annotated[float, typer.Option(help="Не качать больше стольких ГБ за раз")] = 8.0) -> None:
-    """Найти объект в MAST и скачать кадры уровня 3 в data/raw/ (уже скачанное не качается)."""
+          list_only: Annotated[bool, typer.Option("--list", help="Only show what the archive has")] = False,
+          offline: Annotated[bool, typer.Option(help="No network: cache and inbox only")] = False,
+          max_gb: Annotated[float, typer.Option(help="Do not download more than this many GB at once")] = 8.0) -> None:
+    """Find the object in MAST and download level-3 frames to data/raw/ (files already on disk are skipped)."""
     paths = _paths()
     cfg = _target(target, paths, mission, instrument, filters)
     if list_only:
@@ -133,7 +133,7 @@ def fetch(target: TargetArg, mission: MissionOpt = None, instrument: InstrOpt = 
 @_handle
 def inspect(target: TargetArg, mission: MissionOpt = None, instrument: InstrOpt = None,
             filters: FiltersOpt = None) -> None:
-    """Таблица фильтров и чёрно-белое превью каждого кадра."""
+    """Filter table and a greyscale preview of each frame."""
     from skyforge.inspect import inspect as do
 
     paths = _paths()
@@ -144,7 +144,7 @@ def inspect(target: TargetArg, mission: MissionOpt = None, instrument: InstrOpt 
 @app.command()
 @_handle
 def build(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> None:
-    """source: level2 — своя мозаика по каждому фильтру из экспозиций _cal.fits на сетке i2d."""
+    """source: level2 — own mosaic per filter from the _cal.fits exposures, on the i2d grid."""
     from skyforge.level2 import build as do
 
     paths = _paths()
@@ -155,8 +155,8 @@ def build(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> Non
 @app.command()
 @_handle
 def align(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None,
-          force: Annotated[bool, typer.Option(help="Пересчитать, даже если кеш актуален")] = False) -> None:
-    """Перевести все фильтры на сетку опорного и обрезать до общего поля."""
+          force: Annotated[bool, typer.Option(help="Recompute even if the cache is up to date")] = False) -> None:
+    """Reproject all filters onto the reference grid and crop to the common field."""
     from skyforge.align import align as do
 
     paths = _paths()
@@ -167,7 +167,7 @@ def align(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None,
 @app.command()
 @_handle
 def clean(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> None:
-    """Заполнить насыщенные ядра звёзд и вычесть модель фона (стыки мозаики, градиенты)."""
+    """Fill saturated star cores and subtract the background model (mosaic seams, gradients)."""
     from skyforge.clean import clean as do
 
     paths = _paths()
@@ -178,7 +178,7 @@ def clean(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> Non
 @app.command()
 @_handle
 def stretch(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> None:
-    """Вычесть фон, растянуть яркость (asinh/log/sqrt), нормировать в 0–1."""
+    """Subtract the background, stretch the brightness (asinh/log/sqrt), normalise to 0–1."""
     from skyforge.stretch import stretch as do
 
     paths = _paths()
@@ -189,7 +189,7 @@ def stretch(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> N
 @app.command()
 @_handle
 def compose(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> None:
-    """Раскрасить фильтры по длине волны и смешать в RGB."""
+    """Colour the filters by wavelength and blend them into RGB."""
     from skyforge.compose import compose as do
 
     paths = _paths()
@@ -200,7 +200,7 @@ def compose(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> N
 @app.command()
 @_handle
 def finish(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> None:
-    """Денойз, резкость, экспорт 16-битного TIFF и PNG."""
+    """Denoise, sharpen, export a 16-bit TIFF and a PNG."""
     from skyforge.finish import finish as do
 
     paths = _paths()
@@ -211,10 +211,10 @@ def finish(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None) -> No
 @app.command()
 @_handle
 def run(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None,
-        all_styles: Annotated[bool, typer.Option("--all", help="Все стили из configs/<объект>/ подряд")] = False,
-        offline: Annotated[bool, typer.Option(help="Не ходить в сеть, только кеш и inbox")] = False,
-        force_align: Annotated[bool, typer.Option(help="Пересчитать совмещение заново")] = False) -> None:
-    """Весь конвейер: fetch → inspect → align → clean → stretch → compose → finish → отчёт в out/<объект>/<дата-время>/."""
+        all_styles: Annotated[bool, typer.Option("--all", help="All styles from configs/<object>/ in turn")] = False,
+        offline: Annotated[bool, typer.Option(help="No network: cache and inbox only")] = False,
+        force_align: Annotated[bool, typer.Option(help="Recompute the alignment from scratch")] = False) -> None:
+    """Whole pipeline: fetch → inspect → align → clean → stretch → compose → finish → report in out/<object>/<date-time>/."""
     paths = _paths()
     if not all_styles:
         run_all(_load(config, paths, bin_, style), paths, offline=offline, force_align=force_align)
@@ -270,10 +270,10 @@ def _axis(spec: str | None) -> SweepAxis | None:
 @app.command()
 @_handle
 def sweep(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None,
-          x: Annotated[Optional[str], typer.Option(help="Столбцы: stretch.a=0.005,0.02,0.08")] = None,
-          y: Annotated[Optional[str], typer.Option(help="Строки: stretch.white=99.5,99.8,99.95")] = None,
-          crop: Annotated[Optional[str], typer.Option(help="Кроп 100% вместо всего кадра: X,Y,СТОРОНА в пикселях сетки")] = None) -> None:
-    """Сетка вариантов растяжки/цвета на одном листе (нужен выполненный align)."""
+          x: Annotated[Optional[str], typer.Option(help="Columns: stretch.a=0.005,0.02,0.08")] = None,
+          y: Annotated[Optional[str], typer.Option(help="Rows: stretch.white=99.5,99.8,99.95")] = None,
+          crop: Annotated[Optional[str], typer.Option(help="100% crop instead of the whole frame: X,Y,SIDE in grid pixels")] = None) -> None:
+    """Grid of stretch/colour variants on one sheet (needs a completed align)."""
     from skyforge.sweep import sweep as do
 
     paths = _paths()
@@ -291,8 +291,8 @@ def sweep(config: ConfigArg, bin_: BinOpt = None, style: StyleOpt = None,
 
 @app.command()
 @_handle
-def report(folder: Annotated[Optional[Path], typer.Argument(help="Папка в out/ (по умолчанию самая свежая)")] = None) -> None:
-    """Пересобрать HTML-отчёт для папки результатов."""
+def report(folder: Annotated[Optional[Path], typer.Argument(help="Folder in out/ (default: the newest)")] = None) -> None:
+    """Rebuild the HTML report for a results folder."""
     from skyforge.report import build_report
 
     paths = _paths()
@@ -306,12 +306,12 @@ def report(folder: Annotated[Optional[Path], typer.Argument(help="Папка в 
 
 @app.command()
 @_handle
-def discover(config: Annotated[Optional[Path], typer.Option("--config", help="Настройки поиска (configs/discover.yaml)")] = None,
+def discover(config: Annotated[Optional[Path], typer.Option("--config", help="Search settings (configs/discover.yaml)")] = None,
              refresh_press: Annotated[bool, typer.Option("--refresh-press",
-                                                         help="Заново собрать галерею пресс-релизов (сеть)")] = False,
-             since: Annotated[Optional[str], typer.Option(help="Эксклюзив снят не раньше (ГГГГ-ММ-ДД)")] = None,
-             top: Annotated[Optional[int], typer.Option(help="Сколько кандидатов в лист")] = None) -> None:
-    """Найти в MAST недавно открытые наблюдения JWST без пресс-релиза: таблица, candidates.md, лист превью."""
+                                                         help="Rebuild the press-release gallery (network)")] = False,
+             since: Annotated[Optional[str], typer.Option(help="Exclusive access ended no earlier than (YYYY-MM-DD)")] = None,
+             top: Annotated[Optional[int], typer.Option(help="How many candidates on the sheet")] = None) -> None:
+    """Find recently released JWST observations without a press release in MAST: table, candidates.md, preview sheet."""
     from datetime import date
 
     from skyforge.discover import load_config, run as run_discover
@@ -327,9 +327,9 @@ def discover(config: Annotated[Optional[Path], typer.Option("--config", help="Н
 @app.command()
 @_handle
 def baseline(config: ConfigArg,
-             name: Annotated[str, typer.Option(help="Имя принятого результата, обычно тег: phase-3c")],
-             run_dir: Annotated[Path, typer.Option("--from", help="Папка прогона (стиля или --all со стилями)")]) -> None:
-    """Сохранить итоговые PNG прогона как принятые: с ними сравнивает отчёт (report.baseline)."""
+             name: Annotated[str, typer.Option(help="Name of the accepted result, usually a tag: phase-3c")],
+             run_dir: Annotated[Path, typer.Option("--from", help="Run folder (a style folder, or an --all folder with styles)")]) -> None:
+    """Save a run's final PNGs as accepted: the report compares against them (report.baseline)."""
     from skyforge.baseline import save_baseline
 
     paths = _paths()
@@ -341,9 +341,9 @@ def baseline(config: ConfigArg,
 
 @app.command()
 @_handle
-def publish(target: Annotated[str, typer.Argument(help="Объект: папка configs/<объект>/ и раздел objects в configs/publish.yaml")],
+def publish(target: Annotated[str, typer.Argument(help="Object: folder configs/<object>/ and its section under objects in configs/publish.yaml")],
             style: StyleOpt = None) -> None:
-    """Публикация принятого результата (report.baseline): мастер PNG и TIFF, версии JPEG под площадки, подпись RU/EN."""
+    """Publish the accepted result (report.baseline): master PNG and TIFF, JPEG versions for platforms, RU/EN caption, texts for Wikimedia Commons and Flickr."""
     from datetime import date
 
     from skyforge.publish import load_publish, publish_object
@@ -357,7 +357,7 @@ def publish(target: Annotated[str, typer.Argument(help="Объект: папка
 @app.command()
 @_handle
 def gallery() -> None:
-    """Галерея конфигов: docs/GALLERY.md и превью docs/gallery/ — по разделу на объект и стиль из configs/publish.yaml."""
+    """Config gallery: docs/GALLERY.md (English), docs/GALLERY.ru.md and previews in docs/gallery/ — one section per object and style from configs/publish.yaml."""
     from skyforge.publish import build_gallery, load_publish
 
     paths = _paths()
@@ -367,7 +367,7 @@ def gallery() -> None:
 @cache_app.command("list")
 @_handle
 def cache_list() -> None:
-    """Сколько места занимают сырые и промежуточные данные."""
+    """How much disk space raw and intermediate data take."""
     paths = _paths()
     rows = cache_mod.listing(paths)
     total = 0
@@ -379,10 +379,10 @@ def cache_list() -> None:
 
 @cache_app.command("prune")
 @_handle
-def cache_prune(target: Annotated[Optional[str], typer.Argument(help="slug объекта (ngc3132); без него — все")] = None,
-                raw: Annotated[bool, typer.Option("--raw", help="Удалить и скачанные FITS этого объекта")] = False,
-                yes: Annotated[bool, typer.Option("--yes", "-y", help="Не спрашивать подтверждение")] = False) -> None:
-    """Удалить промежуточные данные data/work/ (и по --raw — скачанные файлы объекта)."""
+def cache_prune(target: Annotated[Optional[str], typer.Argument(help="Object slug (ngc3132); without it — all objects")] = None,
+                raw: Annotated[bool, typer.Option("--raw", help="Also delete the downloaded FITS of this object")] = False,
+                yes: Annotated[bool, typer.Option("--yes", "-y", help="Do not ask for confirmation")] = False) -> None:
+    """Delete intermediate data in data/work/ (and, with --raw, the object's downloaded files)."""
     paths = _paths()
     work = paths.work_root / target if target else paths.work_root
     freed = cache_mod.remove_tree(work)

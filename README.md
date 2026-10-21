@@ -1,110 +1,121 @@
 # Skyforge
 
-Конвейер, который превращает открытые научные данные телескопов JWST и Hubble из архива MAST в цветную картинку —
-воспроизводимо: каждый результат задаётся YAML-конфигом, повторный прогон даёт тот же файл байт в байт.
-
-*A reproducible pipeline that turns public JWST and Hubble science data from the MAST archive into colour images:
-every result is defined by a YAML config, and a rerun reproduces the same file byte for byte. Docs are in Russian.*
+A pipeline that turns open science data from the JWST and Hubble telescopes in the MAST archive into a colour image,
+reproducibly: every result is defined by a YAML config, and a rerun gives the same file byte for byte.
 
 ![Sh2-305, JWST NIRCam](docs/gallery/sh2305_showcase.jpg)
 
-## Что внутри
+## What's inside
 
-- **Загрузка** из MAST (`skyforge fetch`), совмещение фильтров на общей сетке (`align`), очистка — ядра насыщенных звёзд,
-  швы и следы космических лучей (`clean`), растяжка с опорой на пустое небо (`stretch`), смешивание в цвет (`compose`),
-  финиш и экспорт 16-битного TIFF и PNG с метаданными (`finish`). Весь путь — `skyforge run <объект> -s <стиль>`.
-- **Поиск объектов** (`skyforge discover`): недавно открытые наблюдения NIRCam, сверка с пресс-релизами ESA/Webb и NASA/STScI.
-- **Публикация** (`skyforge publish`, `skyforge gallery`): мастер PNG/TIFF принятого результата, версии под площадки,
-  подпись на русском и английском, галерея конфигов `docs/GALLERY.md`.
-- **Приёмка по картинкам**: каждый этап пишет превью и отчёт; принятые результаты хранятся как baseline, отчёт
-  показывает разность с ними.
+- **Download** from MAST (`skyforge fetch`), filter alignment on a common grid (`align`), cleaning of saturated star
+  cores, seams and cosmic-ray trails (`clean`), a stretch anchored to empty sky (`stretch`), blending into colour
+  (`compose`), finishing and export of a 16-bit TIFF and a PNG with metadata (`finish`). The whole path is
+  `skyforge run <object> -s <style>`.
+- **Object search** (`skyforge discover`): recently released NIRCam observations, checked against ESA/Webb and
+  NASA/STScI press releases.
+- **Publishing** (`skyforge publish`, `skyforge gallery`): master PNG/TIFF of the accepted result, versions for
+  platforms, a caption in Russian and English, the config gallery `docs/GALLERY.md`.
+- **Acceptance by images**: every stage writes previews and a report; accepted results are kept as a baseline, and the
+  report shows the difference from it.
 
-## Объекты
+How the pipeline is built and what it promises — [docs/OVERVIEW.en.md](docs/OVERVIEW.en.md).
 
-| Объект | Данные | Конфиг | Тег |
+## Objects
+
+| Object | Data | Config | Tag |
 |---|---|---|---|
-| NGC 3132 (Южное кольцо) | JWST NIRCam, программа 2733 (ERO), 6 фильтров, сборка из экспозиций уровня 2 | `configs/ngc3132/` (стили measured и showcase) | `phase-3k` |
-| NGC 3132 | Hubble WFPC2 1995, программа 6221, [O III], Hα, [N II] | `configs/ngc3132hst/` | `phase-3b` |
-| Sh2-305 | JWST NIRCam, программа 4547, F182M и 4 длинноволновых фильтра | `configs/sh2305/` | `phase-4` |
+| NGC 3132 (Southern Ring) | JWST NIRCam, program 2733 (ERO), 6 filters, built from level-2 exposures | `configs/ngc3132/` (styles measured and showcase) | `phase-3k` |
+| NGC 3132 | Hubble WFPC2 1995, program 6221, [O III], Hα, [N II] | `configs/ngc3132hst/` | `phase-3b` |
+| Sh2-305 | JWST NIRCam, program 4547, F182M and 4 long-wavelength filters | `configs/sh2305/` | `phase-4` |
 
-Превью, подписи и команды воспроизведения — в [docs/GALLERY.md](docs/GALLERY.md). План проекта — [docs/PLAN.md](docs/PLAN.md),
-история решений и ограничения — [docs/HANDOFF.md](docs/HANDOFF.md).
+Previews, captions and reproduction commands are in [docs/GALLERY.md](docs/GALLERY.md). The project plan is
+[docs/PLAN.md](docs/PLAN.md), the history of decisions and limitations is [docs/HANDOFF.md](docs/HANDOFF.md) (both in
+Russian). The YAML keys are explained in [configs/README.md](configs/README.md).
 
-## Быстрый старт
+## Quick start
 
 ```bash
 uv sync
 uv run skyforge --help
 uv run pytest
-uv run skyforge run sh2305 -s showcase --bin 4      # данные из MAST при первом запуске (~45 ГБ для Sh2-305)
+uv run skyforge run sh2305 -s showcase --bin 4      # downloads from MAST if the data is not on disk (~45 GB for Sh2-305)
 uv run skyforge publish sh2305 -s showcase
 ```
 
-Данные (`data/`) и результаты (`out/`) в git не хранятся, кроме референсов и листов приёмки. Если MAST не открывается
-напрямую, прокси задаётся в `.env` (пример — `.env.example`).
+Data (`data/`) and results (`out/`) are not stored in git, except references and acceptance sheets. If MAST cannot be
+reached directly, a proxy is set in `.env` (example: `.env.example`).
 
-## Стили
+## Styles
 
-Один объект — одни данные, несколько обработок. В `configs/<объект>/` лежит `base.yaml` (объект, фильтры, очистка, маски) и стили, которые меняют только нужное:
+One object means one set of data and several processings. `configs/<object>/` holds `base.yaml` (object, filters,
+cleaning, masks) and styles that change only what they need:
 
 ```yaml
 # configs/ngc3132/showcase.yaml
-extends: measured          # или base; словари сливаются в глубину
+extends: measured          # or base; dictionaries are merged deeply
 stretch:
   per_filter: { F470N: { white: 99.95, a: 0.05 } }
 color:
-  shadows: { value: 4, scope: nebula }   # подъём теней только в маске туманности
+  shadows: { value: 4, scope: nebula }   # shadow lift only inside the nebula mask
 ```
 
 ```
-uv run skyforge run ngc3132 --style measured        # один стиль → out/ngc3132/<дата>_measured/
-uv run skyforge run ngc3132 --all --bin 1           # все стили → out/ngc3132/<дата>_styles/report.html
-uv run skyforge sweep ngc3132 --style showcase --x color.weights.F212N=0.15,0.08   # с референсом в первой клетке
+uv run skyforge run ngc3132 --style measured        # one style → out/ngc3132/<date>_measured/
+uv run skyforge run ngc3132 --all --bin 1           # all styles → out/ngc3132/<date>_styles/report.html
+uv run skyforge sweep ngc3132 --style showcase --x color.weights.F212N=0.15,0.08   # the reference is in the top-left cell
 ```
 
-Тяжёлые этапы (`inspect`, `align`, `clean`) общие и кешируются в `data/work/`: второй стиль подряд считается за секунды. Растяжка, цвет и финиш у каждого стиля свои.
+The heavy stages (`inspect`, `align`, `clean`) are shared and cached in `data/work/`: a second style in a row takes
+seconds. Stretch, colour and finish are each style's own.
 
-## По шагам
+## Step by step
 
-| Команда | Что делает | Что смотреть |
+| Command | What it does | What to look at |
 | --- | --- | --- |
-| `skyforge fetch "NGC 3132" --list` | что есть в архиве: фильтры, экспозиции, эксклюзив | таблица в консоли |
-| `skyforge fetch ngc3132` | скачать фильтры из конфига в `data/raw/`; при `source: level2` — ещё и экспозиции `_cal.fits` в `data/raw/<объект>/l2/` | — |
-| `skyforge build ngc3132 --style measured` | `source: level2`: своя мозаика по каждому фильтру из экспозиций — destripe в кадре детектора, сведение уровней, стек на сетке i2d | `l2_destripe.png`, `l2_overlaps.png`, `l2_stars.png` |
-| `skyforge inspect ngc3132` | таблица и превью сырых кадров | `inspect_sheet.png` |
-| `skyforge align ngc3132` | общая сетка, север вверх, обрезка | `align_check.png`, `align_zoom.png` |
-| `skyforge clean ngc3132` | ядра звёзд, пьедесталы плиток мозаики, градиенты фона, маска звёзд | `background_model.png`, `star_cores.png`, `star_mask.png` |
-| `skyforge stretch ngc3132` | фон → 0, яркие детали → 1, asinh | `stretch_hist.png` |
-| `skyforge compose ngc3132` | цвет по длине волны, смешивание | `compose.png` |
-| `skyforge finish ngc3132` | денойз, резкость, TIFF/PNG | `finish_zoom.png` |
-| `skyforge sweep ngc3132` | 9 вариантов растяжки на одном листе | `sweep.png` |
-| `skyforge sweep ngc3132 --x color.weights.F212N=1,0.7,0.5,0.3` | одна строка вариантов по одному параметру | `sweep.png` |
-| `skyforge sweep ngc3132 --x color.star_saturation=1,0.5,0.2 --crop 600,450,500` | то же на кропе 100% (X,Y,сторона) | `sweep.png` |
-| `skyforge report` | пересобрать HTML для последнего запуска | `report.html` |
-| `skyforge baseline ngc3132 --name phase-3d --from out/ngc3132/<папка>` | сохранить итог как принятый: с ним сравнивает отчёт (`report.baseline`) | `baseline_diff.png`, `crops_compare.png` |
-| `skyforge cache list` / `prune` | место на диске, чистка `data/work/` | — |
-| `skyforge discover` | недавно открытые наблюдения NIRCam, сверка с пресс-релизами, 10 кандидатов с превью | `candidates.png`, `candidates.md` |
-| `skyforge publish sh2305` | мастер PNG/TIFF принятого результата, JPEG web / social / preview, подпись RU/EN | `out/publish/<объект>/<дата>/` |
-| `skyforge gallery` | галерея конфигов: превью, подпись, команда воспроизведения | `docs/GALLERY.md` |
+| `skyforge fetch "NGC 3132" --list` | what the archive has: filters, exposures, exclusive access | table in the console |
+| `skyforge fetch ngc3132` | download the filters from the config to `data/raw/`; with `source: level2`, also the `_cal.fits` exposures to `data/raw/<object>/l2/` | — |
+| `skyforge build ngc3132 --style measured` | `source: level2`: own mosaic per filter from the exposures — destripe in the detector frame, level matching, stacking on the i2d grid | `l2_destripe.png`, `l2_overlaps.png`, `l2_stars.png` |
+| `skyforge inspect ngc3132` | table and previews of the raw frames | `inspect_sheet.png` |
+| `skyforge align ngc3132` | common grid, north up, cropping | `align_check.png`, `align_zoom.png` |
+| `skyforge clean ngc3132` | star cores, mosaic tile pedestals, background gradients, star mask | `background_model.png`, `star_cores.png`, `star_mask.png` |
+| `skyforge stretch ngc3132` | background → 0, bright details → 1, asinh | `stretch_hist.png` |
+| `skyforge compose ngc3132` | colour by wavelength, blending | `compose.png` |
+| `skyforge finish ngc3132` | denoise, sharpening, TIFF/PNG | `finish_zoom.png` |
+| `skyforge sweep ngc3132` | 9 stretch variants on one sheet | `sweep.png` |
+| `skyforge sweep ngc3132 --x color.weights.F212N=1,0.7,0.5,0.3` | one row of variants along one parameter | `sweep.png` |
+| `skyforge sweep ngc3132 --x color.star_saturation=1,0.5,0.2 --crop 600,450,500` | the same on a 100% crop (X,Y,side) | `sweep.png` |
+| `skyforge report` | rebuild the HTML for the latest run | `report.html` |
+| `skyforge baseline ngc3132 --name phase-3d --from out/ngc3132/<folder>` | save the result as accepted: the report compares against it (`report.baseline`) | `baseline_diff.png`, `crops_compare.png` |
+| `skyforge cache list` / `prune` | disk space, cleanup of `data/work/` | — |
+| `skyforge discover` | recently released NIRCam observations, check against press releases, 10 candidates with previews | `candidates.png`, `candidates.md` |
+| `skyforge publish sh2305` | master PNG/TIFF of the accepted result, JPEG web / social / preview, RU/EN caption | `out/publish/<object>/<date>/` |
+| `skyforge gallery` | config gallery: preview, caption, reproduction command | `docs/GALLERY.md`, `docs/GALLERY.ru.md` |
 
-Отдельные команды пишут в `out/<объект>/current/` (у стилей — `current/<стиль>/`), `run` — в новую папку с датой. Для папки стилей нужен `--style`; вместо имени можно указать путь к любому YAML.
+Individual commands write to `out/<object>/current/` (for styles, `current/<style>/`); `run` writes to a new dated
+folder. A folder with styles needs `--style`; instead of a name you can give a path to any YAML.
 
-Без сети: положи FITS в `data/inbox/<объект>/` (например `data/inbox/ngc3132/`), фильтр определится по заголовку, и `skyforge run ngc3132 --offline` возьмёт их.
+Without a network: put the FITS files into `data/inbox/<object>/` (for example `data/inbox/ngc3132/`), the filter is
+read from the header, and `skyforge run ngc3132 --offline` will use them.
 
-## Тесты
+## Tests
 
 ```
 uv run pytest
 ```
 
-Синтетическое небо из трёх фильтров с разной сеткой: проверяется, что после совмещения звёзды стоят там, где их предсказывает WCS, что два прогона дают байт-в-байт одинаковые файлы и что сырые файлы не меняются.
+A synthetic sky of three filters on different grids: the tests check that after alignment the stars sit where the WCS
+predicts them, that two runs give byte-identical files and that the raw files are not changed.
 
-## Лицензии и указание источника
+## Licenses and credit
 
-- **Код** — MIT (`LICENSE`).
-- **Наши картинки** (`out/publish/`, `docs/gallery/`, листы приёмки) — CC BY-SA 4.0, автор Denis Krivosheev.
-  Указание источника данных: «NASA, ESA, CSA, STScI» для JWST, «NASA, ESA, STScI» для Hubble; обработка — Denis Krivosheev.
-- **Данные** — архив MAST (STScI); на них распространяются условия NASA, ESA, CSA и STScI.
-- **Чужие изображения для сравнения** в `data/reference/`: снимок Hubble Heritage 1998 (STScI-1998-39, ESA/Hubble opo9839a,
-  CC BY 4.0, Hubble Heritage Team (STScI/AURA/NASA/ESA)); обработки Sh2-305 Мелины Тевено и Марка Маккохрейна
-  (Wikimedia Commons, CC BY-SA 4.0) — авторы и ссылки в `data/reference/sh2305/sources.md`.
+- **Code** — MIT (`LICENSE`).
+- **Our images** (`out/publish/`, `docs/gallery/`, acceptance sheets) — CC BY-SA 4.0, author Denis Krivosheev.
+  Data credit: "NASA, ESA, CSA, STScI" for JWST, "NASA, ESA, STScI" for Hubble; processing — Denis Krivosheev.
+- **Data** — the MAST archive (STScI); the terms of NASA, ESA, CSA and STScI apply to it.
+- **Third-party images for comparison** in `data/reference/`: the 1998 Hubble Heritage image (STScI-1998-39,
+  ESA/Hubble opo9839a, CC BY 4.0, Hubble Heritage Team (STScI/AURA/NASA/ESA)); processings of Sh2-305 by Melina Thévenot
+  and Mark McCaughrean (Wikimedia Commons, CC BY-SA 4.0) — authors and links in `data/reference/sh2305/sources.md`.
+
+---
+
+Документация по-русски: [README.ru.md](README.ru.md)
