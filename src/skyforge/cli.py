@@ -326,6 +326,32 @@ def discover(config: Annotated[Optional[Path], typer.Option("--config", help="Se
 
 @app.command()
 @_handle
+def untouched(day: Annotated[Optional[str], typer.Option("--date", help="discover run to check, out/discover/<YYYY-MM-DD>/ (default: the newest)")] = None,
+              shortlist: Annotated[Optional[int], typer.Option(help="How many candidates from the top of the discover list (default: its shortlist)")] = None,
+              offline: Annotated[bool, typer.Option(help="No network: answers cached for this date only")] = False,
+              web_results: Annotated[Optional[Path], typer.Option(help="JSON with web-search answers to import into the cache")] = None,
+              recon: Annotated[Optional[str], typer.Option(help="Comma-separated MAST target names: scouting sheets and recon.md instead of the check")] = None) -> None:
+    """Search the web, Wikimedia Commons and Flickr for public processings of the discover shortlist: candidates_untouched.md and .png."""
+    from skyforge.untouched import run as run_untouched
+
+    paths = _paths()
+    base = paths.root / "out" / "discover"
+    if day is None:
+        runs = sorted(p.name for p in base.glob("????-??-??") if (p / "candidates.json").exists()) if base.exists() else []
+        if not runs:
+            raise SkyforgeError("в out/discover/ нет прогонов discover — сначала skyforge discover")
+        day = runs[-1]
+    if recon:
+        from skyforge.untouched import recon as run_recon
+
+        console.print(f"  [green]{run_recon(paths.root, day, [t.strip() for t in recon.split(',') if t.strip()])}[/]")
+        return
+    out = run_untouched(paths.root, day, shortlist=shortlist, offline=offline, web_results=web_results)
+    console.print(f"  [green]{out / 'candidates_untouched.md'}[/]")
+
+
+@app.command()
+@_handle
 def baseline(config: ConfigArg,
              name: Annotated[str, typer.Option(help="Name of the accepted result, usually a tag: phase-3c")],
              run_dir: Annotated[Path, typer.Option("--from", help="Run folder (a style folder, or an --all folder with styles)")]) -> None:

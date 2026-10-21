@@ -511,21 +511,44 @@ def save_candidates_json(cands: list[Candidate], path: Path) -> None:
 # --- прогон ---
 
 
-def run(root: Path, cfg: DiscoverConfig, today: date, refresh_press: bool = False) -> Path:
-    """Весь шаг: запрос MAST → кандидаты → пресс-релизы → превью → ранжирование → таблица, candidates.md, лист."""
+def _small(p: Path, mode: str, size: int):
     from PIL import Image
-    from rich.table import Table
 
     Image.MAX_IMAGE_PIXELS = None   # превью MAST больших мозаик — до 370 Мпикс (не «бомба», источник доверенный)
+    im = Image.open(p)
+    im.draft(mode, (size, size))                       # JPEG декодируется сразу уменьшенным (DCT 1/2…1/8)
+    im = im.convert(mode)
+    im.thumbnail((size, size))
+    return im
 
-    def small(p: Path, mode: str, size: int):
-        im = Image.open(p)
-        im.draft(mode, (size, size))                       # JPEG декодируется сразу уменьшенным (DCT 1/2…1/8)
-        im = im.convert(mode)
-        im.thumbnail((size, size))
-        return im
 
+def preview_sheet(cache: Path, items: list[tuple[Candidate, str]], path: Path, cols: int, tile: float,
+                  title: str) -> None:
+    """Лист превью quicklook MAST из кеша discover: клетка на кандидата, подпись — готовая строка."""
     from skyforge.preview import contact_sheet
+
+    tiles, labels = [], []
+    for c, text in items:
+        p = cache / Path(c.preview_uri.split("/")[-1]).name if c.preview_uri else None
+        if p is not None and p.exists():
+            a = np.asarray(_small(p, "RGB", 900), dtype=np.float32) / 255
+            void = nodata_mask(a.mean(-1) * 255, 9)
+            v = a[~void]
+            if v.size:   # quicklook MAST растянут почти линейно — слабое уходит в чёрное; одна asinh для всех клеток
+                lo, hi = np.percentile(v, [1, 99.5])
+                a = np.arcsinh(np.clip((a - lo) / max(hi - lo, 1e-3), 0, None) * 10) / np.arcsinh(10)
+            a = np.clip(a, 0, 1)
+            a[void] = 0.07                                         # белые пустоты вне поля — тёмно-серые
+            tiles.append(a[::-1])
+        else:
+            tiles.append(np.zeros((300, 300, 3), dtype=np.float32))
+        labels.append(text)
+    contact_sheet(tiles, labels, path, cols=cols, tile_inches=tile, title=title)
+
+
+def run(root: Path, cfg: DiscoverConfig, today: date, refresh_press: bool = False) -> Path:
+    """Весь шаг: запрос MAST → кандидаты → пресс-релизы → превью → ранжирование → таблица, candidates.md, лист."""
+    from rich.table import Table
 
     out = root / "out" / "discover" / today.isoformat()
     out.mkdir(parents=True, exist_ok=True)
@@ -554,7 +577,7 @@ def run(root: Path, cfg: DiscoverConfig, today: date, refresh_press: bool = Fals
             p = fetch_preview(uri, cache / Path(uri.split("/")[-1]).name)
             if p is None:
                 continue
-            g = np.asarray(small(p, "L", 512), dtype=np.float32)
+            g = np.asarray(_small(p, "L", 512), dtype=np.float32)
             v = g[~nodata_mask(g, 9)]
             # quicklook MAST бывает растянут по ярким звёздам: > 90% поля — 0, туманность в 8 битах потеряна
             if v.size and (v == 0).mean() > 0.9:
@@ -591,25 +614,13 @@ def run(root: Path, cfg: DiscoverConfig, today: date, refresh_press: bool = Fals
     save_candidates_json(ranked, out / "candidates.json")
     (out / "discover.yaml").write_text(yaml.safe_dump(json.loads(cfg.model_dump_json()), allow_unicode=True,
                                                       sort_keys=False), encoding="utf-8")
+
+    def label(i: int, c: Candidate) -> str:
+        return (f"{i}. {c.target[:22]} · {c.proposal_id} · {c.preview_filter or '—'}\n"
+                f"релиз: {'есть' if c.press else 'нет'} · {len(c.filters)} ф. · {c.area_arcmin2:.0f}′²")
+
     def sheet(cs: list[Candidate], path: Path, cols: int, tile: float, title: str) -> None:
-        tiles, labels = [], []
-        for i, c in enumerate(cs, 1):
-            p = cache / Path(c.preview_uri.split("/")[-1]).name if c.preview_uri else None
-            if p is not None and p.exists():
-                a = np.asarray(small(p, "RGB", 900), dtype=np.float32) / 255
-                void = nodata_mask(a.mean(-1) * 255, 9)
-                v = a[~void]
-                if v.size:   # quicklook MAST растянут почти линейно — слабое уходит в чёрное; одна asinh для всех клеток
-                    lo, hi = np.percentile(v, [1, 99.5])
-                    a = np.arcsinh(np.clip((a - lo) / max(hi - lo, 1e-3), 0, None) * 10) / np.arcsinh(10)
-                a = np.clip(a, 0, 1)
-                a[void] = 0.07                                         # белые пустоты вне поля — тёмно-серые
-                tiles.append(a[::-1])
-            else:
-                tiles.append(np.zeros((300, 300, 3), dtype=np.float32))
-            labels.append(f"{i}. {c.target[:22]} · {c.proposal_id} · {c.preview_filter or '—'}\n"
-                          f"релиз: {'есть' if c.press else 'нет'} · {len(c.filters)} ф. · {c.area_arcmin2:.0f}′²")
-        contact_sheet(tiles, labels, path, cols=cols, tile_inches=tile, title=title)
+        preview_sheet(cache, [(c, label(i, c)) for i, c in enumerate(cs, 1)], path, cols, tile, title)
 
     sheet(top, out / "candidates.png", 5, 4.6,
           f"skyforge discover {today.isoformat()}: {len(top)} кандидатов (превью i2d MAST, один фильтр; asinh для показа)")

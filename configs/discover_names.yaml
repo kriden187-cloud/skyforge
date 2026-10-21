@@ -1,0 +1,36 @@
+# skyforge untouched (фаза 6): имена объектов для поиска обработок в сети — 2–3 написания на цель MAST.
+# Имя цели MAST часто служебное (W3-JWST-3A-FINAL, pg004_gaiashift_noTA4_wsynth): общепринятые имена подобраны по
+# SIMBAD (объекты ближе 3′ от центра поля, 2026-10-21) и заголовку программы. Цели без записи ищутся по имени
+# цели MAST, приведённому к виду «NGC 1326» (дефисы и подчёркивания → пробел, хвосты _offset, -NIRCam, -FINAL убраны).
+# Номер программы ищется всегда: «JWST program N», «JWST N NIRCam».
+names:
+  W3-JWST-3A-FINAL: ["W3", "Westerhout 3", "W3 Main"]          # SIMBAD: W 3k, W 3j (HII) в 2′
+  W3-JWST-2-FINAL: ["W3", "Westerhout 3", "IC 1795"]
+  LHA-120-N-159-NIRCam: ["N159", "N 159", "LHA 120-N 159"]      # БМО
+  MACSJ0717+3745: ["MACS J0717", "MACS J0717.5+3745", "MACS0717"]
+  RXCJ0032+1808: ["RXC J0032.1+1808", "RXCJ0032", "MACS J0032"]
+  S305_offset: ["Sh2-305", "Sharpless 305", "Sh 2-305"]        # контроль: 7 обработок найдено вручную 2026-10-21
+  SMC-SW-Bar-3: ["NGC 248", "SMC-B1", "SMC Bar"]               # SIMBAD: NGC 248 (Cl*/туманность) 0,3′
+  NGC-1326: ["NGC 1326", "NGC1326"]
+  HH288_offset: ["HH 288", "HH288", "IRAS 00342+6347"]
+  AQUARIUS-DIRR: ["Aquarius Dwarf", "DDO 210", "Aquarius dIrr"]
+  NGC-147: ["NGC 147", "NGC147"]
+  NGC1614: ["NGC 1614", "Arp 186", "NGC1614"]
+  NEXUS-Center: ["NEXUS", "North Ecliptic Pole", "NEP field"]
+  Abell370: ["Abell 370", "Abell370"]
+  HH-1019: ["HH 1019", "HH1019", "IRAS 10419-5925"]              # Туманность Киля
+  HH-900: ["HH 900", "HH900", "HH 1014"]                         # Туманность Киля
+  HOPS-373: ["HOPS 373", "HOPS-373", "NGC 2068"]
+  BHR71: ["BHR 71", "BHR71", "HH 320"]
+  OMC3-N: ["OMC-3", "OMC 3", "Orion Molecular Cloud 3"]
+  NGC-5253: ["NGC 5253", "NGC5253"]
+  control_field: ["Westerlund 1 control field", "EWOCS control field"]   # контрольное поле GO-1905 (Westerlund 1)
+  NGC-6553: ["NGC 6553", "NGC6553"]
+  M-22: ["M22", "NGC 6656", "Messier 22"]
+  pg004_gaiashift_noTA4_wsynth: ["PLCK G004.5-19.5", "PLCK G4.5-19.5", "PSZ1 G004.5-19.5"]   # SIMBAD: скопление галактик 2′
+  M31-Phase2-MSA-Catalog-1: ["M31 inner disk", "Andromeda inner disk", "M31"]
+  M31-Phase2-MSA-Catalog-2: ["M31 inner disk", "Andromeda inner disk", "M31"]
+  IC-2006: ["IC 2006", "IC2006"]
+  NGC-6789: ["NGC 6789", "NGC6789"]
+  NGC-1374: ["NGC 1374", "NGC1374"]
+  REBELS-25: ["REBELS-25", "REBELS 25"]

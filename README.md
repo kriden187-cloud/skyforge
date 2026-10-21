@@ -88,6 +88,7 @@ seconds. Stretch, colour and finish are each style's own.
 | `skyforge baseline ngc3132 --name phase-3d --from out/ngc3132/<folder>` | save the result as accepted: the report compares against it (`report.baseline`) | `baseline_diff.png`, `crops_compare.png` |
 | `skyforge cache list` / `prune` | disk space, cleanup of `data/work/` | — |
 | `skyforge discover` | recently released NIRCam observations, check against press releases, 10 candidates with previews | `candidates.png`, `candidates.md` |
+| `skyforge untouched` | check the discover shortlist against public processings (web search, Wikimedia Commons, Flickr); `--recon` scouts chosen targets | `candidates_untouched.md`, `candidates_untouched.png`, `recon/` |
 | `skyforge publish sh2305` | master PNG/TIFF of the accepted result, JPEG web / social / preview, RU/EN caption | `out/publish/<object>/<date>/` |
 | `skyforge gallery` | config gallery: preview, caption, reproduction command | `docs/GALLERY.md`, `docs/GALLERY.ru.md` |
 

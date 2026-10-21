@@ -84,6 +84,7 @@ uv run skyforge sweep ngc3132 --style showcase --x color.weights.F212N=0.15,0.08
 | `skyforge baseline ngc3132 --name phase-3d --from out/ngc3132/<папка>` | сохранить итог как принятый: с ним сравнивает отчёт (`report.baseline`) | `baseline_diff.png`, `crops_compare.png` |
 | `skyforge cache list` / `prune` | место на диске, чистка `data/work/` | — |
 | `skyforge discover` | недавно открытые наблюдения NIRCam, сверка с пресс-релизами, 10 кандидатов с превью | `candidates.png`, `candidates.md` |
+| `skyforge untouched` | сверка короткого списка discover с публичными обработками (поиск в сети, Wikimedia Commons, Flickr); `--recon` — разведка выбранных | `candidates_untouched.md`, `candidates_untouched.png`, `recon/` |
 | `skyforge publish sh2305` | мастер PNG/TIFF принятого результата, JPEG web / social / preview, подпись RU/EN | `out/publish/<объект>/<дата>/` |
 | `skyforge gallery` | галерея конфигов: превью, подпись, команда воспроизведения | `docs/GALLERY.md`, `docs/GALLERY.ru.md` |
 
