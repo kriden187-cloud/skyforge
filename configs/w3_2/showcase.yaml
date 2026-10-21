@@ -1,0 +1,35 @@
+# «Витринный» стиль W3-2: старт — финал Sh2-305 (phase-4). Референса нет, критерии внутренние: небо без нулей,
+# выжжено ≤ 0,5%, прямых границ при ×5 нет, звёзды не зелёные, фактура видна при 100%.
+extends: base
+stretch:
+  method: asinh
+  anchor: masks            # black — по пустому небу, white — по маске туманности
+  white: 99.8              # как финал Sh2-305
+  a: 0.02
+  black_mode: pedestal     # чёрная точка на 3σ ниже неба самых шумных мест — шум неба не обрезается в 0
+  black_k: 3
+  sky_level: 16
+  sky_reference: darkest_blocks   # правило HANDOFF: на сплошной туманности опора — самые тёмные блоки опорного фильтра
+  sky_toe_max_p: 4
+color:
+  mode: manual
+  blend: average
+  overrides:               # задание консультанта 2026-10-21: по длине волны с тёплым сдвигом, как палитра В Sh2-305;
+                           # порядок строгий — оттенки 231° / 200° / 155° / 80° / 50° / 30° / 0°
+    F182M: "#3050ff"       # синий (как Sh2-305)
+    F210M: "#40c0ff"       # голубой (F300M у Sh2-305)
+    F300M: "#30ffb0"       # зелёно-голубой
+    F335M: "#c0ff40"       # жёлто-зелёный (как Sh2-305)
+    F360M: "#ffd820"       # жёлтый
+    F405N: "#ff9020"       # оранжевый (F360M у Sh2-305)
+    F444W: "#ff2020"       # красный (как Sh2-305)
+  saturation: 1.4
+  saturation_gamut: limit
+  saturation_above_sky: 12
+  shadows: { value: 0, scope: nebula, by: max, above_sky: true }
+  background_keep_level: true
+  neutral_background: off
+  star_saturation: 1
+finish:
+  stars: { scale: 1, shrink: 0 }
+  local_contrast: { radius: 80, amount: 0.3 }

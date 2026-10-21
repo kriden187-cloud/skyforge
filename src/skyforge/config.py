@@ -574,6 +574,9 @@ class Config(_Strict):
     mission: Literal["jwst", "hst"] = "jwst"
     instrument: str = "nircam"
     proposal_id: str | None = None
+    # Имя цели MAST (target_name): только её наблюдения — у программ с соседними полями (W3: 1A, 2, 3A в ~5′) поиск
+    # по координатам возвращает все, а выбор по фильтру при равной выдержке брал бы чужое поле. В хеш — только если задано.
+    mast_target: str | None = None
     # level3 — готовые мозаики i2d/drc; level2 — своя сборка из отдельных экспозиций (_cal.fits, только JWST).
     source: Literal["level3", "level2"] = "level3"
     level2: Level2Config = Level2Config()
@@ -646,7 +649,8 @@ class Config(_Strict):
         if sections:
             data = {k: data[k] for k in sections}
         else:
-            data = {k: v for k, v in data.items() if k not in NON_PROCESSING}
+            data = {k: v for k, v in data.items()
+                    if k not in NON_PROCESSING and not (k == "mast_target" and v is None)}
         blob = json.dumps(data, sort_keys=True, ensure_ascii=False).encode()
         return hashlib.sha256(blob).hexdigest()[:16]
 

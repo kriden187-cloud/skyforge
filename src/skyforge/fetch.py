@@ -175,6 +175,8 @@ def query_mast(cfg: Config) -> list[dict[str, Any]]:
     )
     if cfg.proposal_id:
         kw["proposal_id"] = cfg.proposal_id
+    if cfg.mast_target:
+        kw["target_name"] = cfg.mast_target
     if cfg.coords:
         kw["coordinates"] = cfg.coords
     else:
@@ -190,10 +192,26 @@ def product_lists(obsids: list[str]) -> list[dict[str, Any]]:
     return _table_rows(Observations.get_product_list(obsids))
 
 
+def _server_size(uri: str) -> int | None:
+    """Размер, который отдаёт сервер (Content-Length на HEAD); None — если не узнать."""
+    try:
+        r = requests.head(MAST_DOWNLOAD_URL, params={"uri": uri}, timeout=(30, 60), allow_redirects=True)
+        return int(r.headers["Content-Length"]) if r.ok and r.headers.get("Content-Length") else None
+    except (requests.RequestException, ValueError):
+        return None
+
+
 def download(uri: str, dest: Path, expected_size: int | None) -> None:
     """Скачивание с докачкой оборванного файла (.part + Range) и проверкой размера."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     part = dest.with_name(dest.name + ".part")
+    # Фаза 6: размер в списке продуктов MAST бывает старым — файл перепроцессирован (W3 F182M, CAL_VER 3.0.0, на 5760
+    # байт больше), и проверка по нему отбрасывала целый файл пять раз подряд. Мерило — размер, который отдаёт сервер.
+    server = _server_size(uri) if expected_size else None
+    if server and server != expected_size:
+        console.print(f"  [yellow]{dest.name}: в списке продуктов MAST {expected_size} байт, сервер отдаёт {server} — "
+                      f"проверяю по серверу[/]")
+        expected_size = server
     last_error: Exception | None = None
     with Progress(TextColumn("{task.description}"), BarColumn(), DownloadColumn(), TransferSpeedColumn(),
                   TimeRemainingColumn(), console=console, transient=True) as progress:

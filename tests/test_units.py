@@ -616,3 +616,37 @@ def test_sky_reference_default_keeps_stretch_key():
     assert not any(f.startswith("sky_reference") for f in k)
     on = Config.model_validate({"target": "t", "stretch": {"sky_reference": "darkest_blocks"}})
     assert stretch_key(on, {})["stretch"]["sky_reference"] == "darkest_blocks"
+
+
+def test_download_trusts_server_size_over_stale_mast_size(tmp_path, monkeypatch):
+    """Фаза 6: размер в списке продуктов MAST устарел (файл перепроцессирован) — сверка по Content-Length сервера,
+    без пяти перекачек целого файла."""
+    import skyforge.fetch as fetch
+
+    body = b"x" * 10000
+    calls = {"get": 0}
+
+    class Head:
+        ok, headers = True, {"Content-Length": str(len(body))}
+
+    class Get:
+        status_code = 200
+
+        def __enter__(self):
+            calls["get"] += 1
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def raise_for_status(self):
+            pass
+
+        def iter_content(self, n):
+            yield body
+
+    monkeypatch.setattr(fetch.requests, "head", lambda *a, **k: Head())
+    monkeypatch.setattr(fetch.requests, "get", lambda *a, **k: Get())
+    dest = tmp_path / "f.fits"
+    fetch.download("mast:JWST/product/f.fits", dest, len(body) - 5760)
+    assert dest.read_bytes() == body and calls["get"] == 1
