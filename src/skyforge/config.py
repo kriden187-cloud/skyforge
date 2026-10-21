@@ -349,7 +349,10 @@ class StretchConfig(_Strict):
     # опорного фильтра (reference) вне звёзд, в блоке доля чистых пикселей ≥ sky_reference_min_free. На сплошной
     # туманности (Sh2-305) маска неба — слабая туманность: «ноль» вставал на неё, дымка по краям и в промежутках
     # прижималась к полу. Порог 0,9 при маске звёзд ~20% кадра оставлял только блоки в туманности (ошибка шага 4d).
-    sky_reference: Literal["mask", "darkest_blocks"] = "mask"
+    # фаза 6 (W3-2): crop — опорное небо по кропу report.crops с именем sky_reference_crop (вне звёзд): на поле, где
+    # «самые тёмные блоки» — слабейшая туманность, а пустое небо видно глазом в одном месте.
+    sky_reference: Literal["mask", "darkest_blocks", "crop"] = "mask"
+    sky_reference_crop: str | None = None
     sky_reference_block_px: int = Field(512, ge=16)
     sky_reference_n_blocks: int = Field(3, ge=1)
     sky_reference_min_free: float = Field(0.5, gt=0, le=1)
@@ -441,6 +444,15 @@ class StarChromaConfig(_Strict):
     outside_nebula_only: bool = True
 
 
+class FillGapsConfig(_Strict):
+    # Фаза 6 (W3-2): щели детекторов фильтра заполняются следующим фильтром группы, у которого там есть данные,
+    # умноженным на гладкую карту их отношения (медианы по блокам block_px при bin 1, где есть оба; под щелью — от
+    # соседних блоков). Группа [F182M, F210M, F300M]: щель F182M — из F210M, где нет и его (перекрестья) — из F300M.
+    # Только в растянутых слоях на этапе compose: растяжка фильтров считается по тем же пикселям, что без заполнения.
+    groups: list[list[str]]
+    block_px: int = Field(128, ge=16)
+
+
 class ColorConfig(_Strict):
     mode: Literal["wavelength", "manual"] = "wavelength"
     # Оттенок (градусы HSV) для самой короткой и самой длинной волны: 240 синий, 0 красный.
@@ -456,6 +468,7 @@ class ColorConfig(_Strict):
     # этот разгон (уровни из 255); 0 — выкл. Шумный канал неба иначе раздвигается от яркости пикселя за 0.
     saturation_above_sky: float = Field(0.0, ge=0)
     star_chroma: StarChromaConfig = StarChromaConfig()
+    fill_gaps: FillGapsConfig | None = None
     # Подъём теней: число (= value) или {value, scope, feather_px}.
     shadows: ShadowsConfig = ShadowsConfig()
     # Насыщенность звёзд поля внутри маски звёзд (stars.*): 1 — как есть, 0 — серые с той же яркостью.
@@ -624,6 +637,11 @@ class Config(_Strict):
                 raise ValueError(f"reference {self.reference} нет в filters {self.filters}")
         if not self.slug:
             self.slug = slugify(self.target)
+        if self.stretch.sky_reference == "crop":
+            names = [c.name for c in self.report.crops]
+            if self.stretch.sky_reference_crop not in names:
+                raise ValueError(f"stretch.sky_reference: crop — sky_reference_crop должен быть именем кропа из "
+                                 f"report.crops ({', '.join(names) or 'кропов нет'})")
         if self.color.mode == "manual":
             missing = [f for f in self.filters if f not in self.color.overrides]
             if missing:
@@ -649,8 +667,13 @@ class Config(_Strict):
         if sections:
             data = {k: data[k] for k in sections}
         else:
-            data = {k: v for k, v in data.items()
-                    if k not in NON_PROCESSING and not (k == "mast_target" and v is None)}
+            data = {k: v for k, v in data.items() if k not in NON_PROCESSING}
+        for path in OPTIONAL_WHEN_SET:          # новые поля без значения хеш не меняют — принятые объекты те же
+            node = data
+            for k in path[:-1]:
+                node = node.get(k) if isinstance(node, dict) else None
+            if isinstance(node, dict) and node.get(path[-1], 0) is None:
+                del node[path[-1]]
         blob = json.dumps(data, sort_keys=True, ensure_ascii=False).encode()
         return hashlib.sha256(blob).hexdigest()[:16]
 
@@ -677,6 +700,8 @@ class Config(_Strict):
 # Поля, которые не влияют на пиксели: в хеш обработки не входят, иначе одна и та же картинка
 # из плоского конфига и из стиля measured дала бы разные файлы (хеш пишется в метаданные).
 NON_PROCESSING = ("style", "reference_image", "sweep", "preview", "report")
+# Поля фазы 6: в хеш — только если заданы (иначе хеши и ключи кеша принятых объектов поменялись бы).
+OPTIONAL_WHEN_SET = (("mast_target",), ("stretch", "sky_reference_crop"), ("color", "fill_gaps"))
 
 
 def deep_merge(base: dict, over: dict) -> dict:

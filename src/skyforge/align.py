@@ -213,6 +213,49 @@ def channel_rect(finite: dict[str, np.ndarray], groups: list[list[str]], hole_px
     return inscribed_rect(_fill_small_holes(ok, hole_px), 1.0)
 
 
+def coverage_regions(cover: np.ndarray, min_share: float = 0.05, hole_px: int = 2000) -> list[np.ndarray]:
+    """Связные области покрытия (хотя бы один фильтр; мелкие дыры внутри заполнены). Области меньше min_share от
+    всего покрытия не в счёт (обрывки краёв): у обычного поля — одна область."""
+    from scipy import ndimage
+
+    m = _fill_small_holes(cover, hole_px)
+    lab, n = ndimage.label(m)
+    if n <= 1:
+        return [m]
+    sizes = ndimage.sum(m, lab, range(1, n + 1))
+    return [lab == i + 1 for i, s in enumerate(sizes) if s >= min_share * sizes.sum()]
+
+
+# Щели между детекторами SW внутри модуля NIRCam ~4–5″ (W3-2: 3,5–4,3″); промежуток между модулями ~45–55″.
+DETECTOR_GAP_ARCSEC = 8.0
+
+
+def bridge_gaps(mask: np.ndarray, gap_px: int) -> np.ndarray:
+    """Пропуски, у которых данные есть с обеих сторон не дальше gap_px по строке или по столбцу (щели между
+    детекторами через весь модуль), считаются покрытыми; открытые с одной стороны (угол, край) — нет."""
+    def along_rows(m: np.ndarray) -> np.ndarray:
+        h, w = m.shape
+        idx = np.where(m, np.arange(w)[None, :], -1)
+        left = np.maximum.accumulate(idx, axis=1)                         # ближайшее покрытое слева
+        idx_r = np.where(m, np.arange(w)[None, :], w)
+        right = np.minimum.accumulate(idx_r[:, ::-1], axis=1)[:, ::-1]    # ближайшее покрытое справа
+        return m | ((left >= 0) & (right < w) & (right - left - 1 <= gap_px))
+
+    return along_rows(mask) | along_rows(mask.T).T
+
+
+def region_rects(finite: dict[str, np.ndarray], groups: list[list[str]], cover: np.ndarray,
+                 inset_px: float = 0, gap_px: int = 0) -> list[tuple[int, int, int, int]]:
+    """Прямоугольники кадра: одна область покрытия — один channel_rect, как раньше; несколько (фаза 6, W3-2: модули
+    A и B NIRCam без перекрытия) — по channel_rect на каждую, «все группы на краях» внутри своей области; щели
+    детекторов внутри области (до gap_px) края не режут — их заполняет clean или они остаются пустыми."""
+    regions = coverage_regions(cover)
+    if len(regions) <= 1:
+        return [channel_rect(finite, groups, inset_px=inset_px)]
+    return [channel_rect({k: bridge_gaps(v & m, gap_px) & m for k, v in finite.items()}, groups, inset_px=inset_px)
+            for m in regions]
+
+
 def stats_field(cfg: Config, paths: Paths, arrays: list[np.ndarray]) -> Any:
     """Поле статистики (skyforge.field): общее поле всех фильтров из метаданных align."""
     from skyforge.field import make_field
@@ -512,17 +555,26 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         del data, out
 
     ir0, ir1, ic0, ic1 = inscribed_rect(valid, cfg.align.crop_min_coverage)
+    regions: list[tuple[int, int, int, int]] = []
     if cfg.align.crop == "union" and (cfg.align.channel_groups or cfg.align.require_all):
         groups = [list(g) for g in cfg.align.channel_groups]
         if cfg.align.require_all:
             groups += [[f] for f in prods]
         groups += [[k] for k in finite if k.endswith(":nexp")]
-        r0, r1, c0, c1 = channel_rect(finite, groups, inset_px=cfg.align.channel_inset_px / cfg.bin)
+        scale = float(np.mean(proj_plane_pixel_scales(grid_wcs))) * 3600
+        rects = region_rects(finite, groups, count > 0, inset_px=cfg.align.channel_inset_px / cfg.bin,
+                             gap_px=int(round(DETECTOR_GAP_ARCSEC / scale)))
+        r0, r1 = min(r[0] for r in rects), max(r[1] for r in rects)
+        c0, c1 = min(r[2] for r in rects), max(r[3] for r in rects)
+        regions = rects if len(rects) > 1 else []
         del finite
         console.print(f"  кадр: на краях все группы каналов"
                       + (", все фильтры" if cfg.align.require_all else "")
                       + (f", коротких волн ≥ {cfg.align.min_exposures_sw} экспозиций" if cfg.align.min_exposures_sw else "")
-                      + f" — {c1 - c0}×{r1 - r0} px (общее поле {ic1 - ic0}×{ir1 - ir0})")
+                      + f" — {c1 - c0}×{r1 - r0} px (общее поле {ic1 - ic0}×{ir1 - ir0})"
+                      + (f"; областей покрытия {len(regions)}: " + ", ".join(f"{b - a}×{d - c}"
+                                                                           for c, d, a, b in regions)
+                         if regions else ""))
     elif cfg.align.crop == "box":
         r0, r1, c0, c1 = sky_box_rect(cfg.align.box, grid_wcs, grid_shape)
         console.print(f"  кадр — прямоугольник на небе: {c1 - c0}×{r1 - r0} px, пусто (нет данных) "
@@ -535,11 +587,22 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         rect = _target_rect(cfg, paths, prods[reference], grid_wcs, valid) if cfg.align.crop_mode == "target" else None
         r0, r1, c0, c1 = rect or (ir0, ir1, ic0, ic1)
         console.print(f"  обрезка до общего поля: {c1 - c0}×{r1 - r0} px из {grid_shape[1]}×{grid_shape[0]}")
-    np.save(d / "coverage.npy", count[r0:r1, c0:c1].copy())
+    inside = None
+    if regions:
+        inside = np.zeros((r1 - r0, c1 - c0), dtype=bool)
+        for a, b, c, e in regions:
+            inside[a - r0:b - r0, c - c0:e - c0] = True
+    cov = count[r0:r1, c0:c1].copy()
+    if inside is not None:
+        cov[~inside] = 0
+    np.save(d / "coverage.npy", cov)
     for f in prods:
         for name in (f"{f}.npy", f"{f}.tiles.npy"):
             if (d / name).exists():
-                np.save(d / name, np.load(d / name)[r0:r1, c0:c1].copy())
+                a = np.load(d / name)[r0:r1, c0:c1].copy()
+                if inside is not None:
+                    a[~inside] = np.nan if name.endswith(f"{f}.npy") else -1
+                np.save(d / name, a)
     crop_wcs = grid_wcs.slice((slice(r0, r1), slice(c0, c1)))
     if keep is not None:
         _destripe_preview(cfg, keep, crop_wcs, (r1 - r0, c1 - c0), d / "previews" / "destripe_check.png")
@@ -553,8 +616,10 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
         "mode": cfg.align.crop,
         # общее поле (все фильтры) в координатах кадра: в union — граница прежнего кадра; в box — весь кадр
         # (статистика по всем пикселям, где есть все фильтры, а не по вписанной в L-образное поле полосе)
-        "intersection": ([0, r1 - r0, 0, c1 - c0] if cfg.align.crop == "box" else
+        # несколько областей покрытия — как box: весь кадр, статистика по пикселям внутри прямоугольников областей
+        "intersection": ([0, r1 - r0, 0, c1 - c0] if cfg.align.crop == "box" or regions else
                          [int(max(ir0, r0) - r0), int(min(ir1, r1) - r0), int(max(ic0, c0) - c0), int(min(ic1, c1) - c0)]),
+        "regions": [[int(a - r0), int(b - r0), int(c - c0), int(e - c0)] for a, b, c, e in regions],
         "pixel_scale_arcsec": round(float(np.mean(proj_plane_pixel_scales(crop_wcs))) * 3600, 5),
         "destripe": stripes,
         # Заголовок построчно, чтобы читать обратно через Header.fromstring(sep="\n").

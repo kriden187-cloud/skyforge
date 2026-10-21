@@ -399,8 +399,62 @@ def tail_color(cfg: Config, rgb: np.ndarray, layers: dict[str, np.ndarray], star
     return rgb
 
 
+def ratio_map(dst: np.ndarray, src: np.ndarray, block: int) -> np.ndarray:
+    """Гладкая карта dst/src: медианы обоих по блокам block×block, где есть оба (≥ 25% блока); пустые блоки —
+    значение ближайшего, медиана 3×3 блока, билинейная интерполяция по центрам блоков."""
+    from scipy import ndimage
+
+    both = np.isfinite(dst) & np.isfinite(src)
+    h, w = dst.shape
+    nb_y, nb_x = -(-h // block), -(-w // block)
+    small = np.full((nb_y, nb_x), np.nan, dtype=np.float32)
+    for i in range(nb_y):
+        for j in range(nb_x):
+            sl = (slice(i * block, (i + 1) * block), slice(j * block, (j + 1) * block))
+            m = both[sl]
+            if m.mean() >= 0.25:
+                ms = float(np.median(src[sl][m]))
+                if ms > 0:
+                    small[i, j] = float(np.median(dst[sl][m])) / ms
+    bad = ~np.isfinite(small)
+    if bad.all():
+        raise SkyforgeError("color.fill_gaps: нет блоков, где есть оба фильтра пары")
+    if bad.any():
+        small = small[tuple(ndimage.distance_transform_edt(bad, return_distances=False, return_indices=True))]
+    small = ndimage.median_filter(small, size=3, mode="nearest")
+    yy = (np.arange(h) + 0.5) / block - 0.5
+    xx = (np.arange(w) + 0.5) / block - 0.5
+    return ndimage.map_coordinates(small, np.meshgrid(yy, xx, indexing="ij"), order=1, mode="nearest").astype(np.float32)
+
+
+def fill_gaps(cfg: Config, layers: dict[str, np.ndarray]) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
+    """color.fill_gaps: в щели одного фильтра пары — другой × гладкая карта отношения (фаза 6, W3-2).
+    Возвращает слои и маски заполненного по фильтрам; пиксели вне щелей не меняются."""
+    fg = cfg.color.fill_gaps
+    if fg is None:
+        return layers, {}
+    out, filled = dict(layers), {}
+    block = max(4, fg.block_px // cfg.bin)
+    for group in fg.groups:
+        for dst in group:
+            if dst not in layers:
+                continue
+            D = np.asarray(layers[dst], dtype=np.float32)
+            res, done = D.copy(), np.zeros(D.shape, dtype=bool)
+            for src in (f for f in group if f != dst and f in layers):
+                S = np.asarray(layers[src], dtype=np.float32)   # источник — исходный слой, не заполненный
+                gap = ~np.isfinite(res) & np.isfinite(S)
+                if gap.any():
+                    res[gap] = np.clip(S * ratio_map(D, S, block), 0, 1)[gap]
+                    done |= gap
+            if done.any():
+                out[dst], filled[dst] = res, done
+    return out, filled
+
+
 def compose_layers(cfg: Config, layers: dict[str, np.ndarray], star_mask: Any = None,
                    nebula_sd: np.ndarray | None = None, sky: np.ndarray | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+    layers, _ = fill_gaps(cfg, layers)
     rgb, info = base_color(cfg, layers, sky, nebula_sd)
     return tail_color(cfg, rgb, layers, star_mask, nebula_sd), info
 
@@ -412,6 +466,7 @@ def composite_path(cfg: Config, paths: Paths) -> Path:
 def compose_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
     skip = ({"star_saturation_scope"} if cfg.color.star_saturation_scope == "all" else set()) | (
         {"saturation_above_sky"} if cfg.color.saturation_above_sky == 0 else set())   # 3б: ключ JWST прежний
+    skip |= {"fill_gaps"} if cfg.color.fill_gaps is None else set()          # фаза 6: ключ прежних объектов тот же
     color = cfg.color.model_dump(mode="json", exclude=skip)
     return {**stretch_key(cfg, in_key), "filters": cfg.filters, "color": color}
 
@@ -436,6 +491,11 @@ def compose(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     from skyforge.clean import load_nebula_sd, load_sky_mask, load_star_weight
 
     layers, in_key = load_stretched(cfg, paths)
+    layers, filled = fill_gaps(cfg, layers)
+    if filled:
+        composite_path(cfg, paths).parent.mkdir(parents=True, exist_ok=True)
+        np.save(composite_path(cfg, paths).with_name("filled.npy"), np.logical_or.reduce(list(filled.values())))
+        console.print("  заполнены щели: " + ", ".join(f"{f} {m.mean() * 100:.1f}% кадра" for f, m in filled.items()))
     view = with_resolved_crops(cfg, paths)  # кропы в пикселях текущей сетки (только для превью)
     field = stats_field(cfg, paths, list(layers.values()))
     stars = load_star_weight(cfg, paths)

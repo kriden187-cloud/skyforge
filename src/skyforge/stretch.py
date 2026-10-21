@@ -151,8 +151,13 @@ def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
     exclude = set() if cfg.stretch.sky_toe_max_p is not None else {"sky_toe_max_p"}
     if cfg.stretch.sky_reference == "mask":   # шаг 4d: поля опоры — только когда она не по умолчанию
         exclude |= {"sky_reference", "sky_reference_block_px", "sky_reference_n_blocks", "sky_reference_min_free"}
+    if cfg.stretch.sky_reference_crop is None:
+        exclude.add("sky_reference_crop")
     st = cfg.stretch.model_dump(mode="json", exclude=exclude)
     key = {"input": in_key, "stretch": st}   # фаза 4: новые поля в ключе только когда заданы — кеши прежних объектов те же
+    if cfg.stretch.sky_reference == "crop":   # фаза 6: координаты кропа опоры (report в хеш не входит)
+        key["sky_reference_crop_spec"] = next(c.model_dump(mode="json") for c in cfg.report.crops
+                                              if c.name == cfg.stretch.sky_reference_crop)
     if cfg.clean.fill_gaps_px > 0:
         key["fill_gaps_px"] = cfg.clean.fill_gaps_px
     if cfg.stretch.sky_poly_order > 0:
@@ -200,6 +205,18 @@ def reference_sky(cfg: Config, paths: Paths, shape: tuple[int, int]) -> tuple[np
         full &= np.isfinite(np.load(d / f"{f}.npy", mmap_mode="r"))
     stars = ndimage.binary_dilation(np.load(d / "star_weight.npy") > 0.01, iterations=3)
     s = cfg.stretch
+    if s.sky_reference == "crop":
+        from skyforge.align import with_resolved_crops
+        from skyforge.preview import display_crop
+
+        k = next(c for c in with_resolved_crops(cfg, paths).report.crops if c.name == s.sky_reference_crop)
+        sl = display_crop(shape, k.x, k.y, k.size, cfg.bin)
+        ref = np.zeros(shape, dtype=bool)
+        ref[sl] = (full & ~stars)[sl]
+        if ref.sum() < 0.25 * ref[sl].size:
+            console.print(f"[yellow]  опорное небо: в кропе {k.name} чистых пикселей {ref.sum()} из {ref[sl].size}[/]")
+        return ref, {"crop": k.name, "rows": [sl[0].start, sl[0].stop], "cols": [sl[1].start, sl[1].stop],
+                     "pixels": int(ref.sum())}
     ref, info = darkest_blocks(np.load(d / f"{cfg.reference}.npy", mmap_mode="r"), full & ~stars,
                                max(16, s.sky_reference_block_px // cfg.bin), s.sky_reference_n_blocks, s.sky_reference_min_free)
     if info["eligible"] < 0.25 * info["total"]:
@@ -216,7 +233,7 @@ def load_masks(cfg: Config, paths: Paths) -> tuple[np.ndarray, np.ndarray] | Non
     sky, sd = load_sky_mask(cfg, paths), load_nebula_sd(cfg, paths)
     if sky is None or sd is None:
         return None
-    if cfg.stretch.sky_reference == "darkest_blocks":
+    if cfg.stretch.sky_reference in ("darkest_blocks", "crop"):
         sky, _ = reference_sky(cfg, paths, sd.shape)
     neb = sd > 0
     if cfg.stretch.exclude_stars:

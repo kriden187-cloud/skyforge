@@ -30,6 +30,10 @@ color:
   background_keep_level: true
   neutral_background: off
   star_saturation: 1
+  fill_gaps: { groups: [[F182M, F210M, F300M]], block_px: 128 }   # решение 2026-10-21: щели детекторов F182M и F210M
+                           # (3,5–4,3″, 13% площади модуля) — второй фильтр × гладкая карта отношения; перекрестья, где нет
+                           # обоих (0,2%), — F300M; проба — лист проверка_6/02
 finish:
+  nodata_fill: sky         # промежуток между модулями — ровный уровень неба (в PNG прозрачный), как углы Hubble 3б
   stars: { scale: 1, shrink: 0 }
   local_contrast: { radius: 80, amount: 0.3 }

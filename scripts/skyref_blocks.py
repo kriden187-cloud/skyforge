@@ -8,7 +8,10 @@
 σ средних по ячейкам 16×16 px в блоке, делённая на σ шума / 16 (у белого шума ≈ 1; у шума с корреляцией дизеринга —
 до ~2–3; туманность — десятки). Шум σ — по разностям соседних пикселей (MAD), он не видит плавного рисунка.
 
-Запуск: uv run python scripts/skyref_blocks.py <конфиг> <стиль> <папка>   (bin — из конфига)
+Фаза 6: необязательные имена кропов из report.crops (4-й аргумент и дальше) — та же мера и показ ×5 по кропу целиком
+(вне звёзд), рядом с опорными блоками: кандидат в опору sky_reference: crop.
+
+Запуск: uv run python scripts/skyref_blocks.py <конфиг> <стиль> <папка> [кроп ...]   (bin — из конфига)
 """
 
 from __future__ import annotations
@@ -19,10 +22,11 @@ import sys
 import numpy as np
 from scipy import ndimage
 
+from skyforge.align import with_resolved_crops
 from skyforge.clean import clean_dir
 from skyforge.config import Config
 from skyforge.paths import Paths
-from skyforge.preview import contact_sheet
+from skyforge.preview import contact_sheet, display_crop
 from skyforge.stretch import darkest_blocks
 
 CELL = 16
@@ -48,7 +52,7 @@ def asinh_show(a: np.ndarray) -> np.ndarray:
 
 
 def main() -> None:
-    cfg_path, style, out = sys.argv[1], sys.argv[2], pathlib.Path(sys.argv[3])
+    cfg_path, style, out, crop_names = sys.argv[1], sys.argv[2], pathlib.Path(sys.argv[3]), sys.argv[4:]
     out.mkdir(parents=True, exist_ok=True)
     P = Paths(pathlib.Path(".").resolve())
     c = Config.load(cfg_path, style)
@@ -86,25 +90,31 @@ def main() -> None:
                           f"красный — самый светлый"], out / "01_опорные_блоки.png", cols=1, tile_inches=11,
                   title=f"{c.target} ({c.slug}): опорное небо darkest_blocks до растяжки, bin {c.bin}")
 
+    crops = {k.name: k for k in with_resolved_crops(c, P).report.crops}
+    named = [(n, display_crop((H, W), crops[n].x, crops[n].y, crops[n].size, c.bin)) for n in crop_names]
     tiles, labels, rows = [], [], ["фильтр\tблок\tмедиана блока\tp1 кадра\tp5 кадра\tp50 кадра\tσ шума\t"
                                    "структурность (σ ячеек 16 px / (σ/16))"]
     for f in c.filters:
         a = arrays[f]
         fv = a[full]
         p1, p5, p50 = np.percentile(fv, [1, 5, 50])
-        for k, (_, y, x) in enumerate(dark + mid + bright):
-            sub = a[y:y + block, x:x + block].copy()
-            m = ok[y:y + block, x:x + block]
+        cells = [((y, x), (slice(y, y + block), slice(x, x + block))) for _, y, x in dark + mid + bright]
+        cells += [(n, sl) for n, sl in named]
+        for k, (where, sl) in enumerate(cells):
+            sub = a[sl].copy()
+            m = ok[sl]
             sub[~m] = np.nan
             med, sig = float(np.nanmedian(sub)), noise_sigma(sub)
             st = structure(sub, sig)
-            lab = ("опорный " + str(k + 1)) if k < len(dark) else ("медианный" if k == len(dark) else "светлый")
+            lab = (("опорный " + str(k + 1)) if k < len(dark) else ("медианный" if k == len(dark) else
+                   "светлый" if k == len(dark) + 1 else f"кроп {where}"))
             rows.append(f"{f}\t{lab}\t{med:.4g}\t{p1:.4g}\t{p5:.4g}\t{p50:.4g}\t{sig:.3g}\t{st:.1f}")
-            if k < len(dark) + 1:
+            if k < len(dark) + 1 or k >= len(dark) + 2:
                 show = np.clip((np.nan_to_num(sub, nan=med) - (med - 3 * sig)) / (5 * sig), 0, 1)
                 tiles.append(show[::-1])
                 labels.append(f"{f} · {lab} · ×5\nструктурность {st:.1f}")
-    contact_sheet(tiles, labels, out / "02_блоки_x5.png", cols=len(dark) + 1, tile_inches=3.2, interpolation="nearest",
+    contact_sheet(tiles, labels, out / "02_блоки_x5.png", cols=len(dark) + 1 + len(named), tile_inches=3.2,
+                  interpolation="nearest",
                   title=f"{c.target}: опорные блоки и медианный блок во всех фильтрах, ±σ шума (до растяжки, bin {c.bin})")
     (out / "03_числа.tsv").write_text("\n".join(rows) + "\n", encoding="utf-8")
     print("\n".join(rows))

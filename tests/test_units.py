@@ -650,3 +650,71 @@ def test_download_trusts_server_size_over_stale_mast_size(tmp_path, monkeypatch)
     dest = tmp_path / "f.fits"
     fetch.download("mast:JWST/product/f.fits", dest, len(body) - 5760)
     assert dest.read_bytes() == body and calls["get"] == 1
+
+
+def test_region_rects_two_separated_modules():
+    """Фаза 6 (W3-2): два разнесённых квадрата, у каждого фильтра свой сдвиг — по прямоугольнику «все фильтры на краях»
+    на модуль; щель короткого фильтра внутри модуля (полоса 6 px) кадр не режет."""
+    from skyforge.align import region_rects
+
+    a = np.zeros((200, 500), bool)
+    b = np.zeros((200, 500), bool)
+    for c0 in (20, 300):                                                 # модули A и B, промежуток 100 px
+        a[20:180, c0:c0 + 180] = True
+        b[30:190, c0 + 5:c0 + 185] = True                                # второй фильтр сдвинут на 10 и 5 px
+    a[:, 110:116] = False                                                # щель детекторов в модуле A у фильтра a
+    rects = region_rects({"a": a, "b": b}, [["a"], ["b"]], a | b, inset_px=2, gap_px=8)
+    assert rects == [(32, 178, 27, 198), (32, 178, 307, 478)]
+
+
+def test_region_rects_single_region_unchanged():
+    """Одна область покрытия — тот же прямоугольник, что channel_rect (кадр объектов до фазы 6 не меняется)."""
+    from skyforge.align import channel_rect, region_rects
+
+    sw = np.zeros((300, 400), bool)
+    lw = np.zeros((300, 400), bool)
+    sw[10:290, 0:400] = True
+    lw[0:300, 40:380] = True
+    lw[5:8, 390:395] = True                                              # обрывок — меньше 5% покрытия
+    assert region_rects({"SW": sw, "LW": lw}, [["LW"], ["SW"]], sw | lw, inset_px=8) == \
+        [channel_rect({"SW": sw, "LW": lw}, [["LW"], ["SW"]], inset_px=8)]
+
+
+def test_fill_gaps_ratio_and_untouched_outside():
+    """Фаза 6: щель фильтра A заполняется B × гладкое отношение A/B; вне щели слои не меняются ни на бит."""
+    from skyforge.compose import fill_gaps
+
+    rng = np.random.default_rng(3)
+    yy, xx = np.mgrid[0:256, 0:256]
+    b = (0.2 + 0.3 * np.exp(-((xx - 128) ** 2 + (yy - 100) ** 2) / 3000) + rng.normal(0, 0.002, (256, 256))).astype(np.float32)
+    ratio = (1.5 + 0.002 * xx).astype(np.float32)                         # отношение плавно меняется по x
+    a = (b * ratio).astype(np.float32)
+    a_gap = a.copy()
+    a_gap[:, 120:136] = np.nan                                            # щель 16 px через весь кадр
+    b_gap = b.copy()
+    b_gap[60:70, :] = np.nan                                              # у B своя щель
+    cfg = Config(target="t", filters=["F182M", "F210M"],
+                 color={"fill_gaps": {"groups": [["F182M", "F210M"]], "block_px": 32}})
+    out, filled = fill_gaps(cfg, {"F182M": a_gap, "F210M": b_gap})
+    ga, gb = filled["F182M"], filled["F210M"]
+    assert ga[:, 120:136][np.isfinite(b_gap[:, 120:136])].all() and not ga[:, :120].any()
+    assert np.array_equal(out["F182M"][~ga], a_gap[~ga], equal_nan=True)
+    assert np.array_equal(out["F210M"][~gb], b_gap[~gb], equal_nan=True)
+    err = np.abs(out["F182M"][ga] - a[ga]) / a[ga]
+    assert np.median(err) < 0.01                                          # гладкое отношение восстановлено
+
+
+def test_fill_gaps_crossing_from_third_filter():
+    """Перекрестье щелей, где нет обоих фильтров пары, — из третьего фильтра группы."""
+    from skyforge.compose import fill_gaps
+
+    base = np.full((128, 128), 0.3, dtype=np.float32)
+    a, b, c = base * 1.2, base.copy(), base * 0.8
+    a[:, 60:70] = np.nan
+    b[60:70, :] = np.nan
+    cfg = Config(target="t", filters=["F182M", "F210M", "F300M"],
+                 color={"fill_gaps": {"groups": [["F182M", "F210M", "F300M"]], "block_px": 32}})
+    out, filled = fill_gaps(cfg, {"F182M": a, "F210M": b, "F300M": c})
+    assert np.isfinite(out["F182M"]).all() and np.isfinite(out["F210M"]).all()
+    assert np.allclose(out["F182M"][60:70, 60:70], 0.36, atol=1e-4)   # из F300M × (1,2 / 0,8)
+    assert "F300M" not in filled
