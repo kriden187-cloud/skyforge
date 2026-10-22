@@ -38,7 +38,7 @@ LOOK = {
 def fetch_stage(cfg: Config, paths: Paths, offline: bool = False, max_gb: float | None = None) -> dict[str, Any]:
     res = fetch(cfg, paths, offline=offline, max_gb=max_gb)
     info: dict[str, Any] = {"products": {f: asdict(p) for f, p in res.products.items()}, "missing": res.missing}
-    if cfg.source == "level2" and not offline:
+    if cfg.any_level2() and not offline:
         from skyforge.fetch import fetch_level2
 
         info["level2"] = fetch_level2(cfg, paths, max_gb=max_gb)
@@ -71,7 +71,7 @@ def run_all(cfg: Config, paths: Paths, *, offline: bool = False, force_align: bo
     copy_reference(cfg, paths, out_dir)
     t0 = time.perf_counter()
     run_stage("fetch", lambda: fetch_stage(cfg, paths, offline=offline), out_dir)
-    if cfg.source == "level2":
+    if cfg.any_level2():
         from skyforge.level2 import build
 
         run_stage("build", lambda: build(cfg, paths, out_dir), out_dir)

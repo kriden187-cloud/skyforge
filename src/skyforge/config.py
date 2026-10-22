@@ -617,6 +617,10 @@ class Config(_Strict):
     mast_target: str | None = None
     # level3 — готовые мозаики i2d/drc; level2 — своя сборка из отдельных экспозиций (_cal.fits, только JWST).
     source: Literal["level3", "level2"] = "level3"
+    # Фаза 8: источник по фильтру — при source: level3 эти фильтры собираются из уровня 2 (этап build), остальные —
+    # готовые i2d (OMC3-N: F150W и F200W — destripe по детектору снимает полосы 1/f; длинные — с уровня 3). В хеш —
+    # только если задано.
+    level2_filters: list[str] | None = None
     level2: Level2Config = Level2Config()
     filters: list[str] = []
     allow_missing: bool = True
@@ -672,7 +676,23 @@ class Config(_Strict):
             missing = [f for f in self.filters if f not in self.color.overrides]
             if missing:
                 raise ValueError(f"color.mode: manual, но нет цвета в overrides для {missing}")
+        if self.level2_filters is not None:
+            self.level2_filters = [normalize_filter_name(f) for f in self.level2_filters]
+            if self.source == "level2":
+                raise ValueError("level2_filters — только при source: level3 (при source: level2 из уровня 2 все фильтры)")
+            if self.mission != "jwst":
+                raise ValueError("level2_filters: уровень 2 (_cal.fits) — только JWST")
+            alien = [f for f in self.level2_filters if self.filters and f not in self.filters]
+            if alien:
+                raise ValueError(f"level2_filters {alien} нет в filters {self.filters}")
         return self
+
+    def uses_level2(self, f: str) -> bool:
+        """Фильтр собирается из уровня 2 (source: level2 — все; иначе — из level2_filters)."""
+        return self.source == "level2" or f in (self.level2_filters or [])
+
+    def any_level2(self) -> bool:
+        return self.source == "level2" or bool(self.level2_filters)
 
     # --- загрузка и сохранение ---
 
@@ -727,8 +747,8 @@ class Config(_Strict):
 # из плоского конфига и из стиля measured дала бы разные файлы (хеш пишется в метаданные).
 NON_PROCESSING = ("style", "reference_image", "sweep", "preview", "report", "fetch")
 # Поля фазы 6: в хеш — только если заданы (иначе хеши и ключи кеша принятых объектов поменялись бы).
-OPTIONAL_WHEN_SET = (("mast_target",), ("stretch", "sky_reference_crop"), ("stretch", "exclude_point_sources"),
-                     ("color", "fill_gaps"))
+OPTIONAL_WHEN_SET = (("mast_target",), ("level2_filters",), ("stretch", "sky_reference_crop"),
+                     ("stretch", "exclude_point_sources"), ("color", "fill_gaps"))
 
 
 def deep_merge(base: dict, over: dict) -> dict:

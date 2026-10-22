@@ -414,19 +414,20 @@ def local_products(cfg: Config, paths: Paths) -> dict[str, Product]:
 
 
 def require_products(cfg: Config, paths: Paths, level3: bool = False) -> dict[str, Product]:
-    """Файлы для конвейера. source: level2 — своя сборка из экспозиций (этап build) вместо i2d;
-    level3=True — всегда i2d (нужны самой сборке: сетка и маски)."""
+    """Файлы для конвейера. Фильтры из уровня 2 (source: level2 — все, иначе level2_filters, фаза 8) — своя сборка из
+    экспозиций (этап build) вместо i2d; level3=True — всегда i2d (нужны самой сборке: сетка и маски)."""
     prods = local_products(cfg, paths)
-    if cfg.source == "level2" and not level3:
+    if cfg.any_level2() and not level3:
         from skyforge.level2 import built_products
 
         built = built_products(cfg, paths)
-        lacking = [f for f in prods if f not in built]
+        lacking = [f for f in prods if cfg.uses_level2(f) and f not in built]
         if lacking:
-            raise SkyforgeError(f"source: level2 — нет своей сборки для {lacking}: сначала skyforge build")
-        prods = {f: Product(filter=f, path=paths.rel(built[f]), source="level2", obs_id=p.obs_id,
-                            filename=built[f].name, size=built[f].stat().st_size, exptime=p.exptime,
-                            release=p.release, proposal_id=p.proposal_id) for f, p in prods.items()}
+            raise SkyforgeError(f"уровень 2 — нет своей сборки для {lacking}: сначала skyforge build")
+        prods = {f: (Product(filter=f, path=paths.rel(built[f]), source="level2", obs_id=p.obs_id,
+                             filename=built[f].name, size=built[f].stat().st_size, exptime=p.exptime,
+                             release=p.release, proposal_id=p.proposal_id) if cfg.uses_level2(f) else p)
+                 for f, p in prods.items()}
     if not prods:
         raise SkyforgeError(f"для {cfg.target} нет файлов: сначала skyforge fetch (или положи FITS в data/inbox/{cfg.slug}/)")
     missing = [f for f in cfg.filters if f not in prods]
@@ -568,7 +569,7 @@ def fetch_level2(cfg: Config, paths: Paths, *, list_only: bool = False, max_gb: 
         raise SkyforgeError("source: level2 пока только для JWST (_cal.fits)")
     man3 = load_manifest(cfg, paths)
     avail = man3.get("available", {})
-    want = cfg.filters or list(avail)
+    want = [f for f in (cfg.filters or list(avail)) if cfg.uses_level2(f)]
     missing = [f for f in want if f not in avail]
     if missing:
         raise SkyforgeError(f"нет сведений о наблюдениях для {missing}: сначала skyforge fetch (уровень 3)")

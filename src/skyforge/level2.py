@@ -282,8 +282,15 @@ def measure_tweak(sci: np.ndarray, wcs: WCS, stars_world: np.ndarray, c: Level2C
     info: dict[str, Any] = {"stars": 0}
     if stars_world.size == 0:
         return info
-    px, py = wcs.all_world2pix(stars_world[:, 0], stars_world[:, 1], 0)
     h, w = sci.shape
+    # фаза 8 (OMC3-N, мозаика 14502×6332): звёзды со всей мозаики далеко за детектором — обращение дисторсии SIP для них
+    # расходится (NoConvergence). Сначала отбор линейной частью WCS с запасом 100 px, точная формула — только для них
+    lx, ly = wcs.wcs_world2pix(stars_world[:, 0], stars_world[:, 1], 0)
+    near = (lx > -100) & (lx < w + 100) & (ly > -100) & (ly < h + 100)
+    stars_world = stars_world[near]
+    if stars_world.size == 0:
+        return info
+    px, py = wcs.all_world2pix(stars_world[:, 0], stars_world[:, 1], 0)
     inside = (px > 8) & (px < w - 9) & (py > 8) & (py < h - 9)
     pred, meas = [], []
     for i in np.flatnonzero(inside):
@@ -724,9 +731,10 @@ def built_products(cfg: Config, paths: Paths) -> dict[str, Path]:
 def build(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     from skyforge.fetch import level2_files, require_products
 
-    if cfg.source != "level2":
+    if not cfg.any_level2():
         return {"skipped": "source: level3"}
-    l3 = require_products(cfg, paths, level3=True)
+    # фаза 8: собираются только фильтры из уровня 2 (source: level2 — все, иначе level2_filters)
+    l3 = {f: p for f, p in require_products(cfg, paths, level3=True).items() if cfg.uses_level2(f)}
     l2 = level2_files(cfg, paths)
     missing = [f for f in l3 if f not in l2]
     if missing:
