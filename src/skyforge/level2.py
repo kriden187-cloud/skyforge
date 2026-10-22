@@ -693,6 +693,9 @@ def stack(exps: list[dict[str, Any]], shape: tuple[int, int], c: Level2Config) -
 CURVE_FIELDS = {"match_curve_y", "curve_knot_rows", "curve_prior", "curve_bin_px"}
 CHECK_ONLY = {"star_fwhm_small_px", "star_fwhm_tol_small_percent", "star_fwhm_tol_percent",
               "workers"}  # не влияют на сборку: проверки и число процессов
+# фаза 8: гибрид — шаг после стека, свой файл рядом со сборкой; ключ стека от него не зависит
+BLEND_FIELDS = {"blend_large_scale", "blend_sigma_px"}
+BLEND_VERSION = 2  # 2: вес заполненных из i2d пикселей — от i2d
 
 
 def fwhm_check(rows: list[dict[str, Any]], c: Level2Config) -> dict[str, Any]:
@@ -712,7 +715,7 @@ def build_dir(cfg: Config, paths: Paths) -> Path:
 
 def _key(cfg: Config, files: list[Path], i2d: Path) -> dict[str, Any]:
     return {"version": BUILD_VERSION, "files": [[p.name, p.stat().st_size] for p in files],
-            "i2d": [i2d.name, i2d.stat().st_size], "level2": cfg.level2.model_dump(exclude=CHECK_ONLY | (
+            "i2d": [i2d.name, i2d.stat().st_size], "level2": cfg.level2.model_dump(exclude=CHECK_ONLY | BLEND_FIELDS | (
                 set() if cfg.level2.match_curve_y else CURVE_FIELDS)),
             # только то, от чего зависят маски источников (иначе любое переключение в background пересобирает мозаику)
             "masks": {k: getattr(cfg.background, k) for k in ("mask_sigma", "mask_smooth_arcsec", "tile_mask_dilate_arcsec")}
@@ -725,7 +728,61 @@ def built_products(cfg: Config, paths: Paths) -> dict[str, Path]:
     if not meta.exists():
         return {}
     m = json.loads(meta.read_text(encoding="utf-8"))
-    return {f: d / v["file"] for f, v in m.get("filters", {}).items() if (d / v["file"]).exists()}
+    blend = cfg.level2.blend_large_scale is not None
+    out = {}
+    for f, v in m.get("filters", {}).items():
+        name = blend_name(v["file"], cfg) if blend else v["file"]
+        if (d / name).exists():
+            out[f] = d / name
+    return out
+
+
+def blend_name(base: str, cfg: Config) -> str:
+    """Имя файла гибрида для собранного файла base: версия шага и сигма в имени — смена любой даёт новый файл."""
+    s = cfg.level2.blend_sigma_px or 64.0
+    return base.replace(".fits", f"_ls{cfg.level2.blend_large_scale}{s:g}v{BLEND_VERSION}.fits")
+
+
+def blend_large_scale(base: Path, i2d_path: Path, sigma: float, dest: Path) -> dict[str, Any]:
+    """Гибрид (фаза 8): своя − сглаженная(своя − i2d) на общей сетке (сборка — на сетке i2d); сглаживание гауссом с
+    нормировкой по маске общих пикселей (пустые не тянут к нулю). Пустые пиксели своей сборки, где у i2d данные
+    есть, — из i2d того же фильтра (слой FROMI2D). Остальные слои — как у сборки."""
+    with fits.open(base, memmap=False) as h:
+        ours = np.array(h["SCI"].data, dtype=np.float32)
+        rest = [hdu.copy() for hdu in h]
+    with fits.open(i2d_path, memmap=True) as h:
+        ref = np.array(h["SCI"].data, dtype=np.float32)
+        ref_wht = np.array(h["WHT"].data, dtype=np.float32) if "WHT" in h else np.ones_like(ref)
+        ref[ref_wht <= 0] = np.nan
+    if ref.shape != ours.shape:
+        raise SkyforgeError(f"{base.name}: сетка сборки {ours.shape} не совпадает с i2d {ref.shape}")
+    both = np.isfinite(ours) & np.isfinite(ref)
+    diff = np.where(both, ours - ref, 0.0).astype(np.float32)
+    num = ndimage.gaussian_filter(diff, sigma, mode="nearest")
+    den = ndimage.gaussian_filter(both.astype(np.float32), sigma, mode="nearest")
+    with np.errstate(invalid="ignore", divide="ignore"):
+        smooth = np.where(den > 1e-3, num / den, 0.0).astype(np.float32)
+    out = ours - smooth
+    fill = ~np.isfinite(ours) & np.isfinite(ref)
+    out[fill] = ref[fill]
+    rest[1].data = out
+    # вес заполненных — от i2d: загрузка FITS считает пиксели с WHT ≤ 0 пустыми (иначе заполнение пропадает при align)
+    names = [hdu.name for hdu in rest]
+    if "WHT" in names:
+        w = np.array(rest[names.index("WHT")].data, dtype=np.float32)
+        w[fill] = ref_wht[fill]
+        rest[names.index("WHT")].data = w
+    rest.append(fits.ImageHDU(fill.astype(np.uint8), name="FROMI2D"))
+    rest[0].header["SKYBLEND"] = (f"i2d large scale, gauss {sigma:g} px", "own small scale + i2d large scale")
+    # через временный файл: недописанный (обрыв, нехватка памяти) не выглядит готовым — сборка проверяет наличие файла
+    tmp = dest.with_name(dest.name + ".part")
+    fits.HDUList(rest).writeto(tmp, overwrite=True)
+    tmp.replace(dest)
+    finite = np.isfinite(ours)
+    return {"sigma_px": sigma, "filled_from_i2d_px": int(fill.sum()),
+            "filled_from_i2d_percent": round(float(fill.sum() / max(1, (finite | fill).sum()) * 100), 3),
+            "smooth_diff_median": round(float(np.median(smooth[both])), 6),
+            "smooth_diff_p95_abs": round(float(np.percentile(np.abs(smooth[both]), 95)), 6)}
 
 
 def build(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
@@ -780,6 +837,22 @@ def build(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
         info["filters"][f] = {**fi, "fwhm_check": fwhm_check(fi.get("star_rows", []), cfg.level2)}
         for k in previews:
             previews[k].append(pv[k])
+    if cfg.level2.blend_large_scale == "i2d":
+        # фаза 8: гибрид поверх собранного файла — свой файл, пересчёт только если его нет
+        for f, prod in l3.items():
+            v = meta["filters"].get(f)
+            if not v:
+                continue
+            name = blend_name(v["file"], cfg)
+            if not (d / name).exists():
+                sigma = cfg.level2.blend_sigma_px or 64.0
+                v["blend"] = blend_large_scale(d / v["file"], paths.abs(prod.path), sigma, d / name)
+                meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
+            b = v.get("blend", {})
+            console.print(f"  {f}: гибрид (крупный масштаб от i2d, гаусс {b.get('sigma_px')} px): сглаженная разность "
+                          f"медиана {b.get('smooth_diff_median')}, |95%| {b.get('smooth_diff_p95_abs')}; из i2d "
+                          f"{b.get('filled_from_i2d_px')} px ({b.get('filled_from_i2d_percent')}%)")
+            info["filters"].setdefault(f, {})["blend"] = b
     names = []
     if previews["destripe"]:
         imgs, labels = [], []

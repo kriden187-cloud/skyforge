@@ -103,3 +103,57 @@ def test_build_skips_level3_filters(tmp_path, monkeypatch):
     L.build(cfg, paths, tmp_path / "out")
     assert built == ["F150W"]
     assert L.build(_cfg(filters=["F150W", "F356W"]), paths, tmp_path / "out") == {"skipped": "source: level3"}
+
+
+def test_blend_large_scale_takes_large_from_i2d_small_from_own(tmp_path):
+    """Фаза 8, гибрид: своя сборка с другим масштабом и уровнем (0,87·i2d + 0,1), без полос; i2d с полосами по строкам.
+    Гибрид: крупный масштаб как у i2d, полос нет (мелкий масштаб своей сборки); пустые пиксели своей — из i2d."""
+    import numpy as np
+    from astropy.io import fits
+    from scipy import ndimage
+
+    from skyforge.level2 import blend_large_scale
+
+    rng = np.random.default_rng(4)
+    yy, xx = np.indices((600, 800))
+    sky = (1.0 + 2.0 * np.exp(-((yy - 300) ** 2 + (xx - 400) ** 2) / (2 * 150 ** 2))).astype(np.float32)
+    noise = rng.normal(0, 0.01, sky.shape).astype(np.float32)
+    stripes = rng.normal(0, 0.02, (600, 1)).astype(np.float32) * np.ones((1, 800), np.float32)
+    i2d = sky + noise + stripes
+    own = (0.87 * sky + 0.1 + noise).astype(np.float32)
+    own[100:104, 200:204] = np.nan                                      # всё отброшено в стеке
+    own_wht = np.ones_like(own)
+    own_wht[100:104, 200:204] = 0                                       # в стеке там ни одной экспозиции
+    fits.HDUList([fits.PrimaryHDU(), fits.ImageHDU(own, name="SCI"), fits.ImageHDU(own_wht, name="WHT")]
+                 ).writeto(tmp_path / "own.fits")
+    fits.HDUList([fits.PrimaryHDU(), fits.ImageHDU(i2d, name="SCI"), fits.ImageHDU(np.ones_like(i2d), name="WHT")]
+                 ).writeto(tmp_path / "i2d.fits")
+    info = blend_large_scale(tmp_path / "own.fits", tmp_path / "i2d.fits", 64, tmp_path / "blend.fits")
+    with fits.open(tmp_path / "blend.fits") as h:
+        out = h["SCI"].data.astype(np.float64)
+        fromi2d = h["FROMI2D"].data.astype(bool)
+        wht = h["WHT"].data
+    assert (wht[100:104, 200:204] > 0).all()                            # вес заполненных — от i2d (иначе align их обнулит)
+    inner = (slice(150, 450), slice(150, 650))                          # вдали от краёв кадра
+    # на масштабах много больше сигмы — как i2d (при сигме — остаток G(d − G d), он не ноль по построению)
+    large = ndimage.gaussian_filter(out - i2d, 192)[inner]
+    level = np.median(i2d[inner])                                       # как в критерии: доля яркости
+    assert abs(np.median(large)) < 0.005 * level and np.percentile(np.abs(large), 95) < 0.01 * level
+    # полосы — скачки медианы от строки к соседней строке (плавная кривизна пятна в разность почти не входит)
+    rows_i2d = np.std(np.diff(np.median(i2d[inner], axis=1))) / np.sqrt(2)
+    rows_out = np.std(np.diff(np.median(out[inner], axis=1))) / np.sqrt(2)
+    assert rows_out < 0.3 * rows_i2d                                    # полос i2d в гибриде нет
+    assert fromi2d[100:104, 200:204].all() and fromi2d.sum() == 16 and info["filled_from_i2d_px"] == 16
+    assert np.allclose(out[100:104, 200:204], i2d[100:104, 200:204])
+
+
+def test_blend_fields_do_not_change_digest_or_stack_key(tmp_path):
+    from skyforge.config import Level2Config
+    from skyforge.level2 import _key
+
+    base, blend = _cfg(), _cfg(level2=Level2Config(blend_large_scale="i2d", blend_sigma_px=64))
+    assert base.digest() == _cfg(level2=Level2Config()).digest() and blend.digest() != base.digest()
+    f, i2d = tmp_path / "a_cal.fits", tmp_path / "a_i2d.fits"
+    f.write_bytes(b"0")
+    i2d.write_bytes(b"0")
+    assert _key(base, [f], i2d) == _key(blend, [f], i2d)               # стек тот же — гибрид отдельным файлом

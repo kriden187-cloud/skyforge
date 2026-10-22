@@ -207,6 +207,13 @@ class Level2Config(_Strict):
     star_fwhm_small_px: float = Field(2.5, gt=0)
     star_fwhm_tol_small_percent: float = Field(8.0, gt=0)
     star_fwhm_tol_percent: float = Field(5.0, gt=0)
+    # Фаза 8 (OMC3-N): гибрид — крупный масштаб (уровень и перепады туманности) от i2d, мелкий (со снятыми полосами 1/f)
+    # от своей сборки: своя − сглаженная(своя − i2d), гаусс blend_sigma_px, в линейных данных. На сплошной туманности
+    # destripe и сведение уровней съедали 8–13% крупной структуры (своя ≈ 0,87·i2d + 0,10 у F150W). Пустые пиксели своей
+    # сборки (всё отброшено в стеке) — из i2d того же фильтра. Шаг после стека: на сборку и её ключ не влияет. В хеш —
+    # только если задано.
+    blend_large_scale: Literal["i2d"] | None = None
+    blend_sigma_px: float | None = Field(None, gt=0, description="сигма сглаживания разности, px сетки i2d (по умолчанию 64)")
 
 
 class StarsConfig(_Strict):
@@ -748,7 +755,8 @@ class Config(_Strict):
 NON_PROCESSING = ("style", "reference_image", "sweep", "preview", "report", "fetch")
 # Поля фазы 6: в хеш — только если заданы (иначе хеши и ключи кеша принятых объектов поменялись бы).
 OPTIONAL_WHEN_SET = (("mast_target",), ("level2_filters",), ("stretch", "sky_reference_crop"),
-                     ("stretch", "exclude_point_sources"), ("color", "fill_gaps"))
+                     ("stretch", "exclude_point_sources"), ("color", "fill_gaps"), ("level2", "blend_large_scale"),
+                     ("level2", "blend_sigma_px"))
 
 
 def deep_merge(base: dict, over: dict) -> dict:
