@@ -194,8 +194,13 @@ def load_publish(path: Path) -> PublishConfig:
     return pub
 
 
-def find_stop_words(text: str, words: list[str]) -> list[str]:
-    """Слова стоп-списка (по основе, без учёта регистра), найденные в тексте."""
+def find_stop_words(text: str, words: list[str], quotes: tuple[str, ...] = ()) -> list[str]:
+    """Слова стоп-списка (по основе, без учёта регистра), найденные в тексте. quotes — чужие цитаты (название программы
+    из заголовка FITS): их содержимое из проверки вырезается — правило про наши слова, не про чужой текст (решение
+    консультанта 2026-10-22, OMC3-N: «the unique field of Orion Molecular Cloud 3»); в выводе цитата остаётся как есть."""
+    for q in quotes:
+        if q:
+            text = text.replace(q, " ")
     low = text.lower()
     return [w for w in words if re.search(r"(?<![\w])" + re.escape(w.lower()), low)]
 
@@ -748,7 +753,7 @@ def publish_part(paths: Paths, pub: PublishConfig, cfg: Config, f: Facts, part: 
     if po.reddit is not None and po.reddit.style == f.style:
         texts.append(("_reddit.txt", reddit_text(fp, pub, pstem.name, part)))
     for suffix, text in texts:
-        bad = find_stop_words(text + caps["ru"] + caps["en"], pub.stop_words)
+        bad = find_stop_words(text + caps["ru"] + caps["en"], pub.stop_words, (fp.program_title,))
         if bad:
             raise SkyforgeError(f"{f.slug}/{f.style}/{part.name}: слова из стоп-списка ({suffix}): {bad}")
         path = pstem.with_name(pstem.name + suffix)
@@ -784,7 +789,7 @@ def publish_object(paths: Paths, pub: PublishConfig, name: str, style: str | Non
             raise SkyforgeError(f"{cfg.slug}/{st}: TIFF {paths.rel(run_tif)} расходится с принятым PNG на {d8:.0f} уровней")
         f = object_facts(paths, cfg, st, pub, base_png)
         caps = {lang: caption_md(f, pub, lang) for lang in ("ru", "en")}
-        bad = find_stop_words(caps["ru"] + caps["en"], pub.stop_words)
+        bad = find_stop_words(caps["ru"] + caps["en"], pub.stop_words, (f.program_title,))
         if bad:
             raise SkyforgeError(f"{cfg.slug}/{st}: в подписи слова из стоп-списка: {bad}")
         meta = build_meta(f, pub)
@@ -801,7 +806,7 @@ def publish_object(paths: Paths, pub: PublishConfig, name: str, style: str | Non
         co = pub.objects[name].commons
         if co is not None and co.style == st:
             wt = commons_wikitext(f, pub)
-            bad = find_stop_words(wt, pub.stop_words)
+            bad = find_stop_words(wt, pub.stop_words, (f.program_title,))
             if bad:
                 raise SkyforgeError(f"{cfg.slug}/{st}: в тексте для Commons слова из стоп-списка: {bad}")
             cpath = stem.with_name(stem.name + "_commons.txt")
@@ -811,7 +816,7 @@ def publish_object(paths: Paths, pub: PublishConfig, name: str, style: str | Non
         if fsp is not None and fsp.style == st:
             mpng = stem.with_name(stem.name + "_master.png")
             ft = flickr_text(f, pub, stem.name, (arr.shape[1], arr.shape[0]), mpng.stat().st_size / 1e6)
-            bad = find_stop_words(ft, pub.stop_words)
+            bad = find_stop_words(ft, pub.stop_words, (f.program_title,))
             if bad:
                 raise SkyforgeError(f"{cfg.slug}/{st}: в тексте для Flickr слова из стоп-списка: {bad}")
             fpath = stem.with_name(stem.name + "_flickr.txt")
@@ -820,7 +825,7 @@ def publish_object(paths: Paths, pub: PublishConfig, name: str, style: str | Non
         rsp = pub.objects[name].reddit
         if rsp is not None and rsp.style == st:
             rt = reddit_text(f, pub, stem.name)
-            bad = find_stop_words(rt, pub.stop_words)
+            bad = find_stop_words(rt, pub.stop_words, (f.program_title,))
             if bad:
                 raise SkyforgeError(f"{cfg.slug}/{st}: в тексте для Reddit слова из стоп-списка: {bad}")
             rpath = stem.with_name(stem.name + "_reddit.txt")

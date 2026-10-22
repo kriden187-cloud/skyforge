@@ -244,6 +244,26 @@ def test_find_stop_words_word_stems(words):
     assert find_stop_words("ПЕРВОЕ", words) == ["перв"]
 
 
+def test_stop_words_skip_program_title_quote():
+    """Решение консультанта 2026-10-22 (OMC3-N): стоп-список — про наши слова; название программы из заголовка FITS — чужая
+    цитата, её содержимое в проверку не входит, в тексте оно остаётся как есть. То же слово вне цитаты ловится."""
+    from skyforge.publish import caption_md, commons_wikitext, find_stop_words, load_publish
+
+    pub = load_publish(ROOT / "configs" / "publish.yaml")
+    title = "Mass inflow structures in star formation from filaments to streamers: the unique field of Orion Molecular Cloud 3"
+    assert find_stop_words(f"Program 7433 “{title}”", pub.stop_words, (title,)) == []
+    assert find_stop_words(f"Program 7433 “{title}”", pub.stop_words) == ["unique"]          # без цитаты — ловится
+    assert find_stop_words(f"A unique view. Program 7433 “{title}”", pub.stop_words, (title,)) == ["unique"]
+    assert find_stop_words("Уникальный кадр", pub.stop_words, ("",)) == ["уникальн"]         # пустая цитата не мешает
+    f = _sh_facts(slug="omc3n", target="OMC3-N", program="7433", program_title=title, pi="Juvela, Mika",
+                  tag="phase-7", config="configs/omc3n/showcase.yaml")
+    texts = [caption_md(f, pub, "ru"), caption_md(f, pub, "en"), commons_wikitext(f, pub)]
+    assert all(title in t for t in texts)                                                     # название выводится как есть
+    assert all(find_stop_words(t, pub.stop_words, (f.program_title,)) == [] for t in texts)
+    pub.objects["omc3n"].styles["showcase"].shown_en += " A unique field."                    # наше слово вне цитаты
+    assert find_stop_words(caption_md(f, pub, "en"), pub.stop_words, (f.program_title,)) == ["unique"]
+
+
 def test_reddit_text():
     """Фаза 6: текст Reddit — файл, сабреддиты с напоминанием о правилах, заголовок, комментарий с фактами из данных,
     фильтрами с цветами (F140M — фиолетово-синий, отличается от синего F182M), ссылкой на репозиторий, кредитом и
