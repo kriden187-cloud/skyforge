@@ -1,0 +1,46 @@
+# OMC3-N: JWST NIRCam, программа GO 7433 (PI Juvela) «Mass inflow structures in star formation from filaments to
+# streamers», мозаика 2 плитки × 3 дизеринга, ~21′², данные открыты 2026-09-09. Фаза 7 (2026-10-22): тест зрелости
+# конвейера — только конфиг, скрипты листов и документы, src/ не трогается. Обработок в сети не найдено (фаза 6, шаг 1,
+# поиск 2026-10-21; соседние OMC-2/3 — другая программа 5804).
+# Общее для стилей: объект, данные, геометрия, очистка, маски. Стили (extends: base) меняют растяжку, цвет и финиш.
+target: "OMC3-N"
+slug: omc3n
+coords: "83.85167 -5.03889"   # s_ra/s_dec MAST (центр мозаики)
+radius: "6 arcmin"           # как у W3
+mast_target: OMC3-N
+mission: jwst
+instrument: nircam
+proposal_id: "7433"
+filters: [F150W, F200W, F356W, F480M]
+calib_level: 3
+source: level3            # готовые мозаики i2d
+reference: F356W          # сетка длинноволновых 0,063″/px; из двух длинных — более чувствительный
+align:
+  crop: union
+  require_all: true       # как у W3: на краях все фильтры
+bin: 4                    # подбор параметров; финал — bin 1
+stars:
+  fill_cores: true        # насыщенные ядра (дыры WHT=0) заполняются кольцами
+  max_core_arcsec: 4.0    # как у W3 и Sh2-305
+clean:
+  destripe:
+    enabled: false        # как у W3 и Sh2-305
+background:
+  subtract: true
+  tiles: false            # как у W3
+  smooth: false
+finish:
+  north_up: false         # как у W3: сетка опорного фильтра как есть
+report:
+  baseline: phase-7       # принятый результат: data/baselines/omc3n/phase-7/ (финал bin 1 2026-10-22, прогон 13-03-50)
+  crops:                  # центр на небе (ra, dec, градусы); размер — px при bin 1 (0,063″/px); сетка F356W как есть
+    - { name: star1, ra: 83.86449, dec: -5.04523, size: 400 }     # яркая звезда с лучами вверху
+    - { name: star2, ra: 83.86743, dec: -5.06160, size: 400 }     # красная звезда у отражательной туманности
+    - { name: neb, ra: 83.85600, dec: -5.06612, size: 800 }       # яркая отражательная туманность с протозвездой, левый край
+    - { name: cores, ra: 83.85790, dec: -5.06771, size: 400 }     # насыщенные ядра у протозвезды
+    - { name: filament, ra: 83.85206, dec: -5.03770, size: 800 }  # тёмная пылевая полоса, центр
+    - { name: jet, ra: 83.83930, dec: -5.02093, size: 400 }       # выброс (зелёно-жёлтый узел), низ
+    - { name: pillars, ra: 83.85137, dec: -5.00619, size: 800 }   # жёлтые волокна, правая часть
+    - { name: sky, ra: 83.85673, dec: -5.01820, size: 400 }       # опорный блок darkest_blocks (тёмная пыль), правее центра
+    - { name: sky2, ra: 83.85990, dec: -5.05385, size: 400 }      # опорный блок darkest_blocks (тёмная пыль), левее центра
+    - { name: edge, ra: 83.83783, dec: -5.03615, size: 400 }      # нижний край кадра

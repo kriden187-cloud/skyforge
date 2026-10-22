@@ -427,3 +427,66 @@ objects:
         shown_en: "Eight NIRCam filters (F140M, F182M, F210M and five long-wavelength), both detector modules with the real gap between them; wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks; short-wave detector gaps filled from the neighbouring short-wave filter."
         limits_ru: "Щели детекторов коротких фильтров (около 3,5″, 13% площади модуля) заполнены подстановкой соседнего фильтра — при обычном просмотре видно зерно; дизеринг программы около 1″ при щели 3,5″, поэтому сборка из отдельных экспозиций (уровень 2) щели не закрывает; кадры без щелей выложены отдельно — фрагменты A2, A4, B3. Около дюжины квадратов 4″ на пересечениях щелей (0,2% площади) заполнены F300M и отличаются по тону; пунктирные швы по краям полос — из исходных i2d. Пустого неба в поле нет: опора по слабейшей туманности, небо 18 вместо 16, абсолютный уровень условный; полосы 1/f коротких фильтров видны на небе при ×5."
         limits_en: "Short-wave detector gaps (about 3.5″, 13% of a module) are filled by substituting the neighbouring filter — grain is visible at normal viewing; the program's dither is about 1″ against a 3.5″ gap, so a rebuild from the individual exposures (level 2) does not close the gaps; gap-free frames are published separately as fragments A2, A4, B3. About a dozen 4″ squares where gaps cross (0.2% of the area) are filled from F300M and differ in tone; dotted seams along the strip edges come from the source i2d. No empty sky in the field: the reference is the faintest nebula, sky at 18 instead of 16, the absolute level is nominal; short-wave 1/f stripes visible on the sky at 5×."
+  omc3n:
+    accepted: 2026-10-22
+    flickr:
+      style: showcase
+      file: web
+      file_note: "(or {stem}_master.png for full size, {master_mb} MB)"
+      title: "OMC-3 (Orion Molecular Cloud 3) — JWST NIRCam, four filters"
+      paragraphs:
+        - >-
+          The northern part of Orion Molecular Cloud 3 (OMC-3), a filamentary star-forming cloud north of the Orion
+          Nebula, imaged by the James Webb Space Telescope (NIRCam): field OMC3-N of program {program}, PI {pi};
+          observed {obs}, data public in MAST since {release}.
+        - >-
+          Four filters, colours ordered by wavelength (shorter = bluer): {filters}. A bright reflection nebula around a
+          young star on the left, a dark dust filament across the frame, and a protostellar outflow among young stars on
+          the right.
+        - >-
+          My own processing of the public data, fully reproducible from a YAML config: every step and every number is in
+          the open-source pipeline at {repo_line}. The white point of each filter is set on the nebula with the stars
+          excluded, the sky level on the darkest measured blocks (there is no empty sky in this field); nothing is
+          painted by hand.
+        - >-
+          No earlier public colour processing of these data was found (search of 2026-10-22: web, Wikimedia Commons,
+          Flickr; Reddit, AstroBin and X could not be checked). Neighbouring parts of the cloud were imaged by program 5804
+          (PI Tom Megeath), processed by Melina Thévenot (Wikimedia Commons, 2025-02-20) and Judy Schmidt (Flickr,
+          2025-04-07); the ESA/Webb Picture of the Month of June 2026 shows OMC-2.
+      tags: [JWST, Webb, James Webb Space Telescope, NIRCam, OMC-3, Orion Molecular Cloud, Orion, star formation,
+             protostar, outflow, molecular cloud, dust, nebula, astrophotography, MAST, JWST program 7433, Skyforge]
+    reddit:
+      style: showcase
+      file: social
+      subreddits: [r/jwst, r/spaceporn, r/astrophotography]
+      title: "OMC-3 (Orion Molecular Cloud 3) — my processing of public JWST NIRCam data, four filters [OC]"
+      paragraphs:
+        - >-
+          **What:** the northern part of Orion Molecular Cloud 3, north of the Orion Nebula: JWST NIRCam field OMC3-N of
+          program {program} (PI {pi}), observed {obs}, public in MAST since {release}. A reflection nebula, a dark dust
+          filament and a protostellar outflow.
+        - "**Filters, ordered by wavelength (shorter = bluer):** {filters}."
+        - >-
+          **How:** my own open-source pipeline, every step in a YAML config: {repo_line}. White point of each filter on
+          the nebula with stars excluded, sky level on the darkest measured blocks; nothing painted by hand.
+        - >-
+          **Limits:** the frame is the rectangle covered by all four filters (about half of the stepped mosaic); no
+          empty sky in the field; next to the brightest protostar and along the outflow, pixels flagged in the archive
+          mosaic leave a speckled patch about 5″ across, visible at 100%.
+    published:
+      - { style: showcase, platform: Reddit, note: "ждёт аккаунта" }
+    commons:
+      style: showcase
+      filename: "OMC-3 Orion Molecular Cloud 3 JWST NIRCam 4 filters (Krivosheev).png"   # свободно на 2026-10-22 (API)
+      categories: [Orion Molecular Cloud Complex, Images by NIRCam, James Webb Space Telescope images of nebulae,
+                   Star-forming regions]
+    notes_ru:
+      - "Поле OMC3-N программы 7433 (центр RA 83,85°, Dec −5,04°) — северная часть облака OMC-3 в Орионе, к северу от туманности Ориона. Данные открыты 2026-09-09. Более ранних публичных цветных обработок этих данных не найдено (поиск 2026-10-22: поиск в сети, Wikimedia Commons, Flickr; Reddit, AstroBin и X не проверялись). Соседние части облака снимала программа 5804 (руководитель Tom Megeath): обработки Мелины Тевено (Wikimedia Commons, 2025-02-20) и Джуди Шмидт (Flickr, 2025-04-07); «картинка месяца» ESA/Webb июня 2026 — OMC-2."
+    notes_en:
+      - "Field OMC3-N of program 7433 (centre RA 83.85°, Dec −5.04°) — the northern part of the OMC-3 cloud in Orion, north of the Orion Nebula. Data public since 2026-09-09. No earlier public colour processing of these data was found (search of 2026-10-22: web, Wikimedia Commons, Flickr; Reddit, AstroBin and X not checked). Neighbouring parts of the cloud were imaged by program 5804 (PI Tom Megeath): processings by Melina Thévenot (Wikimedia Commons, 2025-02-20) and Judy Schmidt (Flickr, 2025-04-07); the ESA/Webb Picture of the Month of June 2026 shows OMC-2."
+    styles:
+      showcase:
+        shown_ru: "Четыре фильтра NIRCam (F150W, F200W, F356W, F480M), палитра по длине волны; белая точка по туманности без звёзд в каждом фильтре; опорное небо по самым тёмным блокам, небо 16."
+        shown_en: "Four NIRCam filters (F150W, F200W, F356W, F480M), wavelength-ordered palette; white point on the nebula without stars in each filter; sky reference from the darkest blocks, sky level 16."
+        limits_ru: "Кадр — прямоугольник, где на краях есть все четыре фильтра: 52,6% поля мозаики, ступенчатые края срезаны. Пустого неба в поле нет: опора — самые тёмные блоки (пыль), абсолютный уровень условный. У самой яркой протозвезды и по краю выброса — россыпь отбракованных пикселей мозаики i2d (F200W, меньше F150W и F356W): при 100% пёстрый участок около 5″ с прямыми краями и цветная рябь. Слабые полосы 1/f коротких фильтров видны в тёмной пыли при ×5."
+        limits_en: "The frame is the rectangle with all four filters on its edges: 52.6% of the mosaic, the stepped edges are cut. No empty sky in the field: the reference is the darkest blocks (dust), the absolute level is nominal. Next to the brightest protostar and along the outflow edge, pixels flagged in the i2d mosaic (F200W, fewer in F150W and F356W) leave a speckled patch about 5″ across with straight edges and colour ripple, visible at 100%. Faint short-wave 1/f stripes visible in the dark dust at 5×."

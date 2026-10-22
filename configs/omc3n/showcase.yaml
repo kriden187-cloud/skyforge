@@ -1,0 +1,36 @@
+# «Витринный» стиль OMC3-N: старт — финал W3-2 (phase-6). Референса нет, критерии внутренние: небо без нулей,
+# выжжено ≤ 0,5%, прямых границ при ×5 нет, звёзды не зелёные, фактура видна при 100%.
+extends: base
+# Проба фазы 7 (bin 1): clean.fill_gaps_px 6 против россыпи отбракованных пикселей у протозвезды — без эффекта (35 px
+# итога; NaN к этому этапу уже заполнены fill_cores), снято. Лист out/omc3n/проверка_7/bin1_fill/36_россыпь_NaN.png.
+stretch:
+  method: asinh
+  anchor: masks            # black — по пустому небу, white — по маске туманности
+  white: 99.8              # как W3
+  a: 0.05                  # как W3
+  black_mode: pedestal     # чёрная точка на 3σ ниже неба самых шумных мест
+  black_k: 3
+  sky_level: 16
+  sky_reference: darkest_blocks   # правило HANDOFF: на сплошной туманности опора — самые тёмные блоки опорного фильтра
+  sky_reference_min_free: 0.3     # как финал W3
+  sky_toe_max_p: 4
+  exclude_point_sources: {}       # белая точка по туманности без звёзд в каждом фильтре (W3)
+color:
+  mode: manual
+  blend: average
+  overrides:               # задание консультанта 2026-10-22: по длине волны
+    F150W: "#3050ff"       # синий
+    F200W: "#40c0ff"       # голубой
+    F356W: "#ff9020"       # оранжевый
+    F480M: "#ff2020"       # красный
+  saturation: 1.4
+  saturation_gamut: limit
+  saturation_above_sky: 12
+  shadows: { value: 0, scope: nebula, by: max, above_sky: true }
+  background_keep_level: true
+  neutral_background: off
+  star_saturation: 1
+finish:
+  nodata_fill: sky
+  stars: { scale: 1, shrink: 0 }
+  local_contrast: { radius: 80, amount: 0.3 }
