@@ -281,6 +281,242 @@ def test_core_holes_filled_but_edges_and_big_gaps_kept():
     assert np.isnan(out[:, :2]).all() and np.isnan(out[50, 20])
 
 
+def _flagged_scene(seed: int = 5):
+    """Градиент с шумом σ 1; прямоугольник отбракованных пикселей (40% NaN, уцелевшие — выбросы), выбросы у края;
+    насыщенная звезда со сплошной дырой ядра."""
+    rng = np.random.default_rng(seed)
+    yy, xx = np.indices((220, 220))
+    plane = (100 + 0.5 * xx + 0.3 * yy).astype(np.float32)
+    a = plane + rng.normal(0, 1, plane.shape).astype(np.float32)
+    star = 5000 * np.exp(-((yy - 40) ** 2 + (xx - 40) ** 2) / 18)
+    a += star.astype(np.float32)
+    a[np.hypot(yy - 40, xx - 40) < 3.5] = np.nan                     # ядро: одна сплошная дыра
+    box = (slice(90, 130), slice(80, 150))
+    blk = a[box]
+    bad = rng.random(blk.shape) < 0.3
+    blk[bad] += rng.choice([-25, 25], blk.shape)[bad]                  # уцелевшие пиксели блока — выбросы
+    blk[rng.random(blk.shape) < 0.4] = np.nan                        # россыпь дыр блоком с прямыми краями
+    ring = np.zeros(a.shape, bool)
+    ring[87:133, 77:153] = True
+    ring[box] = False
+    a[ring & (rng.random(a.shape) < 0.15)] += 20                      # выбросы у края блока
+    return a, plane, box, yy, xx
+
+
+@pytest.mark.parametrize("scale", [0.063, 0.031])
+@pytest.mark.parametrize("seed", [0, 5, 10, 15, 20, 25, 31, 35, 40])
+def test_flagged_area_filled_smoothly_without_straight_edges(seed, scale):
+    """После фазы 7: прямоугольная область отбракованных пикселей на градиенте с выбросами по краю заполняется
+    гладко по краю — без ступеньки на прямых краях и без выбросов внутри; ядро звезды областью не считается и
+    заполняется прежним способом (не темнее края). Много зёрен и два масштаба (третий раунд проверки кода: одно зерно
+    проходило по везению; при 0,063″/px полоса выбросов не дотягивалась до края блока)."""
+    from skyforge.stars import fill_rings, fill_smooth, find_core_holes, flagged_areas
+
+    a, plane, box, yy, xx = _flagged_scene(seed)
+    region, info = flagged_areas(a, scale=scale)
+    assert len(info) == 1 and info[0]["holes"] >= 10
+    assert region[box].mean() > 0.9                                   # блок, не только дыры (чистые пиксели у края
+                                                                      # могут остаться — выбросы проверяет остаток ниже)
+    assert not region[np.hypot(yy - 40, xx - 40) < 6].any()           # ядро звезды — не область
+    holes = find_core_holes(a, 3000)
+    out = fill_rings(fill_smooth(a, region), holes & ~region)
+    assert np.isfinite(out[box]).all()
+    res = out - plane
+    assert np.abs(res[box]).max() < 4                                  # ни выбросов, ни дыр
+    for inside, outside in (((slice(90, 130), slice(80, 83)), (slice(90, 130), slice(74, 77))),
+                            ((slice(90, 130), slice(147, 150)), (slice(90, 130), slice(153, 156))),
+                            ((slice(90, 93), slice(80, 150)), (slice(84, 87), slice(80, 150))),
+                            ((slice(127, 130), slice(80, 150)), (slice(133, 136), slice(80, 150)))):
+        assert abs(res[inside].mean() - res[outside].mean()) < 0.6     # без ступеньки (σ разности средних ~0,13)
+    rim = a[(np.hypot(yy - 40, xx - 40) >= 3.5) & (np.hypot(yy - 40, xx - 40) < 4.5)]
+    assert out[40, 40] >= np.nanmax(rim) - 1e-3                        # ядро — максимумом соседей, как прежде
+
+
+def _fill_all(a, scale=0.063):
+    from skyforge.stars import fill_rings, fill_smooth, find_core_holes, flagged_areas
+
+    region, info = flagged_areas(a, scale)
+    out = fill_smooth(a, region)
+    return fill_rings(out, find_core_holes(a, 3000) & ~np.isfinite(out)), region, info
+
+
+def test_flagged_area_next_to_mosaic_gap_keeps_data():
+    """Проверка кода: область у пропуска мозаики (NaN до края кадра) — куски без известного соседа не решаются
+    (вырожденная система давала NaN на весь кусок), известные пиксели не становятся NaN."""
+    for seed in range(6):
+        a, plane, box, yy, xx = _flagged_scene(seed)
+        a[:, 150:165] = np.nan                                         # пропуск вплотную к блоку, до края кадра
+        out, region, info = _fill_all(a)
+        assert info, seed
+        assert np.isfinite(out[np.isfinite(a)]).all(), seed           # данные не потеряны
+        assert np.isnan(out[:, 150:165]).all()                         # пропуск мозаики не заполняется
+
+
+def test_fill_smooth_components_do_not_overwrite_each_other():
+    """Проверка кода: рамка одной области накрывает другую — каждая решается своей, без шва на краю окна (на линейном
+    градиенте решение уравнения Лапласа точное)."""
+    from skyforge.stars import fill_smooth
+
+    yy, xx = np.indices((60, 70))
+    ramp = (yy + 2.0 * xx).astype(np.float32)
+    reg = np.zeros(ramp.shape, bool)
+    reg[5:30, 30:55] = True                                            # область A
+    reg[35:39, 5:50] = True
+    reg[10:39, 5:9] = True                                             # область B буквой Г, её рамка накрывает A
+    a = np.where(reg, np.nan, ramp).astype(np.float32)
+    out = fill_smooth(a, reg)
+    assert np.abs(out[reg] - ramp[reg]).max() < 1e-2
+
+
+def test_flagged_area_spares_star_core_and_nearby_faint_stars():
+    """Проверка кода: насыщенное ядро звезды рядом с россыпью в область не входит и заполняется белым, как прежде;
+    слабые звёзды в нескольких пикселях от края области не стираются."""
+    a, plane, box, yy, xx = _flagged_scene(5)
+    star = 5000 * np.exp(-((yy - 110) ** 2 + (xx - 72) ** 2) / 18)    # ядро в 8 px от края блока
+    a = a + star.astype(np.float32)
+    core = np.hypot(yy - 110, xx - 72) < 3.5
+    a[core] = np.nan
+    faint = [(84, 100), (84, 120), (136, 110)]                          # слабые звёзды в 6 px от блока
+    for y, x in faint:
+        a = a + (15 * np.exp(-((yy - y) ** 2 + (xx - x) ** 2) / (2 * 0.45 ** 2))).astype(np.float32)
+    out, region, info = _fill_all(a)
+    assert info and not region[core].any()
+    rim = a[(np.hypot(yy - 110, xx - 72) >= 3.5) & (np.hypot(yy - 110, xx - 72) < 4.5)]
+    assert out[110, 72] >= np.nanmax(rim) - 1e-3                       # ядро — максимумом соседей
+    for y, x in faint:
+        assert not region[y, x] and out[y, x] == a[y, x]
+
+
+@pytest.mark.parametrize("dist, rad", [(8, 2.5), (8, 3.0), (4, 3.5), (1, 3.5)])
+def test_star_core_near_or_touching_area_stays_white(dist, rad):
+    """Проверка кода (второй раунд): малое ядро (21–25 px) рядом с россыпью и ядро, касающееся её, — ядра, не область:
+    центр не темнее края, как при прежнем fill_rings."""
+    a, plane, box, yy, xx = _flagged_scene(0)
+    x0 = 80 - dist
+    a = a + (5000 * np.exp(-((yy - 110) ** 2 + (xx - x0) ** 2) / 18)).astype(np.float32)
+    core = np.hypot(yy - 110, xx - x0) < rad
+    a[core] = np.nan
+    out, region, info = _fill_all(a)
+    rim = a[(np.hypot(yy - 110, xx - x0) >= rad) & (np.hypot(yy - 110, xx - x0) < rad + 1) & np.isfinite(a)]
+    assert info and not region[core].any()
+    assert out[110, x0] >= np.max(rim) - 1e-3
+    # как в clean: другой фильтр видит ту же звезду без насыщения — ядро подтверждено (четвёртый раунд проверки)
+    from skyforge.stars import fill_rings, fill_smooth, find_core_holes, flagged_areas
+
+    other = (plane + 0.1 * 5000 * np.exp(-((yy - 110) ** 2 + (xx - x0) ** 2) / 18)).astype(np.float32)
+    region2, _ = flagged_areas(a, 0.063, [(other, np.zeros(a.shape, bool))])
+    out2 = fill_rings(fill_smooth(a, region2), find_core_holes(a, 3000) & ~np.isfinite(fill_smooth(a, region2)))
+    assert not region2[core].any() and out2[110, x0] >= np.max(rim) - 1e-3
+
+
+def test_star_core_inside_scattered_annulus_keeps_core_and_inner_wings():
+    """Проверка кода (второй раунд): яркая звезда с насыщенным ядром посреди россыпи (случай протозвезды) — ядро белое,
+    крылья в кольце защиты не сглажены."""
+    rng = np.random.default_rng(1)
+    yy, xx = np.indices((220, 220))
+    plane = (100 + 0.5 * xx + 0.3 * yy).astype(np.float32)
+    star = (5000 * np.exp(-((yy - 110) ** 2 + (xx - 115) ** 2) / 18)).astype(np.float32)
+    a = plane + star + rng.normal(0, 1, plane.shape).astype(np.float32)
+    r = np.hypot(yy - 110, xx - 115)
+    ann = (r >= 5.5) & (r < 25)
+    bad = ann & (rng.random(a.shape) < 0.3)
+    a[bad] += rng.choice([-25, 25], a.shape)[bad]
+    a[ann & (rng.random(a.shape) < 0.4)] = np.nan
+    a[r < 3.5] = np.nan
+    out, region, info = _fill_all(a)
+    assert info and not region[r < 3.5].any()
+    rim = a[(r >= 3.5) & (r < 4.5)]
+    assert out[110, 115] >= np.nanmax(rim) - 1e-3                      # ядро белое
+    guard = (r >= 3.5) & (r < 3.5 + 3) & np.isfinite(a)                 # 3 px — внутри кольца защиты 0,25″
+    assert np.array_equal(out[guard], a[guard])                        # крылья у ядра — как были
+
+
+@pytest.mark.parametrize("seed", [1, 5, 9, 13, 17])
+@pytest.mark.parametrize("density", [0.55, 0.7])
+def test_dense_flagged_block_is_found(density, seed):
+    """Проверка кода (второй раунд): плотная россыпь (дыры срастаются в несколько крупных компонент) — тоже область."""
+    a, plane, box, yy, xx = _flagged_scene(seed)
+    rng = np.random.default_rng(seed + 100)
+    blk = a[box]
+    blk[rng.random(blk.shape) < density] = np.nan
+    out, region, info = _fill_all(a)
+    assert info and region[box].mean() > 0.9
+    assert np.abs((out - plane)[box]).max() < 6
+
+
+@pytest.mark.parametrize("seed", range(6))
+def test_clumped_low_coverage_strip_is_not_an_area(seed):
+    """Проверка кода (второй раунд): полоса малого покрытия (шум ×2,8) с битыми пикселями комками 2×2 (11%) — не
+    область, звёзды в ней не стираются."""
+    from skyforge.stars import flagged_areas
+
+    rng = np.random.default_rng(seed)
+    a = rng.normal(100, 1, (400, 400)).astype(np.float32)
+    a[:, 180:220] = rng.normal(100, 2.8, (400, 40))
+    k = rng.random((200, 20)) < 0.11
+    a[:, 180:220][np.kron(k, np.ones((2, 2), bool))] = np.nan
+    for sc in (0.031, 0.063):
+        region, info = flagged_areas(a, scale=sc)
+        assert not region.any() and info == [], sc
+
+
+def test_core_needs_a_source_in_another_filter():
+    """Проверка кода (третий и четвёртый раунды): ядро подтверждается источником на том же месте в другом фильтре —
+    сплошной дырой или ярким компактным пиком (звезда, насыщенная в одном фильтре, или узел выброса). Комок блока на
+    ярком краю туманности (OMC3-N F200W), где в других фильтрах ровная туманность, — не ядро."""
+    from skyforge.stars import core_parts, find_core_holes
+
+    rng = np.random.default_rng(3)
+    yy, xx = np.indices((160, 160))
+    star = 2000 * np.exp(-((yy - 80) ** 2 + (xx - 80) ** 2) / 18)
+    a = (100 + star + rng.normal(0, 1, star.shape)).astype(np.float32)
+    core = np.hypot(yy - 80, xx - 80) < 4
+    a[core] = np.nan
+    holes = find_core_holes(a, 3000)
+    flat = (100 + 0.3 * xx + rng.normal(0, 1, star.shape)).astype(np.float32)        # ровная туманность
+    none = np.zeros(a.shape, bool)
+    assert core_parts(a, holes)[core].all()                                           # без других фильтров — ядро
+    assert not core_parts(a, holes, [(flat, none)], 5).any()                          # в другом фильтре нет источника
+    other_hole = none.copy()
+    other_hole[78:83, 79:84] = True
+    assert core_parts(a, holes, [(flat, other_hole)], 5)[core].all()                  # дыра в другом фильтре
+    peak = (100 + 0.1 * star + rng.normal(0, 1, star.shape)).astype(np.float32)        # тот же источник без насыщения
+    assert core_parts(a, holes, [(flat, none), (peak, none)], 5)[core].all()
+    # пятый раунд (OMC3-N F480M): вытянутая яркая нить под частью — не точечный источник, не подтверждение
+    ridge = (100 + 200 * np.exp(-((xx - 80) ** 2) / (2 * 4.0 ** 2)) + rng.normal(0, 1, star.shape)).astype(np.float32)
+    assert not core_parts(a, holes, [(flat, none), (ridge, none)], 5).any()
+
+
+def test_low_coverage_strip_with_sparse_bad_pixels_is_not_an_area():
+    """Проверка кода: полоса малого покрытия (шум ×2,8) с редкими битыми пикселями (4%) и звёздами — не область."""
+    from skyforge.stars import flagged_areas
+
+    rng = np.random.default_rng(2)
+    a = rng.normal(100, 1, (400, 400)).astype(np.float32)
+    a[:, 180:220] = rng.normal(100, 2.8, (400, 40))
+    yy, xx = np.indices(a.shape)
+    for y in (100, 200, 300):
+        a += (200 * np.exp(-((yy - y) ** 2 + (xx - 200) ** 2) / (2 * 1.5 ** 2))).astype(np.float32)
+    strip = a[:, 180:220]
+    strip[rng.random(strip.shape) < 0.04] = np.nan
+    region, info = flagged_areas(a, scale=0.031)
+    assert not region.any() and info == []
+
+
+def test_flagged_area_skips_sparse_holes_and_star_cores():
+    """Редкие одиночные дыры (россыпь NGC 3132) и сплошные ядра звёзд — не области."""
+    from skyforge.stars import flagged_areas
+
+    rng = np.random.default_rng(9)
+    a = rng.normal(100, 1, (200, 200)).astype(np.float32)
+    ys, xs = rng.integers(5, 195, 40), rng.integers(5, 195, 40)
+    a[ys, xs] = np.nan                                                # 40 одиночных дыр по всему кадру
+    yy, xx = np.indices(a.shape)
+    a[np.hypot(yy - 100, xx - 100) < 8] = np.nan                       # большое сплошное ядро
+    region, info = flagged_areas(a, scale=0.063)
+    assert not region.any() and info == []
+
+
 def test_tile_pedestal_removes_step_and_keeps_nebula():
     from skyforge.background import tile_pedestal
     from skyforge.config import BackgroundConfig

@@ -24,8 +24,8 @@ from skyforge.config import Config
 from skyforge.log import SkyforgeError, console
 from skyforge.paths import Paths
 from skyforge.preview import cache_previews, contact_sheet, quick_norm, shrink
-from skyforge.stars import (StarMask, core_area_px, fill_rings, find_core_holes, sky_stars, sky_weight, star_mask,
-                            star_weight)
+from skyforge.stars import (StarMask, area_key, core_area_px, fill_rings, fill_smooth, find_core_holes, flagged_areas,
+                            sky_stars, sky_weight, solid_holes, star_mask, star_weight)
 from skyforge.stretch import stretch_array
 
 # Превью фона тянется жёстче рабочей растяжки: стыки плиток — это проценты от шума,
@@ -33,7 +33,7 @@ from skyforge.stretch import stretch_array
 REVEAL_BLACK, REVEAL_WHITE, REVEAL_A = 1.0, 90.0, 0.02
 
 
-CLEAN_VERSION = 13  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
+CLEAN_VERSION = 14  # поднять, если меняется алгоритм очистки или масок: старый кеш станет недействительным
 NEBULA_MASK_VERSION = 1  # исключение фильтров из маски туманности (background.nebula_mask_exclude), фаза 4 шаг 7
 
 
@@ -135,6 +135,8 @@ def input_key(cfg: Config, paths: Paths) -> dict[str, Any]:
     if enabled(cfg):
         key["version"] = CLEAN_VERSION
         key["stars"] = cfg.stars.clean_key()
+        if cfg.stars.fill_cores:
+            key["flagged_areas"] = area_key()       # пороги областей — константы stars.py: правка пересчитывает clean
         key["background"] = cfg.background.key()
         if cfg.background.nebula_mask_exclude:
             key["nebula_mask_version"] = NEBULA_MASK_VERSION   # шаг 7: своя версия — общий CLEAN_VERSION не сбрасывает JWST
@@ -210,6 +212,8 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
     star_masks = {}
     tile_maps: dict[str, np.ndarray] = {}
     nexp_maps: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+    # сплошные части дыр каждого фильтра — подтверждение ядер звёзд для областей отбракованных пикселей (после фазы 7)
+    solid = {f: solid_holes(a, scale) for f, a in before.items()} if cfg.stars.fill_cores else {}
     for f, a in before.items():
         out = a
         fi: dict[str, Any] = {}
@@ -218,7 +222,16 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
             fi["cosmic_pixels"] = int(cosmic_masks[f].sum())
         if cfg.stars.fill_cores:
             holes = find_core_holes(out, core_area_px(cfg.stars.max_core_arcsec, scale))
-            out = fill_rings(out, holes)
+            # после фазы 7: области отбракованных пикселей произвольной формы — гладко по краю; остальные дыры (ядра
+            # звёзд и всё, что осталось пустым) — максимумом соседей, как прежде; учёт дыр для насыщенных звёзд и
+            # маски туманности — прежний
+            others = [(before[g_], s_) for g_, s_ in solid.items() if g_ != f] or None
+            area, areas = flagged_areas(out, scale, others)
+            if area.any():
+                out = fill_smooth(out, area)
+                fi["area_pixels"] = int(area.sum())
+                fi["areas"] = areas
+            out = fill_rings(out, holes & ~np.isfinite(out))
             holes_all |= holes
             holes_by_f[f] = holes
             fi["core_pixels"] = int(holes.sum())
