@@ -90,9 +90,9 @@ not edited by hand. Русская версия: [GALLERY.ru.md](GALLERY.ru.md).
 
 ![W3, showcase](gallery/w3_2_showcase.jpg)
 
-Published on the platforms as two separate images — left half of field W3-JWST-2 — NIRCam module A · right half of field W3-JWST-2 — NIRCam module B:
+Published on the platforms as separate images — left half of field W3-JWST-2 — NIRCam module A · right half of field W3-JWST-2 — NIRCam module B · fragment of field W3-JWST-2 (about 50×36″) between NIRCam detector gaps, module A — bright star and dust lanes · fragment of field W3-JWST-2 (about 50×36″) between NIRCam detector gaps, module A — dark dust cloud · fragment of field W3-JWST-2 (about 50×36″) between NIRCam detector gaps, module B — bright cloud:
 
-![left half of field W3-JWST-2 — NIRCam module A](gallery/w3_2_showcase_A.jpg) ![right half of field W3-JWST-2 — NIRCam module B](gallery/w3_2_showcase_B.jpg)
+![left half of field W3-JWST-2 — NIRCam module A](gallery/w3_2_showcase_A.jpg) ![right half of field W3-JWST-2 — NIRCam module B](gallery/w3_2_showcase_B.jpg) ![fragment of field W3-JWST-2 (about 50×36″) between NIRCam detector gaps, module A — bright star and dust lanes](gallery/w3_2_showcase_A2.jpg) ![fragment of field W3-JWST-2 (about 50×36″) between NIRCam detector gaps, module A — dark dust cloud](gallery/w3_2_showcase_A4.jpg) ![fragment of field W3-JWST-2 (about 50×36″) between NIRCam detector gaps, module B — bright cloud](gallery/w3_2_showcase_B3.jpg)
 
 - **Program:** 5437, PI William Best; observed 2024-10-29; data public since 2025-10-30
 - **Filters:** F140M 1.40 µm — violet-blue (#6030ff); F182M 1.82 µm — blue (#3050ff); F210M 2.10 µm — light blue (#40c0ff); F300M 3.00 µm — cyan (#30ffb0); F335M 3.35 µm — yellow-green (#c0ff40); F360M 3.60 µm — yellow (#ffd820); F405N 4.05 µm — orange (#ff9020); F444W 4.44 µm — red (#ff2020)
@@ -100,7 +100,7 @@ Published on the platforms as two separate images — left half of field W3-JWST
 - **Config:** [configs/w3_2/showcase.yaml](../configs/w3_2/showcase.yaml), tag [`phase-6`](https://github.com/kriden187-cloud/skyforge/tree/phase-6), accepted 2026-10-22
 - **Final pixel hash (sha256):** `6cfce60e995bc5fbef7e12c89d1e8c194c360cd3f1aa65e7d9c996e7007d8a11`
 - **What is shown:** Eight NIRCam filters (F140M, F182M, F210M and five long-wavelength), both detector modules with the real gap between them; wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks; short-wave detector gaps filled from the neighbouring short-wave filter.
-- **Limitations:** No empty sky in the field: the reference is the faintest nebula, sky at 18 instead of 16, the absolute level is nominal; short-wave detector-gap strips (13% of a module) have ×1.7 colour noise, visible at 3×; about a dozen 4″ squares where gaps cross (0.2% of the area) are filled from F300M and differ in tone; dotted seams along the strip edges come from the source i2d; short-wave 1/f stripes visible on the sky at 5×.
+- **Limitations:** Short-wave detector gaps (about 3.5″, 13% of a module) are filled by substituting the neighbouring filter — grain is visible at normal viewing; the program's dither is about 1″ against a 3.5″ gap, so a rebuild from the individual exposures (level 2) does not close the gaps; gap-free frames are published separately as fragments A2, A4, B3. About a dozen 4″ squares where gaps cross (0.2% of the area) are filled from F300M and differ in tone; dotted seams along the strip edges come from the source i2d. No empty sky in the field: the reference is the faintest nebula, sky at 18 instead of 16, the absolute level is nominal; short-wave 1/f stripes visible on the sky at 5×.
 - **Note:** Field W3-JWST-2 of program 5437 (frame centre RA 36.80°, Dec +62.00°), in the W3 complex between IC 1795 and W3(OH). Data public since 2025-10-30. No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons, Flickr; Reddit, AstroBin and X not checked). The neighbouring field W3-JWST-1A of the same program was processed by Thomas Carpentier (Flickr, 2025-10-13).
 - **How to get the same file:**
 

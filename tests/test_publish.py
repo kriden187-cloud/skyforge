@@ -257,7 +257,7 @@ def test_publish_part_is_exact_crop_and_repeatable(tmp_path, monkeypatch):
     f = _sh_facts(slug="w3_2", pi="Best, William", program="5437", tag="phase-6", config="configs/w3_2/showcase.yaml",
                   filters=[("F140M", 1.40, "#6030ff"), ("F444W", 4.44, "#ff2020")])
     cfg = Config(target="W3", filters=["F140M", "F444W"])
-    parts = pub.objects["w3_2"].parts
+    parts = [pt for pt in pub.objects["w3_2"].parts if pt.region is not None]
     hashes = []
     for run in ("a", "b"):
         stem = tmp_path / run / "w3_2_showcase"
@@ -277,3 +277,73 @@ def test_publish_part_is_exact_crop_and_repeatable(tmp_path, monkeypatch):
     assert hashes[:2] == hashes[2:]                                      # повтор — те же файлы
     a_commons = (tmp_path / "a" / "w3_2_showcase_A_commons.txt").read_text(encoding="utf-8")
     assert "module B bright cloud" in a_commons and "8 filters (Krivosheev).png|full field" in a_commons
+    assert "fragment" not in a_commons                                   # фрагменты — своя группа
+
+
+def test_publish_fragment_rect_is_exact_crop(tmp_path):
+    """Фаза 6, шаг 3: фрагмент между щелями — прямоугольник rect принятого PNG без изменения пикселей; повтор — те же
+    файлы; Commons other versions — другие фрагменты и диптих, без половин A/B; ограничение фрагмента в подписи."""
+    import json
+
+    import numpy as np
+    import pytest
+    from PIL import Image
+
+    import skyforge.publish as P
+    from skyforge.config import Config
+    from skyforge.log import SkyforgeError
+    from skyforge.paths import Paths
+    from skyforge.publish import load_publish, pixels_sha256
+
+    pub = load_publish(ROOT / "configs" / "publish.yaml")
+    parts = pub.objects["w3_2"].parts
+    frags = [pt for pt in parts if pt.rect is not None]
+    assert [pt.name for pt in frags] == ["A2", "A4", "B3"]
+    H, W = 1682, max(pt.rect[3] for pt in frags)
+    rng = np.random.default_rng(11)
+    arr = rng.integers(0, 256, (H, W, 4), dtype=np.uint8)
+    arr[..., 3] = 255
+    t16 = arr.astype(np.uint16) * 257
+    f = _sh_facts(slug="w3_2", pi="Best, William", program="5437", tag="phase-6", config="configs/w3_2/showcase.yaml",
+                  filters=[("F140M", 1.40, "#6030ff"), ("F444W", 4.44, "#ff2020")])
+    cfg = Config(target="W3", filters=["F140M", "F444W"])
+    hashes = []
+    for run in ("a", "b"):
+        stem = tmp_path / run / "w3_2_showcase"
+        stem.parent.mkdir()
+        for pt in frags:
+            files, sha = P.publish_part(Paths(tmp_path), pub, cfg, f, pt, parts, arr, t16, stem)
+            r0, r1, c0, c1 = pt.rect
+            crop = arr[r0:r1, c0:c1]
+            got = np.asarray(Image.open(stem.with_name(f"{stem.name}_{pt.name}_master.png")))
+            assert np.array_equal(got, crop), pt.name
+            assert sha == pixels_sha256(Image.fromarray(np.ascontiguousarray(crop)))
+            man = json.loads(stem.with_name(f"{stem.name}_{pt.name}_publish.json").read_text(encoding="utf-8"))
+            assert man["region"] == pt.rect and man["slice_rows_cols"] == pt.rect
+            hashes.append(man["files"])
+            cap = stem.with_name(f"{stem.name}_{pt.name}_caption.md").read_text(encoding="utf-8")
+            assert pt.label_ru in cap and "полное поле с заполненными щелями — мастер диптиха" in cap
+            assert "800 px" in cap and "13% площади модуля" not in cap         # ограничение фрагмента, не диптиха
+            commons = stem.with_name(f"{stem.name}_{pt.name}_commons.txt").read_text(encoding="utf-8")
+            others = [o.commons_filename for o in frags if o is not pt]
+            assert all(o in commons for o in others) and "8 filters (Krivosheev).png|full field" in commons
+            assert "module A dust lanes" not in commons and "module B bright cloud" not in commons
+            flickr = stem.with_name(f"{stem.name}_{pt.name}_flickr.txt").read_text(encoding="utf-8")
+            assert pt.flickr_title in flickr and "the full field with the gaps filled is published separately" in flickr
+    assert hashes[:3] == hashes[3:]
+    with pytest.raises(SkyforgeError, match="за краем"):
+        P.publish_part(Paths(tmp_path), pub, cfg, f, frags[-1], parts, arr[:, :3000], t16[:, :3000], stem)
+
+
+def test_part_spec_needs_region_or_rect():
+    import pytest
+    from pydantic import ValidationError
+
+    from skyforge.publish import PartSpec
+
+    base = {"name": "X", "style": "showcase", "label_ru": "x", "label_en": "x"}
+    assert PartSpec(**base, region=0).rect is None
+    assert PartSpec(**base, rect=[0, 10, 0, 20]).region is None
+    for bad in ({}, {"region": 0, "rect": [0, 10, 0, 20]}, {"rect": [10, 0, 0, 20]}, {"rect": [0, 10, 0]}):
+        with pytest.raises(ValidationError):
+            PartSpec(**base, **bad)

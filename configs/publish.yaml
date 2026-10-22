@@ -193,8 +193,9 @@ objects:
             My own processing of the public data, fully reproducible from a YAML config: every step and every number is in
             the open-source pipeline at {repo_line}. The white point of each filter is set on the nebula with the stars
             excluded, the sky level on the darkest measured blocks; nothing is painted by hand. The gaps between the
-            short-wave detectors are filled with the neighbouring short-wave filter scaled by a smooth ratio map (slightly
-            noisier strips at 3× zoom).
+            short-wave detectors are filled with the neighbouring short-wave filter scaled by a smooth ratio map (at normal
+            viewing the filled strips show as grain: the program's dither of about 1″ does not cover the 3.5″ gaps;
+            fragments between the gaps are published separately).
           - >-
             No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons,
             Flickr; Reddit, AstroBin and X could not be checked). The neighbouring field W3-JWST-1A of the same program was
@@ -209,7 +210,7 @@ objects:
             the nebula with stars excluded, sky level on the darkest measured blocks, short-wave detector gaps filled from
             the neighbouring short-wave filter; nothing painted by hand.
           - >-
-            **Limits:** filled detector-gap strips are slightly noisier at 3×; faint 1/f striping of the short-wave
+            **Limits:** filled detector-gap strips show as grain at normal viewing (the program's 1″ dither does not cover the 3.5″ gaps); faint 1/f striping of the short-wave
             filters at 5×.
       - name: B
         region: 1
@@ -232,8 +233,9 @@ objects:
             My own processing of the public data, fully reproducible from a YAML config: every step and every number is in
             the open-source pipeline at {repo_line}. The white point of each filter is set on the nebula with the stars
             excluded, the sky level on the darkest measured blocks; nothing is painted by hand. The gaps between the
-            short-wave detectors are filled with the neighbouring short-wave filter scaled by a smooth ratio map (slightly
-            noisier strips at 3× zoom).
+            short-wave detectors are filled with the neighbouring short-wave filter scaled by a smooth ratio map (at normal
+            viewing the filled strips show as grain: the program's dither of about 1″ does not cover the 3.5″ gaps;
+            fragments between the gaps are published separately).
           - >-
             No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons,
             Flickr; Reddit, AstroBin and X could not be checked). The neighbouring field W3-JWST-1A of the same program was
@@ -249,7 +251,111 @@ objects:
             the neighbouring short-wave filter; nothing painted by hand.
           - >-
             **Limits:** no empty sky in the field (the sky level sits on the faintest nebula); filled detector-gap strips
-            are slightly noisier at 3×; faint 1/f striping of the short-wave filters at 5× on dark sky.
+            show as grain at normal viewing (the program's 1″ dither does not cover the 3.5″ gaps); faint 1/f striping of the short-wave filters at 5× on dark sky.
+      # шаг 3 фазы 6 (решение владельца 2026-10-22): кадры без щелей коротких фильтров — прямоугольники из
+      # out/w3_2/проверка_6/шаг_3/кадры_без_щелей.json (scripts/gapfree_frames_w3.py, отступ 8 px от щели); пиксели как есть
+      - name: A2
+        rect: [49, 623, 1046, 1851]
+        group: fragments
+        style: showcase
+        label_ru: "фрагмент поля W3-JWST-2 (около 50×36″) между щелями детекторов NIRCam, модуль A — яркая звезда и пылевые прожилки"
+        label_en: "fragment of field W3-JWST-2 (about 50×36″) between NIRCam detector gaps, module A — bright star and dust lanes"
+        full_field_ru: &w3_full_ru "полное поле с заполненными щелями"
+        full_field_en: &w3_full_en "the full field with the gaps filled"
+        flickr_title: "W3 (Westerhout 3) — bright star and dust lanes, JWST NIRCam"
+        reddit_title: "W3 (Westerhout 3): a bright star and dust lanes — my processing of public JWST NIRCam data [OC]"
+        commons_filename: "W3 Westerhout 3 JWST NIRCam fragment A2 bright star and dust lanes (Krivosheev).png"
+        shown_ru: &w3_frag_shown_ru_a "Фрагмент поля между щелями детекторов NIRCam (модуль A): восемь фильтров (F140M, F182M, F210M и пять длинноволновых), щелей детекторов в кадре нет, подстановки соседнего фильтра нет; палитра по длине волны с тёплым сдвигом; белая точка по туманности без звёзд в каждом фильтре; опорное небо по самым тёмным блокам."
+        shown_en: &w3_frag_shown_en_a "Fragment of the field between NIRCam detector gaps (module A): eight filters (F140M, F182M, F210M and five long-wavelength), no detector gaps in the frame, nothing substituted from a neighbouring filter; wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks."
+        limits_ru: &w3_frag_limits_ru "Фрагмент около 800 px по длинной стороне — вдвое меньше обычного размера. Пустого неба в поле нет: опора по слабейшей туманности, абсолютный уровень условный; полосы 1/f коротких фильтров видны на небе при ×5."
+        limits_en: &w3_frag_limits_en "A fragment of about 800 px on the long side — half the usual size. No empty sky in the field: the reference is the faintest nebula, the absolute level is nominal; short-wave 1/f stripes visible on the sky at 5×."
+        flickr_paragraphs:
+          - &w3_frag_intro >-
+            The W3 star-forming complex in Cassiopeia, imaged by the James Webb Space Telescope (NIRCam): field
+            W3-JWST-2 of program {program}, PI {pi}; observed {obs}, data public in MAST since {release}.
+          - >-
+            Eight filters, colours ordered by wavelength (shorter = bluer): {filters}. A bright star with long
+            diffraction spikes sits among dark dust lanes; a small dark globule near the top edge, ochre gas around.
+          - &w3_frag_how >-
+            My own processing of the public data, fully reproducible from a YAML config: every step and every number is in
+            the open-source pipeline at {repo_line}. The white point of each filter is set on the nebula with the stars
+            excluded, the sky level on the darkest measured blocks; nothing is painted by hand. This fragment lies between
+            the short-wave detector gaps: no gap fill, nothing substituted from a neighbouring filter.
+          - &w3_frag_earlier >-
+            No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons,
+            Flickr; Reddit, AstroBin and X could not be checked). The neighbouring field W3-JWST-1A of the same program was
+            processed by Thomas Carpentier (Flickr, 2025-10-13).
+        reddit_paragraphs:
+          - >-
+            **What:** the W3 star-forming complex in Cassiopeia, JWST NIRCam field W3-JWST-2 of program {program}
+            (PI {pi}), observed {obs}, public in MAST since {release}. A bright star with diffraction spikes among dark
+            dust lanes.
+          - &w3_frag_filters "**Filters, ordered by wavelength (shorter = bluer):** {filters}."
+          - &w3_frag_reddit_how >-
+            **How:** my own open-source pipeline, every step in a YAML config: {repo_line}. White point of each filter on
+            the nebula with stars excluded, sky level on the darkest measured blocks; the fragment lies between the
+            detector gaps, so there is no gap fill; nothing painted by hand.
+          - &w3_frag_reddit_limits >-
+            **Limits:** a fragment of about 800 px on the long side; no empty sky in the field (the sky level sits on the
+            faintest nebula); faint 1/f striping of the short-wave filters at 5× on dark sky.
+      - name: A4
+        rect: [1097, 1682, 1048, 1851]
+        group: fragments
+        style: showcase
+        label_ru: "фрагмент поля W3-JWST-2 (около 50×36″) между щелями детекторов NIRCam, модуль A — тёмное пылевое облако"
+        label_en: "fragment of field W3-JWST-2 (about 50×36″) between NIRCam detector gaps, module A — dark dust cloud"
+        full_field_ru: *w3_full_ru
+        full_field_en: *w3_full_en
+        flickr_title: "W3 (Westerhout 3) — dark dust cloud, JWST NIRCam"
+        reddit_title: "W3 (Westerhout 3): a dark dust cloud — my processing of public JWST NIRCam data [OC]"
+        commons_filename: "W3 Westerhout 3 JWST NIRCam fragment A4 dark dust cloud (Krivosheev).png"
+        shown_ru: *w3_frag_shown_ru_a
+        shown_en: *w3_frag_shown_en_a
+        limits_ru: *w3_frag_limits_ru
+        limits_en: *w3_frag_limits_en
+        flickr_paragraphs:
+          - *w3_frag_intro
+          - >-
+            Eight filters, colours ordered by wavelength (shorter = bluer): {filters}. A large dark dust cloud with a
+            bright rim, thin filaments below it, violet gas and stars on the right.
+          - *w3_frag_how
+          - *w3_frag_earlier
+        reddit_paragraphs:
+          - >-
+            **What:** the W3 star-forming complex in Cassiopeia, JWST NIRCam field W3-JWST-2 of program {program}
+            (PI {pi}), observed {obs}, public in MAST since {release}. A large dark dust cloud with a bright rim.
+          - *w3_frag_filters
+          - *w3_frag_reddit_how
+          - *w3_frag_reddit_limits
+      - name: B3
+        rect: [1057, 1636, 2791, 3583]
+        group: fragments
+        style: showcase
+        label_ru: "фрагмент поля W3-JWST-2 (около 50×36″) между щелями детекторов NIRCam, модуль B — яркое облако"
+        label_en: "fragment of field W3-JWST-2 (about 50×36″) between NIRCam detector gaps, module B — bright cloud"
+        full_field_ru: *w3_full_ru
+        full_field_en: *w3_full_en
+        flickr_title: "W3 (Westerhout 3) — bright cloud, JWST NIRCam"
+        reddit_title: "W3 (Westerhout 3): a bright cloud — my processing of public JWST NIRCam data [OC]"
+        commons_filename: "W3 Westerhout 3 JWST NIRCam fragment B3 bright cloud (Krivosheev).png"
+        shown_ru: "Фрагмент поля между щелями детекторов NIRCam (модуль B): восемь фильтров (F140M, F182M, F210M и пять длинноволновых), щелей детекторов в кадре нет, подстановки соседнего фильтра нет; палитра по длине волны с тёплым сдвигом; белая точка по туманности без звёзд в каждом фильтре; опорное небо по самым тёмным блокам."
+        shown_en: "Fragment of the field between NIRCam detector gaps (module B): eight filters (F140M, F182M, F210M and five long-wavelength), no detector gaps in the frame, nothing substituted from a neighbouring filter; wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks."
+        limits_ru: *w3_frag_limits_ru
+        limits_en: *w3_frag_limits_en
+        flickr_paragraphs:
+          - *w3_frag_intro
+          - >-
+            Eight filters, colours ordered by wavelength (shorter = bluer): {filters}. A bright cloud with fine streaks;
+            a bright star with diffraction spikes at the left edge.
+          - *w3_frag_how
+          - *w3_frag_earlier
+        reddit_paragraphs:
+          - >-
+            **What:** the W3 star-forming complex in Cassiopeia, JWST NIRCam field W3-JWST-2 of program {program}
+            (PI {pi}), observed {obs}, public in MAST since {release}. A bright cloud with fine streaks.
+          - *w3_frag_filters
+          - *w3_frag_reddit_how
+          - *w3_frag_reddit_limits
     flickr:
       style: showcase
       file: web
@@ -268,8 +374,9 @@ objects:
           My own processing of the public data, fully reproducible from a YAML config: every step and every number is in
           the open-source pipeline at {repo_line}. The white point of each filter is set on the nebula with the stars
           excluded, the sky level on the darkest measured blocks; nothing is painted by hand. The gaps between the
-          short-wave detectors are filled with the neighbouring short-wave filter scaled by a smooth ratio map (slightly
-          noisier strips at 3× zoom).
+          short-wave detectors are filled with the neighbouring short-wave filter scaled by a smooth ratio map (at normal
+          viewing the filled strips show as grain: the program's dither of about 1″ does not cover the 3.5″ gaps;
+          fragments between the gaps are published separately).
         - >-
           No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons,
           Flickr; Reddit, AstroBin and X could not be checked). The neighbouring field W3-JWST-1A of the same program was
@@ -294,7 +401,7 @@ objects:
           the neighbouring short-wave filter; nothing painted by hand.
         - >-
           **Limits:** no empty sky in the field (the sky level sits on the faintest nebula); filled detector-gap strips
-          are slightly noisier at 3×; faint 1/f striping of the short-wave filters at 5× on dark sky.
+          show as grain at normal viewing (the program's 1″ dither does not cover the 3.5″ gaps); faint 1/f striping of the short-wave filters at 5× on dark sky.
     published: []
     commons:
       style: showcase
@@ -308,5 +415,5 @@ objects:
       showcase:
         shown_ru: "Восемь фильтров NIRCam (F140M, F182M, F210M и пять длинноволновых), два модуля с честным промежутком; палитра по длине волны с тёплым сдвигом; белая точка по туманности без звёзд в каждом фильтре; опорное небо по самым тёмным блокам; щели детекторов коротких фильтров заполнены соседним коротким фильтром."
         shown_en: "Eight NIRCam filters (F140M, F182M, F210M and five long-wavelength), both detector modules with the real gap between them; wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks; short-wave detector gaps filled from the neighbouring short-wave filter."
-        limits_ru: "Пустого неба в поле нет: опора по слабейшей туманности, небо 18 вместо 16, абсолютный уровень условный; в полосах щелей коротких фильтров (13% площади модуля) цветовой шум ×1,7 — виден при ×3; около дюжины квадратов 4″ на пересечениях щелей (0,2% площади) заполнены F300M и отличаются по тону; пунктирные швы по краям полос — из исходных i2d; полосы 1/f коротких фильтров видны на небе при ×5."
-        limits_en: "No empty sky in the field: the reference is the faintest nebula, sky at 18 instead of 16, the absolute level is nominal; short-wave detector-gap strips (13% of a module) have ×1.7 colour noise, visible at 3×; about a dozen 4″ squares where gaps cross (0.2% of the area) are filled from F300M and differ in tone; dotted seams along the strip edges come from the source i2d; short-wave 1/f stripes visible on the sky at 5×."
+        limits_ru: "Щели детекторов коротких фильтров (около 3,5″, 13% площади модуля) заполнены подстановкой соседнего фильтра — при обычном просмотре видно зерно; дизеринг программы около 1″ при щели 3,5″, поэтому сборка из отдельных экспозиций (уровень 2) щели не закрывает; кадры без щелей выложены отдельно — фрагменты A2, A4, B3. Около дюжины квадратов 4″ на пересечениях щелей (0,2% площади) заполнены F300M и отличаются по тону; пунктирные швы по краям полос — из исходных i2d. Пустого неба в поле нет: опора по слабейшей туманности, небо 18 вместо 16, абсолютный уровень условный; полосы 1/f коротких фильтров видны на небе при ×5."
+        limits_en: "Short-wave detector gaps (about 3.5″, 13% of a module) are filled by substituting the neighbouring filter — grain is visible at normal viewing; the program's dither is about 1″ against a 3.5″ gap, so a rebuild from the individual exposures (level 2) does not close the gaps; gap-free frames are published separately as fragments A2, A4, B3. About a dozen 4″ squares where gaps cross (0.2% of the area) are filled from F300M and differ in tone; dotted seams along the strip edges come from the source i2d. No empty sky in the field: the reference is the faintest nebula, sky at 18 instead of 16, the absolute level is nominal; short-wave 1/f stripes visible on the sky at 5×."
