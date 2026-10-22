@@ -471,8 +471,9 @@ objects:
           the nebula with stars excluded, sky level on the darkest measured blocks; nothing painted by hand.
         - >-
           **Limits:** the frame is the rectangle covered by all four filters (about half of the stepped mosaic); no
-          empty sky in the field; next to the brightest protostar and along the outflow, pixels flagged in the archive
-          mosaic leave a speckled patch about 5″ across, visible at 100%.
+          empty sky in the field; areas of pixels flagged in the archive mosaic (about 0.1% of the frame, mapped in
+          the repository: out/omc3n/проверка_8/финал/38_карта_областей.png) are filled smoothly from their edges; rare isolated dots next to the protostar and
+          the outflow head (saturated knots filled like star cores, dots around) remain at 3×.
     published:
       - { style: showcase, platform: Reddit, note: "ждёт аккаунта" }
     commons:
@@ -488,5 +489,5 @@ objects:
       showcase:
         shown_ru: "Четыре фильтра NIRCam (F150W, F200W, F356W, F480M), палитра по длине волны; белая точка по туманности без звёзд в каждом фильтре; опорное небо по самым тёмным блокам, небо 16."
         shown_en: "Four NIRCam filters (F150W, F200W, F356W, F480M), wavelength-ordered palette; white point on the nebula without stars in each filter; sky reference from the darkest blocks, sky level 16."
-        limits_ru: "Кадр — прямоугольник, где на краях есть все четыре фильтра: 52,6% поля мозаики, ступенчатые края срезаны. Пустого неба в поле нет: опора — самые тёмные блоки (пыль), абсолютный уровень условный. У самой яркой протозвезды и по краю выброса — россыпь отбракованных пикселей мозаики i2d (F200W, меньше F150W и F356W): при 100% пёстрый участок около 5″ с прямыми краями и цветная рябь. Слабые полосы 1/f коротких фильтров видны в тёмной пыли при ×5."
-        limits_en: "The frame is the rectangle with all four filters on its edges: 52.6% of the mosaic, the stepped edges are cut. No empty sky in the field: the reference is the darkest blocks (dust), the absolute level is nominal. Next to the brightest protostar and along the outflow edge, pixels flagged in the i2d mosaic (F200W, fewer in F150W and F356W) leave a speckled patch about 5″ across with straight edges and colour ripple, visible at 100%. Faint short-wave 1/f stripes visible in the dark dust at 5×."
+        limits_ru: "Кадр — прямоугольник, где на краях есть все четыре фильтра: 52,6% поля мозаики, ступенчатые края срезаны. Пустого неба в поле нет: опора — самые тёмные блоки (пыль), абсолютный уровень условный. Области отбракованных пикселей мозаики i2d — у протозвезды, у выброса и под ядром одной яркой звезды вверху кадра (F200W, F356W; около 0,1% кадра) — заполнены гладко от края; карта — в репозитории, out/omc3n/проверка_8/финал/38_карта_областей.png. Остаются: редкие одиночные точки у протозвезды (при ×3) и голова выброса — насыщенные узлы F200W заполнены по ядру, как ядра звёзд, вокруг точки. Слабые полосы 1/f коротких фильтров видны в тёмной пыли при ×5."
+        limits_en: "The frame is the rectangle with all four filters on its edges: 52.6% of the mosaic, the stepped edges are cut. No empty sky in the field: the reference is the darkest blocks (dust), the absolute level is nominal. Areas of pixels flagged in the i2d mosaic — next to the protostar, along the outflow and below the core of one bright star at the top of the frame (F200W, F356W; about 0.1% of the frame) — are filled smoothly from their edges; map in the repository, out/omc3n/проверка_8/финал/38_карта_областей.png. Remaining: rare isolated dots next to the protostar (at 3×) and the outflow head, where saturated F200W knots are filled like star cores with dots around them. Faint short-wave 1/f stripes visible in the dark dust at 5×."
