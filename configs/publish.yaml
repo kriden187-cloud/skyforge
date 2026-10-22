@@ -482,8 +482,10 @@ objects:
       categories: [Orion Molecular Cloud Complex, Images by NIRCam, James Webb Space Telescope images of nebulae,
                    Star-forming regions]
     notes_ru:
+      - "Статус (2026-10-22): в работе — выкладка отменена до решения по полосам коротких фильтров (F150W, F200W); комплект out/publish/omc3n не использовать."
       - "Поле OMC3-N программы 7433 (центр RA 83,85°, Dec −5,04°) — северная часть облака OMC-3 в Орионе, к северу от туманности Ориона. Данные открыты 2026-09-09. Более ранних публичных цветных обработок этих данных не найдено (поиск 2026-10-22: поиск в сети, Wikimedia Commons, Flickr; Reddit, AstroBin и X не проверялись). Соседние части облака снимала программа 5804 (руководитель Tom Megeath): обработки Мелины Тевено (Wikimedia Commons, 2025-02-20) и Джуди Шмидт (Flickr, 2025-04-07); «картинка месяца» ESA/Webb июня 2026 — OMC-2."
     notes_en:
+      - "Status (2026-10-22): work in progress — release on hold pending a decision on short-wave (F150W, F200W) striping; do not use the out/publish/omc3n set."
       - "Field OMC3-N of program 7433 (centre RA 83.85°, Dec −5.04°) — the northern part of the OMC-3 cloud in Orion, north of the Orion Nebula. Data public since 2026-09-09. No earlier public colour processing of these data was found (search of 2026-10-22: web, Wikimedia Commons, Flickr; Reddit, AstroBin and X not checked). Neighbouring parts of the cloud were imaged by program 5804 (PI Tom Megeath): processings by Melina Thévenot (Wikimedia Commons, 2025-02-20) and Judy Schmidt (Flickr, 2025-04-07); the ESA/Webb Picture of the Month of June 2026 shows OMC-2."
     styles:
       showcase:
