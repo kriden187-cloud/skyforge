@@ -138,6 +138,7 @@ class PublishedEntry(_Strict):
     date: str = ""
     license: str = ""
     note: str = ""
+    part: str | None = None                # часть кадра (objects.<slug>.parts.name); None — полный кадр
 
 
 class ObjectPub(_Strict):
@@ -183,6 +184,11 @@ def load_publish(path: Path) -> PublishConfig:
             if e.get("date") is not None:
                 e["date"] = str(e["date"])
     pub = PublishConfig.model_validate(data)
+    for slug, o in pub.objects.items():
+        names = {pt.name for pt in o.parts}
+        bad = [e.part for e in o.published if e.part is not None and e.part not in names]
+        if bad:
+            raise SkyforgeError(f"{slug}: в published части {bad}, которых нет в parts ({sorted(names)})")
     if pub.watermark:
         raise SkyforgeError("publish.watermark: подпись на картинке не реализована — решение владельца: только текст и метаданные")
     return pub
@@ -400,7 +406,8 @@ def commons_wikitext(f: Facts, pub: PublishConfig, part: PartSpec | None = None,
     data = pub.credit[f.mission]
     other = " ".join([f"* [[:File:{fn}|{label}]]" for fn, label in siblings]
                      + [f"* [{e.url} {e.platform} ({e.date})]" for e in po.published
-                        if e.style == f.style and e.url and e.platform != "Wikimedia Commons"])
+                        if e.style == f.style and e.url and e.platform != "Wikimedia Commons"
+                        and e.part == (part.name if part is not None else None)])
     filename = part.commons_filename if part is not None and part.commons_filename else co.filename
     lines = [
         f"<!-- Имя файла при загрузке: {filename} — текст ниже вставляется целиком как описание страницы файла -->",
@@ -477,7 +484,8 @@ def reddit_text(f: Facts, pub: PublishConfig, stem: str, part: PartSpec | None =
     paras[1:1] = part_para
     paras.append(f"Credit: {pub.credit[f.mission]}; processing: {f.author}. Processing licensed {pub.license} "
                  f"({pub.license_url}).")
-    links = [e for e in pub.objects[f.slug].published if e.style == f.style and e.url]
+    links = [e for e in pub.objects[f.slug].published
+             if e.style == f.style and e.url and e.part == (part.name if part is not None else None)]
     if links:
         paras.append("Full resolution: " + " · ".join(f"[{e.platform}]({e.url})" for e in links))
     lines = [f"FILE TO UPLOAD: {stem}_{rs.file}.{ext}",
@@ -494,8 +502,14 @@ def published_md(f: Facts, pub: PublishConfig) -> str | None:
     rows = [e for e in pub.objects[f.slug].published if e.style == f.style]
     if not rows:
         return None
-    out = [f"# {f.target} — {f.telescope} {f.instrument}, {f.style} — где опубликовано", "", "| Площадка | Ссылка | Дата | Лицензия |", "|---|---|---|---|"]
-    out += [f"| {e.platform} | {e.url or f'({e.note})'} | {e.date} | {e.license} |" for e in rows]
+    out = [f"# {f.target} — {f.telescope} {f.instrument}, {f.style} — где опубликовано", ""]
+    if any(e.part for e in rows):        # части кадра — своя колонка
+        out += ["| Часть | Площадка | Ссылка | Дата | Лицензия |", "|---|---|---|---|---|"]
+        out += [f"| {e.part or 'полный кадр'} | {e.platform} | {e.url or f'({e.note})'} | {e.date} | {e.license} |"
+                for e in rows]
+    else:
+        out += ["| Площадка | Ссылка | Дата | Лицензия |", "|---|---|---|---|"]
+        out += [f"| {e.platform} | {e.url or f'({e.note})'} | {e.date} | {e.license} |" for e in rows]
     return "\n".join(out) + "\n"
 
 
@@ -903,7 +917,7 @@ def build_gallery(paths: Paths, pub: PublishConfig) -> Path:
                                 f"- **{t['shown']}:** {shown}", f"- **{t['limits']}:** {limits}"]
                 parts[lang] += [f"- **{t['note']}:** {n}" for n in notes]
                 if pubd:
-                    parts[lang].append(f"- **{t['published']}:** " + "; ".join(f"[{e.platform}]({e.url}) ({e.date})" for e in pubd))
+                    parts[lang].append(f"- **{t['published']}:** " + "; ".join(f"[{e.platform}{', ' + e.part if e.part else ''}]({e.url}) ({e.date})" for e in pubd))
                 parts[lang] += [f"- **{t['howto']}:**", "", "  ```", f"  git checkout {f.tag}",
                                 f"  skyforge run {name} -s {st} --bin {f.bin}        {t['run_note']}",
                                 f"  skyforge publish {name} -s {st}", "  ```", ""]

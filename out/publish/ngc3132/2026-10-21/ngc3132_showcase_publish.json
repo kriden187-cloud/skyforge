@@ -7,7 +7,7 @@
     "ngc3132_showcase_master.png": "739349327af34e9f96653182ebfac12fcc4b62e8740672caff103fed75e60f53",
     "ngc3132_showcase_master.tif": "f1ccbd17f5538665f385ff444ad60c29b7819468e80c6039b3980f3a0e2412db",
     "ngc3132_showcase_preview.jpg": "85d985c71c3eef073dbf92274dcd701f47ea1c0359a1762e8cc179ca846bbaf9",
-    "ngc3132_showcase_published.md": "d83a725b9456b31708f943253ac08170f0d877ca2505043df2fb13db8adab0a4",
+    "ngc3132_showcase_published.md": "40a67a9fb87e222877a1a240e7aa8b1621a1342b7fb6d2f3716a9cfdba0d40ba",
     "ngc3132_showcase_social.jpg": "0aa1f2c690f11617a09e5b08c78f366b355f37b2a58e4f52ba6d366ebf164cc1",
     "ngc3132_showcase_web.jpg": "2b011bfdd50251ecf1fe478b409049380c1c573c1019277bc072c3a59653ad10"
   },
@@ -27,5 +27,5 @@
     "tag": "phase-3k",
     "title": "NGC 3132 — JWST NIRCam (showcase)"
   },
-  "tiff_from": "out/ngc3132/2026-10-21_15-04-36_styles/showcase/ngc3132_showcase.tif"
+  "tiff_from": "out/ngc3132/2026-10-22_01-20-17_showcase/ngc3132_showcase.tif"
 }

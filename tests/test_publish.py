@@ -167,6 +167,36 @@ def test_flickr_text_and_published_registry():
     assert "|other versions=* [https://www.flickr.com/photos/205062605@N07/55603618036/ Flickr (2026-10-21)]" in commons_wikitext(f, pub)
 
 
+def test_published_registry_by_part(tmp_path):
+    """Реестр с частями кадра (W3-2, половины A/B): тексты части берут только свои ссылки, тексты полного кадра — только
+    записи без части; таблица реестра — с колонкой части; часть, которой нет в parts, — ошибка загрузки."""
+    import pytest
+
+    from skyforge.log import SkyforgeError
+    from skyforge.publish import commons_wikitext, load_publish, published_md, reddit_text
+
+    pub = load_publish(ROOT / "configs" / "publish.yaml")
+    parts = {pt.name: pt for pt in pub.objects["w3_2"].parts}
+    f = _sh_facts(slug="w3_2", pi="Best, William", program="5437", tag="phase-6", config="configs/w3_2/showcase.yaml",
+                  filters=[("F140M", 1.40, "#6030ff"), ("F444W", 4.44, "#ff2020")])
+    fa, fb = "55605113763", "55605398725"
+    ra = reddit_text(f, pub, "w3_2_showcase_A", parts["A"])
+    assert fa in ra and fb not in ra and "File:W3_Westerhout_3_JWST_NIRCam_module_A" in ra
+    full = reddit_text(f, pub, "w3_2_showcase")
+    assert "Full resolution" not in full                                 # полный кадр нигде не выложен
+    ca = commons_wikitext(f, pub, parts["A"], (("x.png", "x"),))
+    assert f"{fa}/ Flickr (2026-10-22)]" in ca and fb not in ca
+    assert fa not in commons_wikitext(f, pub, parts["A2"]) and fa not in commons_wikitext(f, pub)
+    md = published_md(f, pub)
+    assert "| Часть | Площадка |" in md and f"| A | Flickr | https://www.flickr.com/photos/205062605@N07/{fa}/ |" in md
+    assert "| полный кадр | Reddit | (ждёт аккаунта) |" in md
+    bad = (ROOT / "configs" / "publish.yaml").read_text(encoding="utf-8").replace("part: B, platform: Flickr",
+                                                                                "part: Z, platform: Flickr")
+    (tmp_path / "p.yaml").write_text(bad, encoding="utf-8")
+    with pytest.raises(SkyforgeError, match="Z"):
+        load_publish(tmp_path / "p.yaml")
+
+
 def test_owner_decisions_in_publish_yaml():
     """Решения владельца 2026-10-21: CC BY-SA 4.0, автор Denis Krivosheev, без водяного знака; Hubble — JPEG 98."""
     from skyforge.publish import load_publish

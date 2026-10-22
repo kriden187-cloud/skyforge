@@ -60,7 +60,8 @@ objects:
     published:
       - { style: showcase, platform: Flickr, url: "https://www.flickr.com/photos/205062605@N07/55603640956/",
           date: 2026-10-21, license: CC BY-SA 4.0 }
-      - { style: showcase, platform: Wikimedia Commons, note: "ждёт" }
+      - { style: showcase, platform: Wikimedia Commons, date: 2026-10-21, license: CC BY-SA 4.0,
+          url: "https://commons.wikimedia.org/wiki/File:NGC_3132_JWST_NIRCam_(Krivosheev).png" }
     commons:
       style: showcase
       filename: "NGC 3132 JWST NIRCam (Krivosheev).png"
@@ -402,7 +403,16 @@ objects:
         - >-
           **Limits:** no empty sky in the field (the sky level sits on the faintest nebula); filled detector-gap strips
           show as grain at normal viewing (the program's 1″ dither does not cover the 3.5″ gaps); faint 1/f striping of the short-wave filters at 5× on dark sky.
-    published: []
+    published:               # проверено 2026-10-22: заголовок и лицензия — со страниц снимков Flickr, файлы — API Commons
+      - { style: showcase, part: A, platform: Wikimedia Commons, date: 2026-10-22, license: CC BY-SA 4.0,
+          url: "https://commons.wikimedia.org/wiki/File:W3_Westerhout_3_JWST_NIRCam_module_A_dust_lanes_(Krivosheev).png" }
+      - { style: showcase, part: B, platform: Wikimedia Commons, date: 2026-10-22, license: CC BY-SA 4.0,
+          url: "https://commons.wikimedia.org/wiki/File:W3_Westerhout_3_JWST_NIRCam_module_B_bright_cloud_(Krivosheev).png" }
+      - { style: showcase, part: A, platform: Flickr, date: 2026-10-22, license: CC BY-SA 4.0,
+          url: "https://www.flickr.com/photos/205062605@N07/55605113763/" }
+      - { style: showcase, part: B, platform: Flickr, date: 2026-10-22, license: CC BY-SA 4.0,
+          url: "https://www.flickr.com/photos/205062605@N07/55605398725/" }
+      - { style: showcase, platform: Reddit, note: "ждёт аккаунта" }
     commons:
       style: showcase
       filename: "W3 Westerhout 3 JWST NIRCam 8 filters (Krivosheev).png"

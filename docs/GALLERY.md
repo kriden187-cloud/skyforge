@@ -36,7 +36,7 @@ not edited by hand. Русская версия: [GALLERY.ru.md](GALLERY.ru.md).
 - **What is shown:** Showcase in the spirit of the NASA release: sky pedestal and toe, sky polynomial tapered towards the nebula, shadows 2, saturation 1.2.
 - **Limitations:** Steps along exposure-count boundaries; three background details visible at ×2–×5; outer halo fainter than NASA's; one field star with a greenish core.
 - **Note:** Program ERO 2733 (Early Release Observations); official NIRCam image released 12 July 2022 (STScI 2022-033b, ESA/Webb weic2207b, “Southern Ring Nebula (NIRCam Image)”).
-- **Published:** [Flickr](https://www.flickr.com/photos/205062605@N07/55603640956/) (2026-10-21)
+- **Published:** [Flickr](https://www.flickr.com/photos/205062605@N07/55603640956/) (2026-10-21); [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:NGC_3132_JWST_NIRCam_(Krivosheev).png) (2026-10-21)
 - **How to get the same file:**
 
   ```
@@ -102,6 +102,7 @@ Published on the platforms as separate images — left half of field W3-JWST-2 �
 - **What is shown:** Eight NIRCam filters (F140M, F182M, F210M and five long-wavelength), both detector modules with the real gap between them; wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks; short-wave detector gaps filled from the neighbouring short-wave filter.
 - **Limitations:** Short-wave detector gaps (about 3.5″, 13% of a module) are filled by substituting the neighbouring filter — grain is visible at normal viewing; the program's dither is about 1″ against a 3.5″ gap, so a rebuild from the individual exposures (level 2) does not close the gaps; gap-free frames are published separately as fragments A2, A4, B3. About a dozen 4″ squares where gaps cross (0.2% of the area) are filled from F300M and differ in tone; dotted seams along the strip edges come from the source i2d. No empty sky in the field: the reference is the faintest nebula, sky at 18 instead of 16, the absolute level is nominal; short-wave 1/f stripes visible on the sky at 5×.
 - **Note:** Field W3-JWST-2 of program 5437 (frame centre RA 36.80°, Dec +62.00°), in the W3 complex between IC 1795 and W3(OH). Data public since 2025-10-30. No earlier public colour processing of this field was found (search of 2026-10-21: web, Wikimedia Commons, Flickr; Reddit, AstroBin and X not checked). The neighbouring field W3-JWST-1A of the same program was processed by Thomas Carpentier (Flickr, 2025-10-13).
+- **Published:** [Wikimedia Commons, A](https://commons.wikimedia.org/wiki/File:W3_Westerhout_3_JWST_NIRCam_module_A_dust_lanes_(Krivosheev).png) (2026-10-22); [Wikimedia Commons, B](https://commons.wikimedia.org/wiki/File:W3_Westerhout_3_JWST_NIRCam_module_B_bright_cloud_(Krivosheev).png) (2026-10-22); [Flickr, A](https://www.flickr.com/photos/205062605@N07/55605113763/) (2026-10-22); [Flickr, B](https://www.flickr.com/photos/205062605@N07/55605398725/) (2026-10-22)
 - **How to get the same file:**
 
   ```
