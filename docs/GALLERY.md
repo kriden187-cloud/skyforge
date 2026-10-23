@@ -130,3 +130,23 @@ Published on the platforms as separate images — left half of field W3-JWST-2 �
   skyforge run omc3n -s showcase --bin 1        # downloads from MAST if the data is not on disk
   skyforge publish omc3n -s showcase
   ```
+
+## NGC 1365 — VST OmegaCAM, style showcase
+
+![NGC 1365, showcase](gallery/ngc1365_showcase.jpg)
+
+- **Program:** Fornax Deep Survey (FDS), PI R. F. Peletier (NOVA GTO) and M. Capaccioli & E. Iodice (INAF VEGAS); observed 2011-10-30; data public since 2020-08-26
+- **Filters:** u 0.354 µm — violet-blue (#7040ff); g 0.475 µm — blue (#3060ff); r 0.625 µm — orange (#ff6020); i 0.770 µm — red (#ff2020)
+- **Credit:** ESO, VST/OmegaCAM Fornax Deep Survey (CC BY 4.0); processing: Denis Krivosheev; license of the processing CC BY-SA 4.0
+- **Config:** [configs/ngc1365/showcase.yaml](../configs/ngc1365/showcase.yaml), tag [`phase-9`](https://github.com/kriden187-cloud/skyforge/tree/phase-9), accepted 2026-10-24
+- **Final pixel hash (sha256):** `4ebe1d719b78f3228c7b5826a640e397c1c864154d686c458686d82bd778b6f3`
+- **What is shown:** Four OmegaCAM bands (u, g, r, i; exposures 11.6 / 42.2 / 39.6 / 17.6 ks), wavelength-ordered palette with r shifted to red-orange (brown dust near the centre); saturated star cores and charge-bleed columns filled as gaps; white point of each band on the galaxy without point sources (a star is no wider than 1.5 PSF, star-forming knots stay part of the galaxy); a second white point for the bright centre following the smoothed brightness, so the structure of the centre is visible; sky reference from the darkest blocks.
+- **Limitations:** Weights from the data: the archive server does not cut out the survey weight maps (1.76 GB per band), zero pixels of the tile are treated as empty. Halos of bright stars are a property of ground-based data (scattering in the atmosphere and optics) and are not subtracted. Sky at 18 instead of 16: in the u band the sky toe reaches its limit (p = 8). The brightness of the centre is compressed relative to the arms (second white point 7 times higher, 0.17% of the frame).
+- **Note:** The data are stacked Phase 3 tiles of field F17 of the Fornax Deep Survey (ESO VST, OmegaCAM), a 25′ circle cut out on the ESO server; data licence CC BY 4.0. Acknowledgement as required by the ESO archive: “Based on data obtained from the ESO Science Archive Facility with DOI https://doi.org/10.18727/archive/23”. NGC 1365 is a well-known target with many published images; this is a separate processing of the survey tiles.
+- **How to get the same file:**
+
+  ```
+  git checkout phase-9
+  skyforge run ngc1365 -s showcase --bin 1        # downloads from the ESO archive if the data is not on disk
+  skyforge publish ngc1365 -s showcase
+  ```

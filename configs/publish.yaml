@@ -496,3 +496,69 @@ objects:
         shown_en: "Four NIRCam filters (F150W, F200W, F356W, F480M), each rebuilt from the individual level-2 exposures and aligned to Gaia DR3 (in the archive mosaic visits 002 and 004 are offset by 1.2″ and stars double between filters — report docs/reports/omc3n_i2d_offset.md); wavelength-ordered palette; white point on the nebula without stars and without a single spot setting it alone; sky reference from the darkest blocks, sky level 16."
         limits_ru: "Кадр — прямоугольник, где на краях есть все четыре фильтра: около 53% поля мозаики, ступенчатые края срезаны. Пустого неба в поле нет: опора — самые тёмные блоки (пыль), абсолютный уровень условный. Самое яркое место поля — ядро туманности у протозвезды — исключено из выборки белой точки (иначе оно одно задавало бы её у F200W и F356W) и выжжено: 0,66% туманности, одна область. Оттенок туманности у протозвезды на 13–18° теплее, чем в обработке по архивной мозаике (phase-7): там в этом месте были заплатки отбраковки, сравнение условное. Длинные прямые лучи ярких звёзд, в том числе звёзд за краем кадра, — дифракция NIRCam. Полосы 1/f коротких фильтров видны при ×5 в тёмной пыли (слабее, чем в архивной мозаике)."
         limits_en: "The frame is the rectangle with all four filters on its edges: about 53% of the mosaic, the stepped edges are cut. No empty sky in the field: the reference is the darkest blocks (dust), the absolute level is nominal. The brightest place of the field — the nebula core next to the protostar — is excluded from the white point (otherwise it alone would set it in F200W and F356W) and is burnt out: 0.66% of the nebula, one area. The nebula hue next to the protostar is 13–18° warmer than in the processing of the archive mosaic (phase-7), where this place had patches of rejected pixels, so the comparison is nominal. Long straight spikes of bright stars, including stars just outside the frame, are NIRCam diffraction. Short-wave 1/f stripes are visible at 5× in the dark dust (weaker than in the archive mosaic)."
+  ngc1365:
+    accepted: 2026-10-24
+    program: "Fornax Deep Survey (FDS)"
+    program_title: ""
+    pi: "R. F. Peletier (NOVA GTO) and M. Capaccioli & E. Iodice (INAF VEGAS)"   # без запятой: _person переставляет «Фамилия, Имя»
+    credit: "ESO, VST/OmegaCAM Fornax Deep Survey (CC BY 4.0)"
+    flickr:
+      style: showcase
+      file: web
+      file_note: "(or {stem}_master.png for full size, {master_mb} MB)"
+      title: "NGC 1365, the Great Barred Spiral — ESO VST OmegaCAM, Fornax Deep Survey, u g r i"
+      paragraphs:
+        - >-
+          NGC 1365, a barred spiral galaxy in the Fornax cluster, from the deep stacked tiles of the {program} made with
+          the VLT Survey Telescope (VST) and its OmegaCAM camera at ESO Paranal (PIs {pi}); observed between 2011 and 2016, survey tiles
+          public in the ESO Science Archive since {release}.
+        - >-
+          Four bands, colours ordered by wavelength (shorter = bluer): {filters}. Star-forming regions along the arms are
+          blue, the bar and the centre are warm, and the dust lanes of the bar run into the centre.
+        - >-
+          My own processing of the public data, fully reproducible from a YAML config: every step and every number is in
+          the open-source pipeline at {repo_line}. Saturated star cores and charge-bleed columns of the stacks are
+          filled as gaps; the white point of each band is set on the galaxy without point sources (only sources no wider
+          than 1.5 times the seeing count as stars, star-forming knots stay part of the galaxy); the bright centre has a
+          second white point following the smoothed brightness, so its structure is not burnt out; nothing is painted by
+          hand.
+        - >-
+          Based on data obtained from the ESO Science Archive Facility with DOI https://doi.org/10.18727/archive/23.
+      tags: [NGC 1365, Great Barred Spiral Galaxy, barred spiral galaxy, Fornax Cluster, ESO, VST, VLT Survey Telescope,
+             OmegaCAM, Fornax Deep Survey, galaxy, astrophotography, ESO Science Archive, Skyforge]
+    reddit:
+      style: showcase
+      file: social
+      subreddits: [r/spaceporn, r/astrophotography]
+      title: "NGC 1365, the Great Barred Spiral — my processing of public ESO VST data (Fornax Deep Survey, u g r i) [OC]"
+      paragraphs:
+        - >-
+          **What:** NGC 1365, a barred spiral galaxy in the Fornax cluster: deep stacked tiles of the {program}, VLT
+          Survey Telescope (VST) with OmegaCAM at ESO Paranal (PIs {pi}), observed between 2011 and 2016, public in the ESO archive since
+          {release}.
+        - "**Bands, ordered by wavelength (shorter = bluer):** {filters}."
+        - >-
+          **How:** my own open-source pipeline, every step in a YAML config: {repo_line}. Saturated star cores and
+          charge-bleed columns filled as gaps; white point of each band on the galaxy without stars (sources wider than
+          1.5× the seeing stay part of the galaxy); a second white point for the bright centre so its dust lanes are
+          visible; nothing painted by hand.
+        - >-
+          **Limits:** halos around bright stars are in the data (atmosphere and optics); weights from the data itself
+          (the survey weight maps are not cut out by the archive server); the sky is slightly above the target level in
+          the u band; the centre is compressed in brightness relative to the arms.
+    published:
+      - { style: showcase, platform: Reddit, note: "ждёт аккаунта" }
+    commons:
+      style: showcase
+      filename: "NGC 1365 ESO VST OmegaCAM ugri (Krivosheev).png"   # свободно на 2026-10-24 (API)
+      categories: [NGC 1365, VLT Survey Telescope, OmegaCAM, Fornax Cluster]
+    notes_ru:
+      - "Данные — сложенные тайлы Phase 3 поля F17 обзора Fornax Deep Survey (ESO VST, OmegaCAM), вырезка круга 25′ на сервере ESO; лицензия данных CC BY 4.0. Указание по правилам архива ESO: «Based on data obtained from the ESO Science Archive Facility with DOI https://doi.org/10.18727/archive/23». NGC 1365 — известная цель с многими опубликованными снимками; это отдельная обработка тайлов обзора."
+    notes_en:
+      - "The data are stacked Phase 3 tiles of field F17 of the Fornax Deep Survey (ESO VST, OmegaCAM), a 25′ circle cut out on the ESO server; data licence CC BY 4.0. Acknowledgement as required by the ESO archive: “Based on data obtained from the ESO Science Archive Facility with DOI https://doi.org/10.18727/archive/23”. NGC 1365 is a well-known target with many published images; this is a separate processing of the survey tiles."
+    styles:
+      showcase:
+        shown_ru: "Четыре полосы OmegaCAM (u, g, r, i; выдержки 11,6 / 42,2 / 39,6 / 17,6 тыс. с), палитра по длине волны со сдвигом r к красно-оранжевому (пыль у ядра коричневая); ядра насыщенных звёзд и следы растекания заряда заполнены как пропуски; белая точка каждой полосы по галактике без точечных источников (звезда — не шире 1,5 PSF, узлы звездообразования остаются частью галактики); для яркого центра — вторая белая точка по сглаженной яркости, структура ядра видна; опорное небо по самым тёмным блокам."
+        shown_en: "Four OmegaCAM bands (u, g, r, i; exposures 11.6 / 42.2 / 39.6 / 17.6 ks), wavelength-ordered palette with r shifted to red-orange (brown dust near the centre); saturated star cores and charge-bleed columns filled as gaps; white point of each band on the galaxy without point sources (a star is no wider than 1.5 PSF, star-forming knots stay part of the galaxy); a second white point for the bright centre following the smoothed brightness, so the structure of the centre is visible; sky reference from the darkest blocks."
+        limits_ru: "Вес по данным: карты весов обзора сервер ESO не вырезает (1,76 ГБ на полосу), пустыми считаются нулевые пиксели тайла. Ореолы ярких звёзд — свойство наземных данных (рассеяние в атмосфере и оптике), не вычитаются. Небо 18 вместо 16: в полосе u носок неба упирается в предел (p = 8). Яркость центра сжата относительно рукавов (вторая белая точка в 7 раз выше, 0,17% кадра)."
+        limits_en: "Weights from the data: the archive server does not cut out the survey weight maps (1.76 GB per band), zero pixels of the tile are treated as empty. Halos of bright stars are a property of ground-based data (scattering in the atmosphere and optics) and are not subtracted. Sky at 18 instead of 16: in the u band the sky toe reaches its limit (p = 8). The brightness of the centre is compressed relative to the arms (second white point 7 times higher, 0.17% of the frame)."

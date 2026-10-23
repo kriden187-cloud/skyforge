@@ -149,6 +149,10 @@ class ObjectPub(_Strict):
     parts: list[PartSpec] = []
     published: list[PublishedEntry] = []
     pi: str | None = None                  # если в заголовках FITS нет (HST drz)
+    # фаза 9 (ESO Phase 3): программы и руководителя в заголовках нет (PROG_ID = MULTI), кредит — свой у коллекции
+    program: str | None = None
+    program_title: str | None = None
+    credit: str | None = None              # вместо credit[mission]
     jpeg_quality: int | None = Field(None, ge=50, le=100)   # качество JPEG всех версий объекта вместо sizes.*.quality
     notes_ru: list[str] = []
     notes_en: list[str] = []
@@ -234,8 +238,14 @@ class Facts:
 
 
 TELESCOPE = {"jwst": ("JWST", "космический телескоп «Джеймс Уэбб» (JWST)", "James Webb Space Telescope (JWST)"),
-             "hst": ("HST", "космический телескоп «Хаббл» (HST)", "Hubble Space Telescope (HST)")}
-INSTRUMENT = {"nircam": "NIRCam", "miri": "MIRI", "wfpc2": "WFPC2", "wfc3": "WFC3", "acs": "ACS"}
+             "hst": ("HST", "космический телескоп «Хаббл» (HST)", "Hubble Space Telescope (HST)"),
+             # фаза 9: наземная миссия — пока один телескоп (ESO VST, OmegaCAM)
+             "ground": ("VST", "телескоп VST (ESO, обсерватория Паранал)", "VLT Survey Telescope (VST, ESO Paranal Observatory)")}
+INSTRUMENT = {"nircam": "NIRCam", "miri": "MIRI", "wfpc2": "WFPC2", "wfc3": "WFC3", "acs": "ACS", "omegacam": "OmegaCAM"}
+MAST = "MAST (Mikulski Archive for Space Telescopes, STScI)"
+ARCHIVE = {"jwst": MAST, "hst": MAST, "ground": "ESO Science Archive Facility"}
+ARCHIVE_SHORT = {"en": {"jwst": "MAST", "hst": "MAST", "ground": "the ESO archive"},
+                 "ru": {"jwst": "MAST", "hst": "MAST", "ground": "архива ESO"}}
 
 
 def pixels_sha256(img: Image.Image) -> str:
@@ -278,7 +288,8 @@ def object_facts(paths: Paths, cfg: Config, style: str, pub: PublishConfig, base
         heads.append(fits.getheader(paths.abs(prods[f]["path"]), 0))
     get = lambda k: next((str(h[k]).strip() for h in heads if k in h and str(h[k]).strip()), "")
     beg = sorted(str(h.get("DATE-BEG", h.get("DATE-OBS", "")))[:10] for h in heads)
-    end = sorted(str(h.get("DATE-END", h.get("DATE-OBS", "")))[:10] for h in heads)
+    end = sorted(str(h.get("DATE-END", h.get("DATE-OBS", "")))[:10] if "DATE-END" in h or "MJD-END" not in h
+                 else _mjd_date(float(h["MJD-END"])) for h in heads)   # тайлы ESO: конец — только MJD-END
     po = pub.objects[cfg.slug]
     meta = _png_meta(base_png)
     colors = meta.get("filters") or {}
@@ -286,15 +297,27 @@ def object_facts(paths: Paths, cfg: Config, style: str, pub: PublishConfig, base
                   key=lambda t: t[1])
     with Image.open(base_png) as im:
         sha = pixels_sha256(im)
-    program = get("PROGRAM").lstrip("0") or get("PROPOSID") or (cfg.proposal_id or "")
+    program = po.program or get("PROGRAM").lstrip("0") or get("PROPOSID") or (cfg.proposal_id or "")
     return Facts(
         slug=cfg.slug, style=style, target=cfg.target, mission=cfg.mission, telescope=TELESCOPE[cfg.mission][0],
         instrument=INSTRUMENT.get(cfg.instrument.lower(), cfg.instrument.upper()), program=program,
-        program_title=get("TITLE"), pi=po.pi or get("PI_NAME"), obs_start=beg[0], obs_end=end[-1],
+        program_title=po.program_title if po.program_title is not None else get("TITLE"), pi=po.pi or get("PI_NAME"),
+        obs_start=beg[0], obs_end=end[-1],
         release=min((p.get("release") or "") for f, p in prods.items() if f in cfg.filters),
         filters=filt, config=f"configs/{cfg.slug}/{style}.yaml", tag=cfg.report.baseline or "",
         config_digest=meta.get("config_digest", ""), bin=int(re.search(r"_bin(\d+)\.png$", base_png.name).group(1)),
         master_sha256=sha, author=pub.author or cfg.author, accepted=po.accepted)
+
+
+def _mjd_date(mjd: float) -> str:
+    from astropy.time import Time
+
+    return Time(mjd, format="mjd").to_value("iso", subfmt="date")
+
+
+def data_credit(f: Facts, pub: PublishConfig) -> str:
+    """Кредит данных: свой у объекта (коллекция ESO) или общий по миссии."""
+    return pub.objects[f.slug].credit or pub.credit[f.mission]
 
 
 def color_name(hexc: str, lang: str) -> str:
@@ -321,7 +344,7 @@ def _um(w: float, lang: str) -> str:
 
 
 def credit_line(f: Facts, pub: PublishConfig, lang: str) -> str:
-    return f"{pub.credit[f.mission]}; {'обработка' if lang == 'ru' else 'processing'}: {f.author}"
+    return f"{data_credit(f, pub)}; {'обработка' if lang == 'ru' else 'processing'}: {f.author}"
 
 
 def caption_md(f: Facts, pub: PublishConfig, lang: str) -> str:
@@ -342,9 +365,9 @@ def caption_md(f: Facts, pub: PublishConfig, lang: str) -> str:
                  f"- **Программа:** {prog}; руководитель — {f.pi}",
                  f"- **Наблюдения:** {obs} (UTC); данные открыты в архиве: {f.release}",
                  f"- **Фильтры (длина волны — цвет на картинке):** {fl}",
-                 "- **Источник данных:** MAST (Mikulski Archive for Space Telescopes, STScI)",
+                 f"- **Источник данных:** {ARCHIVE[f.mission]}",
                  f"- **Указание источника:** {credit_line(f, pub, 'ru')}",
-                 f"- **Лицензия на обработку:** {pub.license} ({pub.license_url}); данные — на условиях {pub.credit[f.mission]}",
+                 f"- **Лицензия на обработку:** {pub.license} ({pub.license_url}); данные — на условиях {data_credit(f, pub)}",
                  f"- **Воспроизведение:** конфиг {cfg_ref}, тег {tag_ref} (принято {f.accepted}); `git checkout {f.tag}`, "
                  f"`{run}`; хеш конфига `{f.config_digest}`, хеш пикселей итога (sha256) `{f.master_sha256}`"]
         if st.shown_ru:
@@ -359,9 +382,9 @@ def caption_md(f: Facts, pub: PublishConfig, lang: str) -> str:
                  f"- **Program:** {prog}; PI — {f.pi}",
                  f"- **Observations:** {obs} (UTC); data public in the archive since: {f.release}",
                  f"- **Filters (wavelength — colour in the image):** {fl}",
-                 "- **Data source:** MAST (Mikulski Archive for Space Telescopes, STScI)",
+                 f"- **Data source:** {ARCHIVE[f.mission]}",
                  f"- **Credit:** {credit_line(f, pub, 'en')}",
-                 f"- **License of the processing:** {pub.license} ({pub.license_url}); data under {pub.credit[f.mission]} terms",
+                 f"- **License of the processing:** {pub.license} ({pub.license_url}); data under {data_credit(f, pub)} terms",
                  f"- **Reproduction:** config {cfg_ref}, tag {tag_ref} (accepted {f.accepted}); `git checkout {f.tag}`, "
                  f"`{run}`; config digest `{f.config_digest}`, final pixel hash (sha256) `{f.master_sha256}`"]
         if st.shown_en:
@@ -408,7 +431,7 @@ def commons_wikitext(f: Facts, pub: PublishConfig, part: PartSpec | None = None,
         en += " Other processings of the same data on Commons: " + ", ".join(f"[[:File:{o.file}|{o.en}]]" for o in co.others) + "."
         ru += " Другие обработки тех же данных на Commons: " + ", ".join(f"[[:File:{o.file}|{o.ru}]]" for o in co.others) + "."
     repo = f"{pub.repo}/tree/{f.tag}" if pub.repo else f"tag {f.tag}"
-    data = pub.credit[f.mission]
+    data = data_credit(f, pub)
     other = " ".join([f"* [[:File:{fn}|{label}]]" for fn, label in siblings]
                      + [f"* [{e.url} {e.platform} ({e.date})]" for e in po.published
                         if e.style == f.style and e.url and e.platform != "Wikimedia Commons"
@@ -421,7 +444,7 @@ def commons_wikitext(f: Facts, pub: PublishConfig, part: PartSpec | None = None,
         f"|description={{{{en|1={en}}}}}",
         f"{{{{ru|1={ru}}}}}",
         f"|date={f.obs_start}",
-        f"|source={{{{own}}}}: processing of public {f.telescope} data from MAST (Mikulski Archive for Space Telescopes, STScI), "
+        f"|source={{{{own}}}}: processing of public {f.telescope} data from {ARCHIVE[f.mission]}, "
         f"program {f.program}. Pipeline and configuration: {repo} ({f.config})",
         f"|author={f.author}; data: {data}",
         "|permission=",
@@ -459,7 +482,7 @@ def flickr_text(f: Facts, pub: PublishConfig, stem: str, master_size: tuple[int,
     paras = [p.format(**subs).strip() for p in fs.paragraphs]
     part_para = ([f"This image: {part.label_en}; {part.full_field_en} is published separately as a diptych."] if part is not None else [])
     paras[1:1] = part_para
-    paras.append(f"Credit: {pub.credit[f.mission]}; processing: {f.author}. Processing licensed {pub.license}.")
+    paras.append(f"Credit: {data_credit(f, pub)}; processing: {f.author}. Processing licensed {pub.license}.")
     lines = [head,
              f"LICENSE ON FLICKR: set to \"{pub.flickr.license_label}\" in the photo's license settings",
              f"ALBUM: {pub.flickr.album}", "", "=== TITLE ===", (part.flickr_title if part is not None and part.flickr_title else fs.title), "",
@@ -487,7 +510,7 @@ def reddit_text(f: Facts, pub: PublishConfig, stem: str, part: PartSpec | None =
     paras = [p.format(**subs).strip() for p in rs.paragraphs]
     part_para = ([f"This image: {part.label_en}; {part.full_field_en} is published separately as a diptych."] if part is not None else [])
     paras[1:1] = part_para
-    paras.append(f"Credit: {pub.credit[f.mission]}; processing: {f.author}. Processing licensed {pub.license} "
+    paras.append(f"Credit: {data_credit(f, pub)}; processing: {f.author}. Processing licensed {pub.license} "
                  f"({pub.license_url}).")
     links = [e for e in pub.objects[f.slug].published
              if e.style == f.style and e.url and e.part == (part.name if part is not None else None)]
@@ -522,7 +545,9 @@ def build_meta(f: Facts, pub: PublishConfig) -> dict[str, Any]:
     tel, inst = f.telescope, f.instrument
     fl = ", ".join(n for n, _, _ in f.filters)
     year = f.accepted[:4]
+    extra = {} if ARCHIVE[f.mission] == MAST else {"source": ARCHIVE[f.mission]}   # прежние объекты — те же метаданные
     return {
+        **extra,
         "title": f"{f.target} — {tel} {inst} ({f.style})",
         "credit": credit_line(f, pub, "en"),
         "credit_ru": credit_line(f, pub, "ru"),
@@ -531,7 +556,7 @@ def build_meta(f: Facts, pub: PublishConfig) -> dict[str, Any]:
         "description_ru": f"{f.target}, {tel} {inst}, фильтры {fl}; программа {f.program} (руководитель {f.pi}), "
                           f"наблюдения {f.obs_start}. Конфиг {f.config}, тег {f.tag}, хеш {f.config_digest}, "
                           f"пиксели sha256 {f.master_sha256[:16]}.",
-        "copyright": f"© {year} {f.author}. {pub.license} ({pub.license_url}). Data: {pub.credit[f.mission]}.",
+        "copyright": f"© {year} {f.author}. {pub.license} ({pub.license_url}). Data: {data_credit(f, pub)}.",
         "license": pub.license, "license_url": pub.license_url, "config": f.config, "tag": f.tag,
         "repo": f"{pub.repo}/tree/{f.tag}" if pub.repo else "",
         "config_digest": f.config_digest, "pixels_sha256": f.master_sha256,
@@ -555,7 +580,7 @@ def write_png(arr: np.ndarray, path: Path, meta: dict[str, Any]) -> Path:
     info.add_itxt("Description.ru", meta["description_ru"])
     info.add_itxt("Copyright", meta["copyright"])
     info.add_itxt("Software", meta["software"])
-    info.add_itxt("Source", "MAST (Mikulski Archive for Space Telescopes, STScI)")
+    info.add_itxt("Source", meta.get("source", MAST))
     info.add_itxt("skyforge", json.dumps(meta, ensure_ascii=False, sort_keys=True))
     path.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(arr).save(path, pnginfo=info)
@@ -862,7 +887,7 @@ GALLERY_TEXT = {
            "filters": "Filters", "credit": "Credit", "license": "license of the processing", "config": "Config", "tag": "tag",
            "accepted": "accepted", "hash": "Final pixel hash (sha256)", "shown": "What is shown", "limits": "Limitations",
            "note": "Note", "published": "Published", "howto": "How to get the same file",
-           "run_note": "# downloads from MAST if the data is not on disk"},
+           "run_note": "# downloads from {archive} if the data is not on disk"},
     "ru": {"file": "GALLERY.ru.md", "title": "# Галерея конфигов Skyforge",
            "intro": ["Каждый раздел — принятый результат: превью, подпись, конфиг, тег и команда, которой получить тот же файл.",
                      "Файл создаёт `skyforge gallery` из `configs/publish.yaml`, принятых PNG (`data/baselines/`) и заголовков данных;",
@@ -871,7 +896,7 @@ GALLERY_TEXT = {
            "filters": "Фильтры", "credit": "Указание источника", "license": "лицензия на обработку —", "config": "Конфиг",
            "tag": "тег", "accepted": "принято", "hash": "Хеш пикселей итога (sha256)", "shown": "Что показано",
            "limits": "Ограничения", "note": "Примечание", "published": "Опубликовано", "howto": "Как получить тот же файл",
-           "run_note": "# если данных нет на диске, скачает из MAST"},
+           "run_note": "# если данных нет на диске, скачает из {archive}"},
 }
 
 
@@ -924,7 +949,7 @@ def build_gallery(paths: Paths, pub: PublishConfig) -> Path:
                 if pubd:
                     parts[lang].append(f"- **{t['published']}:** " + "; ".join(f"[{e.platform}{', ' + e.part if e.part else ''}]({e.url}) ({e.date})" for e in pubd))
                 parts[lang] += [f"- **{t['howto']}:**", "", "  ```", f"  git checkout {f.tag}",
-                                f"  skyforge run {name} -s {st} --bin {f.bin}        {t['run_note']}",
+                                f"  skyforge run {name} -s {st} --bin {f.bin}        {t['run_note'].format(archive=ARCHIVE_SHORT[lang][f.mission])}",
                                 f"  skyforge publish {name} -s {st}", "  ```", ""]
             console.print(f"  галерея: {cfg.slug}/{st}")
     for lang, t in GALLERY_TEXT.items():

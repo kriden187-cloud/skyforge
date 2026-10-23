@@ -165,9 +165,9 @@ def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
     st = cfg.stretch.model_dump(mode="json", exclude=exclude)
     if st.get("exclude_point_sources") and st["exclude_point_sources"].get("max_fwhm_psf") is None:
         del st["exclude_point_sources"]["max_fwhm_psf"]   # фаза 9: без значения — ключ кеша прежний
-    key = {"input": in_key, "stretch": st}
+    key = {"input": in_key, "stretch": st}   # фаза 4: новые поля в ключе только когда заданы — кеши прежних объектов те же
     if cfg.stretch.exclude_point_sources is not None and cfg.stretch.exclude_point_sources.max_fwhm_psf is not None:
-        key["point_width_version"] = POINT_WIDTH_VERSION   # фаза 4: новые поля в ключе только когда заданы — кеши прежних объектов те же
+        key["point_width_version"] = POINT_WIDTH_VERSION
     if cfg.stretch.sky_reference == "crop":   # фаза 6: координаты кропа опоры (report в хеш не входит)
         key["sky_reference_crop_spec"] = next(c.model_dump(mode="json") for c in cfg.report.crops
                                               if c.name == cfg.stretch.sky_reference_crop)
