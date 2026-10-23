@@ -643,12 +643,19 @@ def stack(exps: list[dict[str, Any]], shape: tuple[int, int], c: Level2Config) -
             continue
         S = np.full((len(idx), r1 - r0, W), np.nan, dtype=np.float32)
         E = np.full_like(S, np.nan)
+        # фаза 8 (level2.clip_error: err): порог выбросов — по полной ERR, веса — по E
+        C = np.full_like(S, np.nan) if "eclip" in exps[idx[0]] else E
         for m, k in enumerate(idx):
             e = exps[k]
             y0, y1, x0, x1 = e["box"]
             ya, yb = max(y0, r0), min(y1, r1)
             S[m, ya - r0:yb - r0, x0:x1] = e["data"][ya - y0:yb - y0]
             E[m, ya - r0:yb - r0, x0:x1] = e["err"][ya - y0:yb - y0]
+            if C is not E:
+                C[m, ya - r0:yb - r0, x0:x1] = e["eclip"][ya - y0:yb - y0]
+        if C is not E:   # где полной ERR нет, а ошибка весов есть — порог по ней (иначе пиксель не отбраковать)
+            hole = ~np.isfinite(C)
+            C[hole] = E[hole]
         S[~np.isfinite(E)] = np.nan
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
@@ -657,13 +664,13 @@ def stack(exps: list[dict[str, Any]], shape: tuple[int, int], c: Level2Config) -
         grad = np.hypot(gy, gx)
         cnt = np.isfinite(S).sum(axis=0)
         dev = np.abs(S - med[None])
-        bad = (dev > c.clip_sigma * E + c.clip_gradient * grad[None]) & (cnt[None] >= 3)
+        bad = (dev > c.clip_sigma * C + c.clip_gradient * grad[None]) & (cnt[None] >= 3)
         # двое на пиксель: медиана — их среднее, отбрасываем бо́льшее, если расхождение не по шуму
         two = cnt == 2
         if two.any():
             hi = np.nanargmax(np.where(np.isfinite(S), S, -np.inf), axis=0)
             diff = np.nanmax(S, axis=0) - np.nanmin(S, axis=0)
-            e2 = np.sqrt(np.nansum(E**2, axis=0))
+            e2 = np.sqrt(np.nansum(C**2, axis=0))
             drop = two & (diff > c.clip_sigma * e2 + c.clip_gradient * grad)
             yy, xx = np.nonzero(drop)
             bad[hi[yy, xx], yy, xx] = True
@@ -696,6 +703,12 @@ CHECK_ONLY = {"star_fwhm_small_px", "star_fwhm_tol_small_percent", "star_fwhm_to
 # фаза 8: гибрид — шаг после стека, свой файл рядом со сборкой; ключ стека от него не зависит
 BLEND_FIELDS = {"blend_large_scale", "blend_sigma_px"}
 BLEND_VERSION = 2  # 2: вес заполненных из i2d пикселей — от i2d
+QUICK_SCALE_ARCSEC = 0.125  # фаза 8: шаг предварительной сборки для маски источников при астрометрии по Gaia
+
+
+def _optional_unset(c: Level2Config) -> set[str]:
+    """Поля фазы 8 без значения в ключ сборки не входят — ключи и кеш принятых объектов прежние."""
+    return {k for k in ("astrometry", "clip_error") if getattr(c, k) is None}
 
 
 def fwhm_check(rows: list[dict[str, Any]], c: Level2Config) -> dict[str, Any]:
@@ -713,13 +726,16 @@ def build_dir(cfg: Config, paths: Paths) -> Path:
     return paths.work_root / cfg.slug / "level2"
 
 
-def _key(cfg: Config, files: list[Path], i2d: Path) -> dict[str, Any]:
-    return {"version": BUILD_VERSION, "files": [[p.name, p.stat().st_size] for p in files],
-            "i2d": [i2d.name, i2d.stat().st_size], "level2": cfg.level2.model_dump(exclude=CHECK_ONLY | BLEND_FIELDS | (
-                set() if cfg.level2.match_curve_y else CURVE_FIELDS)),
-            # только то, от чего зависят маски источников (иначе любое переключение в background пересобирает мозаику)
-            "masks": {k: getattr(cfg.background, k) for k in ("mask_sigma", "mask_smooth_arcsec", "tile_mask_dilate_arcsec")}
-            | {"stars": cfg.stars.mask_key()}}
+def _key(cfg: Config, files: list[Path], i2d: Path, pointing: str | None = None) -> dict[str, Any]:
+    key = {"version": BUILD_VERSION, "files": [[p.name, p.stat().st_size] for p in files],
+           "i2d": [i2d.name, i2d.stat().st_size], "level2": cfg.level2.model_dump(exclude=CHECK_ONLY | BLEND_FIELDS | (
+               set() if cfg.level2.match_curve_y else CURVE_FIELDS) | _optional_unset(cfg.level2)),
+           # только то, от чего зависят маски источников (иначе любое переключение в background пересобирает мозаику)
+           "masks": {k: getattr(cfg.background, k) for k in ("mask_sigma", "mask_smooth_arcsec", "tile_mask_dilate_arcsec")}
+           | {"stars": cfg.stars.mask_key()}}
+    if pointing:   # фаза 8: решение астрометрии по Gaia (и маска по предварительной сборке) — только когда задано
+        key["pointing"] = pointing
+    return key
 
 
 def built_products(cfg: Config, paths: Paths) -> dict[str, Path]:
@@ -802,10 +818,18 @@ def build(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {"filters": {}}
     info: dict[str, Any] = {"filters": {}}
     previews: dict[str, list] = {"destripe": [], "overlaps": [], "stars": [], "astrometry": [], "curves": []}
+    pointing = None
+    if cfg.level2.astrometry == "gaia":
+        # фаза 8: поправки наведения всех экспозиций объекта по Gaia — одни на все фильтры (короткие и длинные волны
+        # одной экспозиции сдвигаются вместе)
+        from skyforge.astrometry import solve_pointing
+
+        pointing = solve_pointing(cfg, paths, {f: l2[f] for f in l3}, d)
+        info["pointing"] = {k: pointing[k] for k in ("summary", "visits", "between_visits", "exposures")}
     todo: dict[str, tuple[Path, str]] = {}
     for f, prod in l3.items():
         i2d_path = paths.abs(prod.path)
-        key = _key(cfg, l2[f], i2d_path)
+        key = _key(cfg, l2[f], i2d_path, pointing["digest"] if pointing else None)
         digest = hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:10]
         old = meta["filters"].get(f)
         if old and old.get("digest") == digest and (d / old["file"]).exists():
@@ -821,7 +845,8 @@ def build(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
         order = sorted(todo, key=lambda f: (list(l3).index(f) % 3, list(l3).index(f)))
         console.print(f"  сборка {len(todo)} фильтров в {min(cfg.level2.workers, len(todo))} процессах")
         with ProcessPoolExecutor(max_workers=min(cfg.level2.workers, len(todo))) as ex:
-            futs = {f: ex.submit(_build_filter, cfg, f, todo[f][0], l2[f], d / f"{f}_l2_{todo[f][1]}.fits") for f in order}
+            futs = {f: ex.submit(_build_filter, cfg, f, todo[f][0], l2[f], d / f"{f}_l2_{todo[f][1]}.fits", pointing)
+                    for f in order}
             results = {f: fut.result() for f, fut in futs.items()}
     for f, prod in l3.items():
         old = meta["filters"].get(f)
@@ -830,7 +855,8 @@ def build(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
             info["filters"][f] = {**old, "cached": True, "fwhm_check": fwhm_check(old.get("star_rows", []), cfg.level2)}
             continue
         i2d_path, digest = todo[f]
-        fi, pv = results[f] if f in results else _build_filter(cfg, f, i2d_path, l2[f], d / f"{f}_l2_{digest}.fits")
+        fi, pv = results[f] if f in results else _build_filter(cfg, f, i2d_path, l2[f], d / f"{f}_l2_{digest}.fits",
+                                                               pointing)
         fi.update(digest=digest, file=f"{f}_l2_{digest}.fits")
         meta["filters"][f] = fi
         meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
@@ -886,7 +912,51 @@ def build(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
     return info
 
 
-def _build_filter(cfg: Config, f: str, i2d_path: Path, files: list[Path], dest: Path) -> tuple[dict[str, Any], dict]:
+def quick_stack(files: list[Path], pointing: dict[str, Any], grid_wcs: WCS, shape: tuple[int, int], c: Level2Config,
+                k: int) -> np.ndarray:
+    """Фаза 8: предварительная сборка в k раз грубее сетки — медиана экспозиций с поправками наведения, без destripe
+    и сведения уровней. По ней маска источников, когда i2d опорой не годится (сам собран со сдвигом визитов)."""
+    from skyforge.astrometry import apply_pointing
+
+    H, W = -(-shape[0] // k), -(-shape[1] // k)
+    small = grid_wcs.deepcopy()
+    small.wcs.crpix = (np.asarray(grid_wcs.wcs.crpix) - 0.5) / k + 0.5   # пиксель k×k с тем же краем
+    if small.wcs.has_cd():
+        small.wcs.cd = np.asarray(grid_wcs.wcs.cd) * k
+    else:
+        small.wcs.cdelt = np.asarray(grid_wcs.wcs.cdelt) * k
+    small.wcs.set()
+    parts = []
+    for p in files:
+        sci, _, fw, _ = load_exposure(p, c.dq_bad)
+        # перепроекция берёт значение в центре крупного пикселя — без усреднения k×k звёзды размером в пару
+        # пикселей теряются между выборками и выпадают из маски; среднее окна k по непустым пикселям
+        fin = np.isfinite(sci)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            sci = (ndimage.uniform_filter(np.where(fin, sci, 0).astype(np.float32), k)
+                   / ndimage.uniform_filter(fin.astype(np.float32), k))
+        sci[~fin] = np.nan
+        if p.name in pointing["files"]:
+            fw = apply_pointing(fw, pointing["files"][p.name])
+        box = _bbox_on_grid(fw, sci.shape, small, (H, W))
+        if box is not None:
+            parts.append((box, project(sci, fw, small, box)))
+    out = np.full((H, W), np.nan, dtype=np.float32)
+    rows = 64
+    for r0 in range(0, H, rows):
+        r1 = min(H, r0 + rows)
+        S = [np.pad(a[max(r0, b[0]) - b[0]:min(r1, b[1]) - b[0]],
+                    ((max(b[0], r0) - r0, r1 - min(b[1], r1)), (b[2], W - b[3])), constant_values=np.nan)
+             for b, a in parts if b[0] < r1 and b[1] > r0]
+        if S:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                out[r0:r1] = np.nanmedian(np.stack(S), axis=0)
+    return out
+
+
+def _build_filter(cfg: Config, f: str, i2d_path: Path, files: list[Path], dest: Path,
+                  pointing: dict[str, Any] | None = None) -> tuple[dict[str, Any], dict]:
     c = cfg.level2
     with fits.open(i2d_path, memmap=True) as h:
         i2d = np.array(h["SCI"].data, dtype=np.float32)
@@ -896,11 +966,21 @@ def _build_filter(cfg: Config, f: str, i2d_path: Path, files: list[Path], dest: 
     grid_wcs = _wcs(grid_hdr)
     shape = i2d.shape
     scale = float(np.mean(proj_plane_pixel_scales(grid_wcs))) * 3600
-    src_grid = source_mask_grid(i2d, scale, cfg)
-    free_grid = np.isfinite(i2d) & ~src_grid
+    if pointing:
+        # фаза 8: маска источников по своей предварительной сборке (≈0,125″/px) — i2d со сдвигом визитов её сдвинул бы
+        k = max(1, int(round(QUICK_SCALE_ARCSEC / scale)))
+        quick = quick_stack(files, pointing, grid_wcs, shape, c, k)
+        src_small = source_mask_grid(quick, scale * k, cfg)
+        src_grid = np.repeat(np.repeat(src_small, k, axis=0), k, axis=1)[:shape[0], :shape[1]]
+        have = np.repeat(np.repeat(np.isfinite(quick), k, axis=0), k, axis=1)[:shape[0], :shape[1]]
+        free_grid = have & ~src_grid
+        del quick, src_small, have
+    else:
+        src_grid = source_mask_grid(i2d, scale, cfg)
+        free_grid = np.isfinite(i2d) & ~src_grid
     console.print(f"  {f}: {len(files)} экспозиций → сетка i2d {shape[1]}×{shape[0]}")
     astro: list[dict[str, Any]] = []
-    if c.tweak:
+    if c.tweak and not pointing:
         # проход 1: подгонка по каждой экспозиции; решение — по группам детекторов (правила 3g)
         ref_stars = reference_stars(i2d, grid_wcs)
         for p in files:
@@ -917,6 +997,10 @@ def _build_filter(cfg: Config, f: str, i2d_path: Path, files: list[Path], dest: 
             fw, b_, a_ = apply_tweak(fw, astro[k])
             astro[k]["residuals_before"], astro[k]["residuals_after"] = b_, a_
             astro[k]["name"] = p.name
+        if pointing and p.name in pointing["files"]:
+            from skyforge.astrometry import apply_pointing
+
+            fw = apply_pointing(fw, pointing["files"][p.name])
         mask = mask_to_frame(src_grid, grid_wcs, fw, sci.shape, c.mask_grow_px)
         clean, st = destripe_frame(sci, mask, c)
         stripes.append(st)
@@ -928,6 +1012,8 @@ def _build_filter(cfg: Config, f: str, i2d_path: Path, files: list[Path], dest: 
         if box is None:
             continue
         e = {"name": p.name, "box": box, "data": project(clean, fw, grid_wcs, box), "err": project(err, fw, grid_wcs, box)}
+        if c.clip_error == "err" and c.weights != "err":
+            e["eclip"] = project(load_exposure(p, c.dq_bad, "err")[1], fw, grid_wcs, box)
         if c.match_per_amp or c.match_curve_y:
             aw = sci.shape[1] // max(1, c.amplifiers)
             amp_img = np.minimum(np.arange(sci.shape[1]) // aw, c.amplifiers - 1)[None, :].repeat(sci.shape[0], 0)
@@ -992,7 +1078,18 @@ def _build_filter(cfg: Config, f: str, i2d_path: Path, files: list[Path], dest: 
     fits.HDUList(hdus).writeto(dest, overwrite=True)
 
     ov_metric, ov_map, sigma1 = overlap_residual(exps, res["sci"], res["nexp"], free_grid, c.overlap_block_px)
-    stars = compare_stars(i2d, res["sci"], exps=exps)
+    allow = None
+    if pointing:
+        # фаза 8: с i2d сравнивать звёзды только там, где его экспозиции не сдвигались (у OMC3-N — визиты 001 и 003)
+        from skyforge.astrometry import I2D_OK_ARCSEC
+
+        allow = np.ones(shape, dtype=bool)
+        for e in exps:
+            corr = pointing["files"].get(e["name"])
+            if corr and math.hypot(*corr["shift"]) > I2D_OK_ARCSEC:
+                y0, y1, x0, x1 = e["box"]
+                allow[y0:y1, x0:x1] &= ~np.isfinite(e["data"])
+    stars = compare_stars(i2d, res["sci"], exps=exps, allow=allow)
     rb = float(np.median([s["rows_before"] for s in stripes]))
     ra = float(np.median([s["rows_after"] for s in stripes]))
     fi = {"exposures": len(exps), "rows_before": round(rb, 6), "rows_after": round(ra, 6),
@@ -1001,6 +1098,8 @@ def _build_filter(cfg: Config, f: str, i2d_path: Path, files: list[Path], dest: 
           "curves_y": curves_info,
           "stars": stars["summary"], "star_rows": stars["rows"],
           "astrometry": [_astro_row(p.name, a) for p, a in zip(files, astro)]}
+    if pointing:
+        fi["pointing"] = {p.name: pointing["files"][p.name] for p in files if p.name in pointing["files"]}
     if astro:
         done = [a for a in astro if a["apply"]]
         own = [a for a in done if a["status"] in ("сдвиг", "поворот")]
@@ -1136,12 +1235,15 @@ def _single_flux(exps: list[dict[str, Any]], y: int, x: int, r_ap: float) -> flo
     return float(np.median(vals)) if vals else float("nan")
 
 
-def compare_stars(ref: np.ndarray, ours: np.ndarray, n: int = 5, exps: list | None = None) -> dict[str, Any]:
+def compare_stars(ref: np.ndarray, ours: np.ndarray, n: int = 5, exps: list | None = None,
+                  allow: np.ndarray | None = None) -> dict[str, Any]:
     """Пять изолированных ненасыщенных звёзд на пустом небе: FWHM и поток в i2d, в нашей сборке и
-    (если даны exps) медианный поток по отдельным экспозициям."""
+    (если даны exps) медианный поток по отдельным экспозициям. allow — где i2d годится для сравнения (фаза 8)."""
     a = np.nan_to_num(ref)
     sm = ndimage.gaussian_filter(a, 1.0)
     pk = np.argwhere((sm == ndimage.maximum_filter(sm, 41)) & (sm > np.percentile(sm, 99.9)))
+    if allow is not None:
+        pk = pk[allow[pk[:, 0], pk[:, 1]]]
     med, _, std = sigma_clipped_stats(a[:: 7, :: 7], sigma=3.0)
     cand = []
     for y, x in pk:

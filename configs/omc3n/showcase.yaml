@@ -15,6 +15,8 @@ stretch:
   sky_reference_min_free: 0.3     # как финал W3
   sky_toe_max_p: 4
   exclude_point_sources: {}       # белая точка по туманности без звёзд в каждом фильтре (W3)
+  exclude_dominant_spot: { share: 0.9 }   # фаза 8 (решение консультанта 2026-10-23): одно пятно (ядро у протозвезды,
+                                 # туманность, не звезда) не задаёт белую точку; отступ по спаду профиля
 color:
   mode: manual
   blend: average

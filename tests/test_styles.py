@@ -179,3 +179,28 @@ def test_style_required_for_style_folder(sky, cfg, monkeypatch):
     monkeypatch.setenv("SKYFORGE_HOME", str(sky.root))
     res = CliRunner().invoke(app, ["align", "testobj"])
     assert res.exit_code == 1 and "--style" in res.output and "alpha" in res.output
+
+
+def test_dominant_spot_excluded_only_when_it_sets_white_alone():
+    """Фаза 8: пятно, в котором ≥ share пикселей над белой точкой, исключается из выборки с отступом по спаду профиля;
+    россыпь ярких деталей по туманности — нет."""
+    import numpy as np
+
+    from skyforge.config import DominantSpotConfig
+    from skyforge.stretch import dominant_spot
+
+    rng = np.random.default_rng(5)
+    yy, xx = np.indices((400, 400))
+    neb = np.ones((400, 400), dtype=bool)
+    base = 1.0 + 0.3 * np.sin(xx / 40.0) + rng.normal(0, 0.01, (400, 400))
+    spot = base + 5.0 * np.exp(-((yy - 200) ** 2 + (xx - 150) ** 2) / (2 * 12.0 ** 2))
+    sp = DominantSpotConfig()
+    m, info = dominant_spot(spot.astype(np.float32), neb, 99.8, sp, 0.063)
+    assert m is not None and info["share"] >= 0.9 and m[200, 150]
+    assert not m[200, 350] and m[200, 150 + 12]            # отступ дальше края пятна, но не на всю туманность
+    knots = base.copy()
+    for k in range(40):                                     # 40 одинаковых узлов — ни один не задаёт белую точку один
+        cy, cx = rng.integers(20, 380, 2)
+        knots += 2.0 * np.exp(-((yy - cy) ** 2 + (xx - cx) ** 2) / (2 * 2.0 ** 2))
+    m2, info2 = dominant_spot(knots.astype(np.float32), neb, 99.8, sp, 0.063)
+    assert m2 is None and info2["share"] < 0.9

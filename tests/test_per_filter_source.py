@@ -89,7 +89,7 @@ def test_build_skips_level3_filters(tmp_path, monkeypatch):
     monkeypatch.setattr(F, "level2_files", lambda cfg, p: {"F150W": [cal]})
     built = []
 
-    def fake_build(cfg, f, i2d, files, dest):
+    def fake_build(cfg, f, i2d, files, dest, pointing=None):
         built.append(f)
         dest.write_bytes(b"0")
         return {}, {"destripe": ([], []), "overlaps": ([], []), "stars": ([], []), "astrometry": (f, None),
@@ -157,3 +157,39 @@ def test_blend_fields_do_not_change_digest_or_stack_key(tmp_path):
     f.write_bytes(b"0")
     i2d.write_bytes(b"0")
     assert _key(base, [f], i2d) == _key(blend, [f], i2d)               # стек тот же — гибрид отдельным файлом
+
+
+def test_stack_clip_error_uses_full_err():
+    """Фаза 8: на яркой туманности две экспозиции расходятся на пуассоновский шум. Порог по шуму считывания отбрасывает
+    бо́льшее (уровень вниз), порог по полной ERR (clip_error: err) оставляет обе; веса — по-прежнему от err."""
+    import numpy as np
+
+    from skyforge.config import Level2Config
+    from skyforge.level2 import stack
+
+    shape = (4, 4)
+    a = np.full(shape, 5.0, dtype=np.float32)
+    b = np.full(shape, 5.5, dtype=np.float32)          # 0,5 — около 1σ пуассоновского шума
+    rn = np.full(shape, 0.06, dtype=np.float32)       # шум считывания
+    tot = np.full(shape, 0.45, dtype=np.float32)      # полная ERR
+    exps = [{"name": "a", "box": (0, 4, 0, 4), "data": a, "err": rn}, {"name": "b", "box": (0, 4, 0, 4), "data": b, "err": rn}]
+    old = stack(exps, shape, Level2Config())
+    assert old["rejected"] == 16 and np.allclose(old["sci"], 5.0)
+    for e, t in zip(exps, (tot, tot)):
+        e["eclip"] = t
+    new = stack(exps, shape, Level2Config(clip_error="err"))
+    assert new["rejected"] == 0 and np.allclose(new["sci"], 5.25)
+
+
+def test_phase8_level2_fields_unset_keep_key(tmp_path):
+    """astrometry и clip_error без значения в ключ сборки не входят — кеш принятых объектов тот же."""
+    from skyforge.config import Level2Config
+    from skyforge.level2 import _key
+
+    f, i2d = tmp_path / "a_cal.fits", tmp_path / "a_i2d.fits"
+    f.write_bytes(b"0")
+    i2d.write_bytes(b"0")
+    base = _key(_cfg(), [f], i2d)
+    assert "astrometry" not in base["level2"] and "clip_error" not in base["level2"] and "pointing" not in base
+    assert _key(_cfg(level2=Level2Config(clip_error="err")), [f], i2d) != base
+    assert _cfg(level2=Level2Config(astrometry="gaia")).digest() != _cfg().digest()

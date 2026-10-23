@@ -428,7 +428,7 @@ objects:
         limits_ru: "Щели детекторов коротких фильтров (около 3,5″, 13% площади модуля) заполнены подстановкой соседнего фильтра — при обычном просмотре видно зерно; дизеринг программы около 1″ при щели 3,5″, поэтому сборка из отдельных экспозиций (уровень 2) щели не закрывает; кадры без щелей выложены отдельно — фрагменты A2, A4, B3. Около дюжины квадратов 4″ на пересечениях щелей (0,2% площади) заполнены F300M и отличаются по тону; пунктирные швы по краям полос — из исходных i2d. Пустого неба в поле нет: опора по слабейшей туманности, небо 18 вместо 16, абсолютный уровень условный; полосы 1/f коротких фильтров видны на небе при ×5."
         limits_en: "Short-wave detector gaps (about 3.5″, 13% of a module) are filled by substituting the neighbouring filter — grain is visible at normal viewing; the program's dither is about 1″ against a 3.5″ gap, so a rebuild from the individual exposures (level 2) does not close the gaps; gap-free frames are published separately as fragments A2, A4, B3. About a dozen 4″ squares where gaps cross (0.2% of the area) are filled from F300M and differ in tone; dotted seams along the strip edges come from the source i2d. No empty sky in the field: the reference is the faintest nebula, sky at 18 instead of 16, the absolute level is nominal; short-wave 1/f stripes visible on the sky at 5×."
   omc3n:
-    accepted: 2026-10-22
+    accepted: 2026-10-23
     flickr:
       style: showcase
       file: web
@@ -445,9 +445,12 @@ objects:
           the right.
         - >-
           My own processing of the public data, fully reproducible from a YAML config: every step and every number is in
-          the open-source pipeline at {repo_line}. The white point of each filter is set on the nebula with the stars
-          excluded, the sky level on the darkest measured blocks (there is no empty sky in this field); nothing is
-          painted by hand.
+          the open-source pipeline at {repo_line}. All four filters are rebuilt from the individual level-2 exposures and
+          aligned to Gaia DR3: in the archive mosaics two of the four visits are offset by 1.2″, so stars and the outflow
+          knot appear twice between filters (report:
+          https://github.com/kriden187-cloud/skyforge/blob/master/docs/reports/omc3n_i2d_offset.md). The white point of
+          each filter is set on the nebula with the stars excluded and without a single bright spot setting it alone;
+          the sky level on the darkest measured blocks (there is no empty sky in this field); nothing is painted by hand.
         - >-
           No earlier public colour processing of these data was found (search of 2026-10-22: web, Wikimedia Commons,
           Flickr; Reddit, AstroBin and X could not be checked). Neighbouring parts of the cloud were imaged by program 5804
@@ -467,14 +470,15 @@ objects:
           filament and a protostellar outflow.
         - "**Filters, ordered by wavelength (shorter = bluer):** {filters}."
         - >-
-          **How:** my own open-source pipeline, every step in a YAML config: {repo_line}. White point of each filter on
-          the nebula with stars excluded, sky level on the darkest measured blocks; nothing painted by hand.
+          **How:** my own open-source pipeline, every step in a YAML config: {repo_line}. All four filters rebuilt from the
+          level-2 exposures and aligned to Gaia DR3 — in the archive mosaics two visits are offset by 1.2″ and stars double
+          between filters (report in the repository: docs/reports/omc3n_i2d_offset.md). White point of each filter on the
+          nebula with stars excluded, sky level on the darkest measured blocks; nothing painted by hand.
         - >-
           **Limits:** the frame is the rectangle covered by all four filters (about half of the stepped mosaic); no
-          empty sky in the field; areas of pixels flagged in the archive mosaic (about 0.1% of the frame, mapped in
-          the repository: out/omc3n/проверка_8/финал/38_карта_областей.png) are filled smoothly from their edges; rare isolated dots next to the protostar and
-          the outflow head (saturated knots filled like star cores, dots around) remain at 3×; long vertical lines are
-          diffraction spikes of bright stars, some just outside the frame; faint short-wave 1/f stripes at 5× in dark dust.
+          empty sky in the field; the brightest spot of the field, next to the protostar, is excluded from the white
+          point and burnt out (0.7% of the nebula); long straight lines are diffraction spikes of bright stars, some just
+          outside the frame; faint short-wave 1/f stripes at 5× in dark dust.
     published:
       - { style: showcase, platform: Reddit, note: "ждёт аккаунта" }
     commons:
@@ -488,7 +492,7 @@ objects:
       - "Field OMC3-N of program 7433 (centre RA 83.85°, Dec −5.04°) — the northern part of the OMC-3 cloud in Orion, north of the Orion Nebula. Data public since 2026-09-09. No earlier public colour processing of these data was found (search of 2026-10-22: web, Wikimedia Commons, Flickr; Reddit, AstroBin and X not checked). Neighbouring parts of the cloud were imaged by program 5804 (PI Tom Megeath): processings by Melina Thévenot (Wikimedia Commons, 2025-02-20) and Judy Schmidt (Flickr, 2025-04-07); the ESA/Webb Picture of the Month of June 2026 shows OMC-2."
     styles:
       showcase:
-        shown_ru: "Четыре фильтра NIRCam (F150W, F200W, F356W, F480M), палитра по длине волны; белая точка по туманности без звёзд в каждом фильтре; опорное небо по самым тёмным блокам, небо 16."
-        shown_en: "Four NIRCam filters (F150W, F200W, F356W, F480M), wavelength-ordered palette; white point on the nebula without stars in each filter; sky reference from the darkest blocks, sky level 16."
-        limits_ru: "Кадр — прямоугольник, где на краях есть все четыре фильтра: 52,6% поля мозаики, ступенчатые края срезаны. Пустого неба в поле нет: опора — самые тёмные блоки (пыль), абсолютный уровень условный. Области отбракованных пикселей мозаики i2d — у протозвезды, у выброса и под ядром одной яркой звезды вверху кадра (F200W, F356W; около 0,1% кадра) — заполнены гладко от края; карта — в репозитории, out/omc3n/проверка_8/финал/38_карта_областей.png. Остаются: редкие одиночные точки у протозвезды (при ×3) и голова выброса — насыщенные узлы F200W заполнены по ядру, как ядра звёзд, вокруг точки. Длинные вертикальные лучи ярких звёзд, в том числе звёзд за краем кадра, — дифракция NIRCam. Полосы 1/f коротких фильтров видны при ×5 в тёмной пыли: разброс по строкам 0,4–0,5 уровня при шуме пикселя 0,7–1,0."
-        limits_en: "The frame is the rectangle with all four filters on its edges: 52.6% of the mosaic, the stepped edges are cut. No empty sky in the field: the reference is the darkest blocks (dust), the absolute level is nominal. Areas of pixels flagged in the i2d mosaic — next to the protostar, along the outflow and below the core of one bright star at the top of the frame (F200W, F356W; about 0.1% of the frame) — are filled smoothly from their edges; map in the repository, out/omc3n/проверка_8/финал/38_карта_областей.png. Remaining: rare isolated dots next to the protostar (at 3×) and the outflow head, where saturated F200W knots are filled like star cores with dots around them. Long vertical spikes of bright stars, including stars just outside the frame, are NIRCam diffraction. Short-wave 1/f stripes are visible at 5× in the dark dust: row-to-row scatter 0.4–0.5 levels against pixel noise of 0.7–1.0."
+        shown_ru: "Четыре фильтра NIRCam (F150W, F200W, F356W, F480M), каждый собран из отдельных экспозиций уровня 2 с привязкой к Gaia DR3 (в архивной мозаике визиты 002 и 004 сдвинуты на 1,2″, звёзды двоятся между фильтрами — отчёт docs/reports/omc3n_i2d_offset.md); палитра по длине волны; белая точка по туманности без звёзд и без одного пятна, задающего её в одиночку; опорное небо по самым тёмным блокам, небо 16."
+        shown_en: "Four NIRCam filters (F150W, F200W, F356W, F480M), each rebuilt from the individual level-2 exposures and aligned to Gaia DR3 (in the archive mosaic visits 002 and 004 are offset by 1.2″ and stars double between filters — report docs/reports/omc3n_i2d_offset.md); wavelength-ordered palette; white point on the nebula without stars and without a single spot setting it alone; sky reference from the darkest blocks, sky level 16."
+        limits_ru: "Кадр — прямоугольник, где на краях есть все четыре фильтра: около 53% поля мозаики, ступенчатые края срезаны. Пустого неба в поле нет: опора — самые тёмные блоки (пыль), абсолютный уровень условный. Самое яркое место поля — ядро туманности у протозвезды — исключено из выборки белой точки (иначе оно одно задавало бы её у F200W и F356W) и выжжено: 0,66% туманности, одна область. Оттенок туманности у протозвезды на 13–18° теплее, чем в обработке по архивной мозаике (phase-7): там в этом месте были заплатки отбраковки, сравнение условное. Длинные прямые лучи ярких звёзд, в том числе звёзд за краем кадра, — дифракция NIRCam. Полосы 1/f коротких фильтров видны при ×5 в тёмной пыли (слабее, чем в архивной мозаике)."
+        limits_en: "The frame is the rectangle with all four filters on its edges: about 53% of the mosaic, the stepped edges are cut. No empty sky in the field: the reference is the darkest blocks (dust), the absolute level is nominal. The brightest place of the field — the nebula core next to the protostar — is excluded from the white point (otherwise it alone would set it in F200W and F356W) and is burnt out: 0.66% of the nebula, one area. The nebula hue next to the protostar is 13–18° warmer than in the processing of the archive mosaic (phase-7), where this place had patches of rejected pixels, so the comparison is nominal. Long straight spikes of bright stars, including stars just outside the frame, are NIRCam diffraction. Short-wave 1/f stripes are visible at 5× in the dark dust (weaker than in the archive mosaic)."

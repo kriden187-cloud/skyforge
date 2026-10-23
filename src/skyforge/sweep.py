@@ -44,7 +44,7 @@ def sweep(cfg: Config, paths: Paths, out_dir: Path, x: SweepAxis | None = None,
     masks = load_masks(cfg, paths)  # статистика растяжки — по полному кадру и полным маскам
     field = stats_field(cfg, paths, list(arrays.values()))
     scale = read_aligned_meta(cfg, paths).get("pixel_scale_arcsec")
-    fmasks = {f: filter_masks(cfg, a, masks, scale)[0] for f, a in arrays.items()}   # фаза 6: свои точечные источники
+    fmasks = {f: filter_masks(cfg, a, masks, scale, field)[0] for f, a in arrays.items()}   # фаза 6: свои точечные источники
     sd = sd if sd is not None else load_nebula_sd(cfg, paths)
     if crop:
         cx, cy, side = crop

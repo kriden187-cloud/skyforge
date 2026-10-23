@@ -155,6 +155,8 @@ def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
         exclude.add("sky_reference_crop")
     if cfg.stretch.exclude_point_sources is None:
         exclude.add("exclude_point_sources")
+    if cfg.stretch.exclude_dominant_spot is None:
+        exclude.add("exclude_dominant_spot")
     st = cfg.stretch.model_dump(mode="json", exclude=exclude)
     key = {"input": in_key, "stretch": st}   # фаза 4: новые поля в ключе только когда заданы — кеши прежних объектов те же
     if cfg.stretch.sky_reference == "crop":   # фаза 6: координаты кропа опоры (report в хеш не входит)
@@ -289,15 +291,91 @@ def point_sources(a: np.ndarray, ps: Any, scale_arcsec: float) -> tuple[np.ndarr
                  "noise": round(noise, 6)}
 
 
+def dominant_spot(a: np.ndarray, neb: np.ndarray, white: float, sp: Any, scale_arcsec: float,
+                  field: Any = None) -> tuple[np.ndarray | None, dict[str, Any]]:
+    """stretch.exclude_dominant_spot (фаза 8): если среди пикселей выборки туманности выше белой точки (процентиль white,
+    в поле статистики) доля одного связного пятна ≥ sp.share — маска пятна с отступом по спаду профиля: кольца от края
+    пятна, пока медиана остатка над местной медианой не упадёт ниже ring_sigma·σ шума (как у точечных источников).
+    Возвращает (маска или None, {share, ...})."""
+    from scipy import ndimage
+
+    from skyforge.field import block_median_map
+
+    inf = np.zeros(a.shape, dtype=bool)
+    if field is not None:
+        inf[field.rows, field.cols] = field.full
+    else:
+        inf[:] = True
+    sel = neb & np.isfinite(a) & inf
+    if sel.sum() < 100:
+        return None, {}
+    hi = float(np.percentile(a[sel], white))
+    hot = sel & (a >= hi)
+    lab, n = ndimage.label(hot, structure=np.ones((3, 3), dtype=bool))
+    if n == 0:
+        return None, {}
+    sizes = np.bincount(lab.ravel())[1:]
+    k = int(np.argmax(sizes)) + 1
+    share = float(sizes[k - 1] / sizes.sum())
+    info: dict[str, Any] = {"share": round(share, 3), "regions": int(n)}
+    if share < sp.share:
+        return None, info
+    rmax = max(2, int(sp.max_radius_arcsec / scale_arcsec))
+    sl = ndimage.find_objects((lab == k).astype(np.int32))[0]
+    y0, y1 = max(sl[0].start - rmax - 1, 0), min(sl[0].stop + rmax + 1, a.shape[0])
+    x0, x1 = max(sl[1].start - rmax - 1, 0), min(sl[1].stop + rmax + 1, a.shape[1])
+    sub = a[y0:y1, x0:x1]
+    ok = np.isfinite(sub)
+    bg = block_median_map(np.where(ok, sub, np.nan), max(16, int(round(sp.window_arcsec / scale_arcsec))), fill_empty=True)
+    r = np.where(ok, sub - bg, np.nan)
+    d = np.diff(np.where(np.isfinite(a), a, np.nan), axis=1)
+    d = d[np.isfinite(d)]
+    noise = float(1.4826 * np.median(np.abs(d - np.median(d))) / np.sqrt(2)) if d.size else 0.0
+    dist = ndimage.distance_transform_edt(lab[y0:y1, x0:x1] != k)
+    rad = rmax
+    for q in range(1, rmax + 1):
+        ring = r[(dist > q - 1) & (dist <= q)]
+        ring = ring[np.isfinite(ring)]
+        if ring.size and float(np.median(ring)) < sp.ring_sigma * noise:
+            rad = q
+            break
+    out = np.zeros(a.shape, dtype=bool)
+    out[y0:y1, x0:x1] = dist <= rad
+    cy, cx = ndimage.center_of_mass(lab == k)
+    info.update(pixels=int(sizes[k - 1]), center=[int(round(cy)), int(round(cx))], radius_arcsec=round(rad * scale_arcsec, 2),
+                white_before=round(hi, 4))
+    return out, info
+
+
+def _spot_text(si: dict[str, Any] | None) -> str:
+    if not si:
+        return ""
+    if "radius_arcsec" not in si:
+        return f"; крупнейшее пятно над белой точкой — {si['share'] * 100:.0f}% (не исключается)"
+    return (f"; пятно {si['share'] * 100:.0f}% пикселей над белой точкой ({si['white_before']:.4g}) исключено с отступом "
+            f"{si['radius_arcsec']}″ — {si['nebula_excluded_percent']}% выборки туманности")
+
+
 def filter_masks(cfg: Config, a: np.ndarray, masks: tuple[np.ndarray, np.ndarray] | None,
-                 scale_arcsec: float | None) -> tuple[tuple[np.ndarray, np.ndarray] | None, dict[str, Any]]:
-    """Маски растяжки одного фильтра: при stretch.exclude_point_sources — туманность без его точечных источников."""
-    ps = cfg.stretch.exclude_point_sources
-    if ps is None or masks is None or not scale_arcsec:
+                 scale_arcsec: float | None, field: Any = None) -> tuple[tuple[np.ndarray, np.ndarray] | None, dict[str, Any]]:
+    """Маски растяжки одного фильтра: при stretch.exclude_point_sources — туманность без его точечных источников;
+    при stretch.exclude_dominant_spot — и без пятна, задающего белую точку в одиночку (фаза 8)."""
+    ps, sp = cfg.stretch.exclude_point_sources, cfg.stretch.exclude_dominant_spot
+    if (ps is None and sp is None) or masks is None or not scale_arcsec:
         return masks, {}
-    src, info = point_sources(a, ps, scale_arcsec)
-    info["nebula_excluded_percent"] = round(float((masks[1] & src).sum() / max(masks[1].sum(), 1) * 100), 1)
-    return (masks[0], masks[1] & ~src), info
+    info: dict[str, Any] = {}
+    neb = masks[1]
+    if ps is not None:
+        src, info = point_sources(a, ps, scale_arcsec)
+        info["nebula_excluded_percent"] = round(float((neb & src).sum() / max(neb.sum(), 1) * 100), 1)
+        neb = neb & ~src
+    if sp is not None:
+        spot, sinfo = dominant_spot(a, neb, cfg.stretch.white, sp, scale_arcsec, field)
+        if spot is not None:
+            sinfo["nebula_excluded_percent"] = round(float((neb & spot).sum() / max(neb.sum(), 1) * 100), 2)
+            neb = neb & ~spot
+        info["dominant_spot"] = sinfo
+    return (masks[0], neb), info
 
 
 def stretch_all(cfg: Config, arrays: dict[str, np.ndarray],
@@ -305,8 +383,10 @@ def stretch_all(cfg: Config, arrays: dict[str, np.ndarray],
                 field: Any = None, scale_arcsec: float | None = None) -> tuple[dict[str, np.ndarray], dict[str, dict]]:
     out, stats = {}, {}
     for f, a in arrays.items():
-        mf, ps_info = filter_masks(cfg, a, masks, scale_arcsec)
+        mf, ps_info = filter_masks(cfg, a, masks, scale_arcsec, field)
         out[f], stats[f] = stretch_array(a, cfg.stretch.for_filter(f), masks=mf, field=field)
+        if "dominant_spot" in ps_info:
+            stats[f]["dominant_spot"] = ps_info.pop("dominant_spot")
         if ps_info:
             stats[f]["point_sources"] = ps_info
     return out, stats
@@ -364,7 +444,7 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
             lin, disp, sinfo = star_layers(arrays, {f: stats[f]["white_value"] for f in arrays}, stars, ss, cfg.bin)
             for f, a in arrays.items():
                 # туманность без звезды, точки растяжки — по исходному кадру (не меняются)
-                mf, _ = filter_masks(cfg, a, masks, scale)
+                mf, _ = filter_masks(cfg, a, masks, scale, field)
                 neb, _ = stretch_array(a - lin[f], cfg.stretch.for_filter(f), stats_from=a, masks=mf, field=field)
                 stretched[f] = screen(neb, disp[f])
             console.print(f"  звёзды с насыщенным ядром отдельно от туманности: {len(sinfo)}")
@@ -377,7 +457,8 @@ def stretch(cfg: Config, paths: Paths, out_dir: Path) -> dict[str, Any]:
                       f"выжжено {stats[f]['white_clipped_percent']}%"
                       + (f"; точечных источников {stats[f]['point_sources']['stars']} (до "
                          f"{stats[f]['point_sources']['max_radius_arcsec']}″), из выборки туманности исключено "
-                         f"{stats[f]['point_sources']['nebula_excluded_percent']}%" if "point_sources" in stats[f] else ""))
+                         f"{stats[f]['point_sources']['nebula_excluded_percent']}%" if "point_sources" in stats[f] else "")
+                      + _spot_text(stats[f].get("dominant_spot")))
     (d / "meta.json").write_text(json.dumps({"key": stretch_key(cfg, in_key), "filters": list(stretched), "stats": stats,
                                              "saturated_stars": sinfo},
                                             ensure_ascii=False, indent=2), encoding="utf-8")

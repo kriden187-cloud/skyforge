@@ -186,6 +186,10 @@ class Level2Config(_Strict):
     # Веса стека: rnoise — 1/VAR_RNOISE (шум считывания, как ivm у drizzle); err — 1/ERR² (в ERR есть пуассоновский
     # шум самой звезды: в ядре яркий отсчёт получает меньший вес, и поток звёзд занижается — у F090W на 2%).
     weights: Literal["rnoise", "err"] = "rnoise"
+    # Фаза 8 (OMC3-N): порог выбросов стека — по полной ERR (с пуассоновским шумом), веса — как в weights. На яркой
+    # туманности длинных волн ERR в 5–8 раз больше шума считывания: порог 4·rnoise резал 28% значений F356W, а у пар
+    # экспозиций всегда бо́льшее (уровень вниз). None — как раньше: порог по той же ошибке, что веса. В хеш — если задано.
+    clip_error: Literal["err"] | None = None
     # Астрометрическая подстройка экспозиций по звёздам i2d (аналог tweakreg). Правила 3g (решение Дениса):
     # исправлять, если точность сдвига (остаток/√N) < tweak_max_precision; поворот — только при ≥ tweak_rot_min_stars
     # звёздах и |поворот| ≥ tweak_rot_min_deg, иначе только сдвиг. Короткие волны: детекторы одной экспозиции
@@ -193,6 +197,10 @@ class Level2Config(_Strict):
     # Длинные волны (без соседей): точность ≥ порога или остаток после > tweak_lw_max_residual — не исправлять;
     # если при этом остаток до > tweak_exclude_above — экспозиция исключается из стека.
     tweak: bool = True
+    # Фаза 8 (OMC3-N): опора астрометрии — Gaia DR3 (skyforge.astrometry): одна поправка на экспозицию по парам звёзд
+    # в разных экспозициях и по Gaia на эпоху наблюдения, общая для всех фильтров объекта. Нужна, когда i2d сам
+    # собран с ошибкой (OMC3-N: визит 004 сдвинут на 1,2″). None — как раньше: tweak по звёздам i2d. В хеш — если задано.
+    astrometry: Literal["gaia"] | None = None
     tweak_min_stars: int = Field(8, ge=3)
     tweak_max_stars: int = Field(30, ge=3)
     tweak_max_precision: float = Field(0.03, gt=0, description="px: точность сдвига rms/√N, ниже которой исправлять")
@@ -346,6 +354,17 @@ class PointSourcesConfig(_Strict):
     max_radius_arcsec: float = Field(8.0, gt=0)
 
 
+class DominantSpotConfig(_Strict):
+    # Фаза 8 (OMC3-N): 99,8-й процентиль описывает туманность в целом, а не одно самое яркое пятно в ней. Если среди
+    # пикселей выборки туманности выше белой точки доля одного связного пятна ≥ share, пятно исключается из выборки
+    # с отступом по спаду профиля, как у звёзд (exclude_point_sources): кольца от края пятна, пока медиана остатка над
+    # местной медианой (окно window_arcsec) не упадёт ниже ring_sigma·σ шума (не дальше max_radius_arcsec).
+    share: float = Field(0.9, gt=0, le=1)
+    window_arcsec: float = Field(6.0, gt=0)
+    ring_sigma: float = Field(2.0, gt=0)
+    max_radius_arcsec: float = Field(8.0, gt=0)
+
+
 class StretchConfig(_Strict):
     method: Literal["asinh", "log", "sqrt", "linear"] = "asinh"
     # masks — black считается по маске пустого неба, white — по маске туманности (этап clean):
@@ -397,6 +416,7 @@ class StretchConfig(_Strict):
 
     exclude_radius_px: float = Field(150.0, ge=0, description="радиус диска вокруг звезды с насыщенным ядром, px при bin 1")
     exclude_point_sources: PointSourcesConfig | None = None
+    exclude_dominant_spot: DominantSpotConfig | None = None   # фаза 8; в хеш — только если задано
 
     @model_validator(mode="before")
     @classmethod
@@ -756,7 +776,8 @@ NON_PROCESSING = ("style", "reference_image", "sweep", "preview", "report", "fet
 # Поля фазы 6: в хеш — только если заданы (иначе хеши и ключи кеша принятых объектов поменялись бы).
 OPTIONAL_WHEN_SET = (("mast_target",), ("level2_filters",), ("stretch", "sky_reference_crop"),
                      ("stretch", "exclude_point_sources"), ("color", "fill_gaps"), ("level2", "blend_large_scale"),
-                     ("level2", "blend_sigma_px"))
+                     ("level2", "blend_sigma_px"), ("level2", "astrometry"), ("level2", "clip_error"),
+                     ("stretch", "exclude_dominant_spot"))
 
 
 def deep_merge(base: dict, over: dict) -> dict:
