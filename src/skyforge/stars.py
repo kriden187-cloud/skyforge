@@ -20,8 +20,9 @@ from astropy.stats import sigma_clipped_stats
 from scipy import ndimage
 
 from dataclasses import dataclass
+from typing import Any
 
-from skyforge.config import StarsConfig
+from skyforge.config import PlateauConfig, StarsConfig
 from skyforge.stretch import sample
 
 _EIGHT = np.ones((3, 3), dtype=bool)
@@ -423,3 +424,82 @@ def star_weight(masks: dict[str, tuple[np.ndarray, np.ndarray]], detect: str, s:
         w = ndimage.gaussian_filter(w, feather)
     w[nebula] = 0  # растушёвка не должна заползать на туманность
     return StarMask(w, max(3, int(round(s.local_window_arcsec / scale_arcsec))), detect)
+
+
+PLATEAU_NOISE_K = 5.0   # допуск плато — не меньше стольких σ шума кадра
+PLATEAU_VERSION = 5     # 2: допуск выше неба и местного шума (без этого «плато» — шум диска галактики);
+                        # 3: следы растекания заряда выше доли уровня плато (pc.saturation); 4–5: кайма ниже неба
+
+
+def plateau_cores(a: np.ndarray, pc: PlateauConfig) -> tuple[np.ndarray, dict[str, int]]:
+    """Фаза 9 (stars.plateau_cores): плато насыщения наземного стека → дыра NaN (дальше — fill_cores, как ядро i2d).
+
+    Кандидаты — локальные максимумы ярче pc.min_snr шумов (σ по разностям соседних пикселей) над медианой кадра, и
+    допуск pc.tol от их высоты над медианой — не меньше PLATEAU_NOISE_K σ (иначе «плато» — просто шум гладкой туманности
+    или диска галактики: на уровне 100σ допуск 1% меньше шума). Плато — связная область вокруг максимума в пределах
+    допуска, не меньше pc.min_px пикселей; допуск — выше и местного шума в окне (яркая середина галактики шумит сильнее
+    неба). У ненасыщенной звезды и ядра галактики уже соседний пиксель на 15–20% ниже
+    пика — плато из одного пикселя. Если плато найдены и задан pc.saturation, дырой становятся и связные области (не меньше
+    pc.min_px) выше этой доли уровня самого низкого плато над медианой — следы растекания заряда у ярких звёзд. Кайма
+    ниже неба, связная с найденным, — тоже дыра. Кадр меняется на месте (копия из load_sci). Возвращает кадр и
+    {plateaus, pixels, largest_px[, saturation_level, bleed_px, rim_px]}."""
+    from scipy import ndimage
+
+    ok = np.isfinite(a)
+    if not ok.any():
+        return a, {"plateaus": 0, "pixels": 0, "largest_px": 0}
+    v = a[ok]
+    med = float(np.median(v[:: max(1, v.size // 2_000_000)]))
+    d = np.diff(np.where(ok, a, np.nan), axis=1)
+    d = d[np.isfinite(d)]
+    noise = float(1.4826 * np.median(np.abs(d - np.median(d))) / np.sqrt(2)) if d.size else 0.0
+    z = np.where(ok, a, -np.inf)
+    floor = med + max(pc.min_snr, PLATEAU_NOISE_K / pc.tol) * noise
+    peaks = np.argwhere((z == ndimage.maximum_filter(z, 3)) & (z > floor))
+    peaks = peaks[np.argsort(-a[peaks[:, 0], peaks[:, 1]])]
+    H, W = a.shape
+    out = np.zeros(a.shape, dtype=bool)
+    sizes, levels = [], []
+    half = 40
+    for y, x in peaks:
+        if out[y, x]:
+            continue
+        y0, y1, x0, x1 = max(y - half, 0), min(y + half + 1, H), max(x - half, 0), min(x + half + 1, W)
+        win = z[y0:y1, x0:x1]
+        band = pc.tol * (a[y, x] - med)
+        # местный шум (яркая середина галактики шумит сильнее неба): допуск плато должен быть выше него
+        dw = np.diff(np.where(np.isfinite(win), win, np.nan), axis=1)
+        dw = dw[np.isfinite(dw)]
+        if dw.size and band < PLATEAU_NOISE_K * 1.4826 * float(np.median(np.abs(dw - np.median(dw)))) / np.sqrt(2):
+            continue
+        lab, _ = ndimage.label(win >= a[y, x] - band)
+        reg = lab == lab[y - y0, x - x0]
+        n = int(reg.sum())
+        if n >= pc.min_px:
+            out[y0:y1, x0:x1] |= reg
+            sizes.append(n)
+            levels.append(float(a[y, x]))
+    info: dict[str, Any] = {}
+    if pc.saturation is not None and levels:
+        level = med + pc.saturation * (min(levels) - med)
+        lab, n = ndimage.label(z >= level)
+        big = np.bincount(lab.ravel(), minlength=n + 1) >= pc.min_px
+        big[0] = False
+        bleed = big[lab] & ~out
+        out |= big[lab]
+        info = {"saturation_level": float(level), "bleed_px": int(bleed.sum())}
+    if pc.grow_px and out.any():
+        out = ndimage.binary_dilation(out, iterations=pc.grow_px)
+    if out.any():
+        # кайма ниже неба вокруг насыщения (у следов растекания — столбец через пиксель ниже порога, шире grow_px):
+        # связные (8 соседей) с расширенной дырой пиксели ниже медианы на PLATEAU_NOISE_K σ — тоже дыра; иначе при bin N
+        # они остаются в блоке и дают ноль в одном фильтре
+        low = ok & ~out & (a < med - PLATEAU_NOISE_K * noise)
+        lab, _ = ndimage.label(low | out, structure=np.ones((3, 3)))
+        touch = np.zeros(lab.max() + 1, dtype=bool)
+        touch[np.unique(lab[out])] = True
+        rim = touch[lab] & low
+        out |= rim
+        info["rim_px"] = int(rim.sum())
+    a[out] = np.nan
+    return a, {"plateaus": len(sizes), "pixels": int(out.sum()), "largest_px": int(max(sizes) if sizes else 0), **info}

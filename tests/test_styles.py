@@ -204,3 +204,32 @@ def test_dominant_spot_excluded_only_when_it_sets_white_alone():
         knots += 2.0 * np.exp(-((yy - cy) ** 2 + (xx - cx) ** 2) / (2 * 2.0 ** 2))
     m2, info2 = dominant_spot(knots.astype(np.float32), neb, 99.8, sp, 0.063)
     assert m2 is None and info2["share"] < 0.9
+
+
+def test_core_gain_compresses_only_bright_center():
+    """Фаза 9, режим ядра: ниже knee множитель 1 (диск и рукава те же), широкое ядро ложится под белую точку, точечное
+    активное ядро остаётся точкой, провал «пылевой полосы» через ядро сохраняется в отношении к соседям."""
+    import numpy as np
+
+    from skyforge.config import CoreConfig
+    from skyforge.stretch import core_gain
+
+    yy, xx = np.indices((400, 400))
+    r2 = (yy - 200) ** 2 + (xx - 200) ** 2
+    disk = 0.3 * np.exp(-r2 / (2 * 80.0 ** 2))
+    bulge = 30.0 * np.exp(-r2 / (2 * 25.0 ** 2))            # ядро в 30 раз ярче белой точки рукавов
+    nucleus = 20.0 * np.exp(-r2 / (2 * 1.2 ** 2))          # активное ядро — точка
+    lane = 1 - 0.3 * (np.abs(yy - 200 + 10) < 2)           # пылевая полоса через ядро: −30%
+    a = ((disk + bulge + nucleus) * lane).astype(np.float32)
+    arrays = {"g": a, "r": 2 * a}
+    stats = {"g": {"black_value": 0.0, "white_value": 1.0}, "r": {"black_value": 0.0, "white_value": 2.0}}
+    gain, info = core_gain(arrays, stats, CoreConfig(knee=0.5, sigma_arcsec=1.0, inner_percentile=100),
+                           scale_arcsec=0.2)
+    assert info["applied"] and gain is not None
+    outside = r2 > 90 ** 2
+    assert np.all(gain[outside] == 1.0)                      # диск не тронут
+    y = a * gain
+    core = r2 < 40 ** 2
+    assert (y[core] >= 1).mean() < 0.01                       # выжжена только точка ядра (было: всё ядро ≥ 1)
+    assert (a[core] >= 1).mean() > 0.9
+    assert y[190, 200] / y[184, 200] < 0.8                    # провал полосы в ядре виден (−30% к соседу)

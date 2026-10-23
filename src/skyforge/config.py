@@ -224,6 +224,20 @@ class Level2Config(_Strict):
     blend_sigma_px: float | None = Field(None, gt=0, description="сигма сглаживания разности, px сетки i2d (по умолчанию 64)")
 
 
+class PlateauConfig(_Strict):
+    # Фаза 9: плато насыщения — связная область вокруг яркого максимума, где значения в пределах tol от него, не меньше
+    # min_px пикселей (у ненасыщенной звезды и ядра галактики соседний пиксель уже на 15–20% ниже пика). Максимум —
+    # ярче min_snr шумов (σ по разностям соседних пикселей). Найденное плато (с отступом grow_px) — дыра NaN.
+    # saturation: связные области выше этой доли уровня самого низкого найденного плато (над медианой) — тоже насыщение:
+    # следы растекания заряда вдоль столбцов (значения 80–100% пика, не плоские). Порог из заголовка (ABMAGSAT) не
+    # годится: пересчёт звёздной величины в пиксель по гауссу даёт в r уровень ниже ядра NGC 1365.
+    tol: float = Field(0.01, gt=0, lt=0.5)
+    min_px: int = Field(5, ge=2)
+    min_snr: float = Field(50.0, gt=0)
+    grow_px: int = Field(1, ge=0)
+    saturation: float | None = Field(0.8, gt=0, le=1)
+
+
 class StarsConfig(_Strict):
     # Насыщенные ядра в i2d — дыры NaN с WHT=0 внутри поля (слоя DQ в продуктах уровня 3 нет).
     fill_cores: bool = False
@@ -248,17 +262,24 @@ class StarsConfig(_Strict):
     # из 8 звёзд неба находилась одна. None — выкл. Только пики на «тихом небе» (cosmics.quiet_sky, k ниже).
     sky_detect_filter: str | None = None
     sky_quiet_sigma: float = Field(4.0, gt=0)
+    # Фаза 9 (наземные стеки): насыщенное ядро звезды — плато, а не дыра NaN. При чтении кадра (align, исходная сетка)
+    # плато становится дырой и дальше заполняется как ядро (fill_cores). None — выкл. (ключи принятых объектов прежние).
+    plateau_cores: PlateauConfig | None = None
 
     _SKY_FIELDS = ("sky_detect_filter", "sky_quiet_sigma")
+
+    def _unset(self) -> set[str]:
+        return {"plateau_cores"} if self.plateau_cores is None else set()
 
     def mask_key(self) -> dict:
         """Поля, от которых зависят маски для destripe и сборки уровня 2 (без поиска звёзд с насыщенным ядром —
         он на этапе clean и в ключи build/align не входит; звёзды неба 3б — тоже только clean)."""
-        return self.model_dump(exclude={"saturated_min_core_px", "saturated_min_filters", *self._SKY_FIELDS})
+        return self.model_dump(exclude={"saturated_min_core_px", "saturated_min_filters", *self._SKY_FIELDS, *self._unset()})
 
     def clean_key(self) -> dict:
         """Ключ clean: поля звёзд неба 3б — только когда поиск включён (кеш clean у JWST не сбрасывается)."""
-        return self.model_dump(mode="json", exclude=set(self._SKY_FIELDS) if self.sky_detect_filter is None else set())
+        return self.model_dump(mode="json", exclude=(set(self._SKY_FIELDS) if self.sky_detect_filter is None else set())
+                               | self._unset())
 
 
 class BackgroundConfig(_Strict):
@@ -352,6 +373,10 @@ class PointSourcesConfig(_Strict):
     window_arcsec: float = Field(6.0, gt=0)
     ring_sigma: float = Field(2.0, gt=0)
     max_radius_arcsec: float = Field(8.0, gt=0)
+    # Фаза 9 (галактики): звезда — только находка шириной не больше max_fwhm_psf × PSF полосы (FWHM гаусса); узлы
+    # звездообразования и фоновые галактики шире PSF — часть объекта, остаются в выборке белой точки. PSF — из
+    # заголовка продукта (PSF_FWHM), без него — медиана по ярким находкам кадра. None — без проверки ширины.
+    max_fwhm_psf: float | None = Field(None, gt=0)
 
 
 class DominantSpotConfig(_Strict):
@@ -363,6 +388,20 @@ class DominantSpotConfig(_Strict):
     window_arcsec: float = Field(6.0, gt=0)
     ring_sigma: float = Field(2.0, gt=0)
     max_radius_arcsec: float = Field(8.0, gt=0)
+
+
+class CoreConfig(_Strict):
+    # Фаза 9 (галактики): режим ядра — вторая белая точка для яркого центра. Яркость всех полос после чёрной и белой
+    # точек (среднее) сглаживается гауссом sigma_arcsec; где сглаженная яркость S выше knee (в долях внешней белой
+    # точки), её крупный масштаб сжимается логарифмом так, что внутренняя белая точка (процентиль inner_percentile
+    # сглаженной яркости в поле) ложится на top, а на knee кривая идёт без излома. Множитель «сжатая S / S» — общий
+    # для всех полос: мелкая структура ядра (пылевые полосы, само ядро) и цвет сохраняются; ниже knee множитель 1 —
+    # рукава и оболочка не меняются. Сжимается только центр — самая большая по площади связная область выше knee (яркие
+    # звёзды поля тоже выше knee, их не трогает).
+    knee: float = Field(0.5, gt=0, lt=1)
+    sigma_arcsec: float = Field(2.0, gt=0)
+    top: float = Field(0.85, gt=0, le=1)   # запас под мелкую структуру: пиксели ярче сглаженной яркости на 10–60%
+    inner_percentile: float = Field(99.99, gt=50, le=100)
 
 
 class StretchConfig(_Strict):
@@ -417,6 +456,7 @@ class StretchConfig(_Strict):
     exclude_radius_px: float = Field(150.0, ge=0, description="радиус диска вокруг звезды с насыщенным ядром, px при bin 1")
     exclude_point_sources: PointSourcesConfig | None = None
     exclude_dominant_spot: DominantSpotConfig | None = None   # фаза 8; в хеш — только если задано
+    core: CoreConfig | None = None   # фаза 9: режим ядра галактики; в хеш — только если задано
 
     @model_validator(mode="before")
     @classmethod
@@ -780,7 +820,9 @@ NON_PROCESSING = ("style", "reference_image", "sweep", "preview", "report", "fet
 OPTIONAL_WHEN_SET = (("mast_target",), ("level2_filters",), ("stretch", "sky_reference_crop"),
                      ("stretch", "exclude_point_sources"), ("color", "fill_gaps"), ("level2", "blend_large_scale"),
                      ("level2", "blend_sigma_px"), ("level2", "astrometry"), ("level2", "clip_error"),
-                     ("stretch", "exclude_dominant_spot"), ("archive_collection",))
+                     ("stretch", "exclude_dominant_spot"), ("archive_collection",),
+                     ("stretch", "exclude_point_sources", "max_fwhm_psf"), ("stars", "plateau_cores"),
+                     ("stretch", "core"))
 
 
 def deep_merge(base: dict, over: dict) -> dict:

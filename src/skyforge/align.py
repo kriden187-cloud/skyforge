@@ -416,6 +416,15 @@ def aligned_dir(cfg: Config, paths: Paths) -> Path:
 
 
 def _cache_key(cfg: Config, prods: dict[str, Product], reference: str) -> dict[str, Any]:
+    key = _cache_key_base(cfg, prods, reference)
+    if cfg.stars.plateau_cores is not None:   # фаза 9: версия алгоритма плато — только когда он включён
+        from skyforge.stars import PLATEAU_VERSION
+
+        key["plateau_version"] = PLATEAU_VERSION
+    return key
+
+
+def _cache_key_base(cfg: Config, prods: dict[str, Product], reference: str) -> dict[str, Any]:
     return {
         "version": ALIGN_VERSION,
         "files": {f: [p.path, p.size] for f, p in prods.items()},
@@ -531,6 +540,14 @@ def _compute(cfg: Config, paths: Paths, prods: dict[str, Product], reference: st
     keep: dict[str, Any] | None = None
     for f, prod in prods.items():
         data, wcs = load_sci(paths.abs(prod.path))
+        if cfg.stars.plateau_cores is not None:   # фаза 9: плато насыщения наземного стека — дыра, как ядро i2d
+            from skyforge.stars import plateau_cores
+
+            data, pinfo = plateau_cores(data, cfg.stars.plateau_cores)
+            bleed = f", следы растекания {pinfo['bleed_px']} px" if "bleed_px" in pinfo else ""
+            bleed += f", кайма {pinfo['rim_px']} px" if "rim_px" in pinfo else ""
+            console.print(f"  {f}: плато насыщения {pinfo['plateaus']} ({pinfo['pixels']} px, крупнейшее "
+                          f"{pinfo['largest_px']} px{bleed}) → дыры")
         if cfg.clean.destripe.enabled:
             data, stripes[f], kept = _destripe_native(cfg, data, wcs, load_context(paths.abs(prod.path)))
             pf = cfg.clean.destripe.preview_filter

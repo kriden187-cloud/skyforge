@@ -322,7 +322,9 @@ def _compute(cfg: Config, paths: Paths, d: Path, out_dir: Path) -> dict[str, Any
         console.print("  второй проход по небу (мягче): " + ", ".join(
             f"{f} {info['filters'][f]['cosmic_pixels_sky_pass']} px" for f in after))
     if cfg.stars.sky_detect_filter:  # 3б шаг 3: звёзды поля на небе — по шуму неба, к маске звёзд
-        sf = cfg.stars.sky_detect_filter.upper()
+        from skyforge.filters import normalize_filter_name
+
+        sf = normalize_filter_name(cfg.stars.sky_detect_filter)
         if sf not in after:
             raise SkyforgeError(f"stars.sky_detect_filter {sf} нет среди фильтров {list(after)}")
         q = quiet_sky(after[sf], load_sky_mask(cfg, paths), cfg.stars.sky_quiet_sigma)
@@ -599,12 +601,13 @@ def _cosmics_sheet(cfg: Config, before: dict, after: dict, masks: dict, path: Pa
 
 
 def _detect_filter(cfg: Config, filters: list[str]) -> str:
-    from skyforge.filters import sort_by_wavelength
+    from skyforge.filters import normalize_filter_name, sort_by_wavelength
 
     if cfg.stars.detect_filter:
-        if cfg.stars.detect_filter.upper() not in filters:
+        name = normalize_filter_name(cfg.stars.detect_filter)   # фаза 9: наземные полосы — строчные (u, g, r, i)
+        if name not in filters:
             raise SkyforgeError(f"stars.detect_filter {cfg.stars.detect_filter} нет среди фильтров {filters}")
-        return cfg.stars.detect_filter.upper()
+        return name
     return sort_by_wavelength(filters, cfg.mission, cfg.instrument)[0]
 
 

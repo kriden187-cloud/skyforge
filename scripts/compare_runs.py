@@ -34,8 +34,9 @@ def main() -> None:
             c = img[h // 2 - s // 2:h // 2 + s // 2, w // 2 - s // 2:w // 2 + s // 2]
             tiles.append(np.kron(c, np.ones((5, 5, 1), dtype=np.float32)))
             labels.append(f"{name} — {lab}, ×5 (центр)")
+    name = pathlib.Path(run_a).parent.name.upper()
     contact_sheet(tiles, labels, out / f"{num}_{la}_{lb}.png", cols=4, tile_inches=4.0, interpolation="nearest",
-                  title=f"OMC3-N: {la} | {lb} — кропы на небе при 100% и ×5")
+                  title=f"{name}: {la} | {lb} — кропы на небе при 100% и ×5")
 
 
 if __name__ == "__main__":
