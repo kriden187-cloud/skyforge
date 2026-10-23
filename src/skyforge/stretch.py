@@ -165,7 +165,9 @@ def stretch_key(cfg: Config, in_key: dict[str, Any]) -> dict[str, Any]:
     st = cfg.stretch.model_dump(mode="json", exclude=exclude)
     if st.get("exclude_point_sources") and st["exclude_point_sources"].get("max_fwhm_psf") is None:
         del st["exclude_point_sources"]["max_fwhm_psf"]   # фаза 9: без значения — ключ кеша прежний
-    key = {"input": in_key, "stretch": st}   # фаза 4: новые поля в ключе только когда заданы — кеши прежних объектов те же
+    key = {"input": in_key, "stretch": st}
+    if cfg.stretch.exclude_point_sources is not None and cfg.stretch.exclude_point_sources.max_fwhm_psf is not None:
+        key["point_width_version"] = POINT_WIDTH_VERSION   # фаза 4: новые поля в ключе только когда заданы — кеши прежних объектов те же
     if cfg.stretch.sky_reference == "crop":   # фаза 6: координаты кропа опоры (report в хеш не входит)
         key["sky_reference_crop_spec"] = next(c.model_dump(mode="json") for c in cfg.report.crops
                                               if c.name == cfg.stretch.sky_reference_crop)
@@ -254,6 +256,9 @@ def load_masks(cfg: Config, paths: Paths) -> tuple[np.ndarray, np.ndarray] | Non
     return sky, neb
 
 
+POINT_WIDTH_VERSION = 2   # 2: окно максимума и резкости по PSF (при bin 1 наземные звёзды шире окна 5 px)
+
+
 def _fwhm_px(r: np.ndarray, y: int, x: int, half: int) -> float | None:
     """FWHM находки (px) гауссом с постоянным фоном в окне (2·half+1)²; None — подгонка не сошлась."""
     from scipy.optimize import curve_fit
@@ -292,8 +297,13 @@ def point_sources(a: np.ndarray, ps: Any, scale_arcsec: float,
     d = np.diff(np.where(ok, a, np.nan), axis=1)
     d = d[np.isfinite(d)]
     noise = float(1.4826 * np.median(np.abs(d - np.median(d))) / np.sqrt(2)) if d.size else 0.0
-    peaks = np.argwhere((r == ndimage.maximum_filter(r, 5)) & (r > ps.sigma * noise)
-                        & (r > ps.sharpness * np.maximum(ndimage.uniform_filter(r, 5), 1e-12)))
+    # окно максимума и резкости — 5 px (звезда ~2 px); при проверке ширины (фаза 9) — около 2,5 PSF: при bin 1 наземная
+    # звезда 4–6 px, пик в окне 5×5 почти не выше среднего, и резкость отсеивала все звёзды (bin 4 — по-прежнему 5)
+    k = 5
+    if getattr(ps, "max_fwhm_psf", None) and psf_arcsec:
+        k = max(5, 2 * int(round(1.25 * psf_arcsec / scale_arcsec)) + 1)
+    peaks = np.argwhere((r == ndimage.maximum_filter(r, k)) & (r > ps.sigma * noise)
+                        & (r > ps.sharpness * np.maximum(ndimage.uniform_filter(r, k), 1e-12)))
     width: dict[str, Any] = {}
     if getattr(ps, "max_fwhm_psf", None) and len(peaks):
         head_px = psf_arcsec / scale_arcsec if psf_arcsec else None

@@ -99,3 +99,22 @@ def test_plateau_cores_saturated_star_becomes_hole():
     assert info["rim_px"] == 26 * 3 and info["plateaus"] == 1
     assert info["saturation_level"] == pytest.approx(0.8 * 3e4, rel=0.01)
     assert np.isfinite(out[150, 60]) and np.isfinite(out[120, 150])    # ненасыщенная звезда и ядро галактики — нет
+
+
+def test_point_sources_window_follows_psf():
+    """bin 1 наземного стека: звезда FWHM 5,5 px — в окне 5×5 пик почти не выше среднего; при проверке ширины окно
+    максимума и резкости — около 2,5 PSF, звезда находится, а узел шире 1,5 PSF остаётся частью объекта."""
+    from skyforge.config import PointSourcesConfig
+    from skyforge.stretch import point_sources
+
+    rng = np.random.default_rng(2)
+    yy, xx = np.indices((300, 300))
+    a = rng.normal(0, 1.0, (300, 300))
+    sg = 5.5 / 2.3548
+    a += 2e3 * np.exp(-((yy - 80) ** 2 + (xx - 80) ** 2) / (2 * sg ** 2))           # звезда шириной PSF
+    a += 2e3 * np.exp(-((yy - 200) ** 2 + (xx - 200) ** 2) / (2 * (2.5 * sg) ** 2))  # узел в 2,5 раза шире
+    a = a.astype(np.float32)
+    old, _ = point_sources(a, PointSourcesConfig(), 0.2)
+    assert not old[80, 80]                                               # окно 5 px: резкость звезду не пропускает
+    m, info = point_sources(a, PointSourcesConfig(max_fwhm_psf=1.5), 0.2, psf_arcsec=1.1)
+    assert m[80, 80] and not m[200, 200] and info["stars"] == 1   # узел отсеивает уже резкость в окне 2,5 PSF
