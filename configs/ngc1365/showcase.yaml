@@ -1,0 +1,35 @@
+# «Витринный» стиль NGC 1365: старт — финал W3-2 (phase-6). Референса нет, критерии внутренние: небо без нулей,
+# выжжено ≤ 0,5%, прямых границ при ×5 нет, звёзды не зелёные, фактура рукавов видна при 100%.
+extends: base
+stretch:
+  method: asinh
+  anchor: masks            # black — по пустому небу, white — по маске галактики
+  white: 99.8              # как W3
+  a: 0.05                  # как W3
+  black_mode: pedestal
+  black_k: 3
+  sky_level: 16
+  sky_reference: darkest_blocks   # здесь пустое небо есть — проверить кропами sky/sky2 при ×5
+  sky_reference_min_free: 0.3
+  sky_toe_max_p: 4
+  exclude_point_sources: {}       # белая точка по галактике без звёзд в каждой полосе (W3)
+  exclude_dominant_spot: { share: 0.9 }   # задание фазы 9: проверить, что правило делает с ядром
+color:
+  mode: manual
+  blend: average
+  overrides:               # задание консультанта (фаза 9, шаг 2): по длине волны
+    u: "#7040ff"           # фиолетово-синий
+    g: "#3060ff"           # синий
+    r: "#c0ff40"           # зелёно-жёлтый
+    i: "#ff2020"           # красный
+  saturation: 1.4
+  saturation_gamut: limit
+  saturation_above_sky: 12
+  shadows: { value: 0, scope: nebula, by: max, above_sky: true }
+  background_keep_level: true
+  neutral_background: off
+  star_saturation: 1
+finish:
+  nodata_fill: sky
+  stars: { scale: 1, shrink: 0 }
+  local_contrast: { radius: 80, amount: 0.3 }

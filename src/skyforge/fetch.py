@@ -42,6 +42,8 @@ INSTRUMENTS = {
         # В MAST продукты HAP для WFPC2 записаны как WFPC2/PC, хотя это мозаика всех четырёх чипов.
         "wfpc2": "WFPC2/PC", "wfpc2/pc": "WFPC2/PC",
     },
+    # фаза 9: наземные тайлы ESO Phase 3 (skyforge.eso), не MAST
+    "ground": {"omegacam": "OMEGACAM"},
 }
 # Подгруппа продукта уровня 3 в порядке предпочтения.
 SUBGROUPS = {"jwst": ["I2D"], "hst": ["DRC", "DRZ", "DRW"]}
@@ -55,7 +57,7 @@ PROVENANCE_RANK = {"HAP-SVM": 2, "HAP-MVM": 0}
 class Product:
     filter: str
     path: str  # относительно корня проекта
-    source: str  # "mast" | "inbox"
+    source: str  # "mast" | "inbox" | "eso" | "level2"
     obs_id: str | None = None
     filename: str = ""
     size: int | None = None
@@ -404,7 +406,7 @@ def local_products(cfg: Config, paths: Paths) -> dict[str, Product]:
     found: dict[str, Product] = {}
     for f, d in load_manifest(cfg, paths).get("products", {}).items():
         prod = Product(**d)
-        if prod.source == "mast" and paths.abs(prod.path).exists() and (not want or f in want):
+        if prod.source in ("mast", "eso") and paths.abs(prod.path).exists() and (not want or f in want):
             found[f] = prod
     for f, prod in scan_inbox(cfg, paths).items():
         if not want or f in want:
@@ -457,6 +459,10 @@ def _print_available(cfg: Config, avail: dict[str, Available], have: dict[str, P
 
 def fetch(cfg: Config, paths: Paths, *, offline: bool = False, list_only: bool = False,
           max_gb: float | None = None) -> FetchResult:
+    if cfg.mission == "ground":   # фаза 9: наземные тайлы ESO, вырезка на сервере
+        from skyforge.eso import fetch_eso
+
+        return fetch_eso(cfg, paths, offline=offline, list_only=list_only, max_gb=max_gb)
     want = list(cfg.filters)
     found = local_products(cfg, paths)
     manifest = load_manifest(cfg, paths)

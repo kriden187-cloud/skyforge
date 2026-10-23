@@ -55,7 +55,7 @@ def main() -> None:
     sd, sky = load_nebula_sd(c, P), load_sky_mask(c, P)
     H, W = sd.shape
     rgba = np.asarray(Image.open(png).convert("RGBA"))
-    img = rgba[..., :3].astype(np.float32)[::-1] / 255          # сетка: строка 0 — низ
+    img = rgba[..., :3].astype(np.float32)[::-1] / 255          # сетка: строка 0 — низ (contact_sheet рисует origin lower — без второго переворота)
     assert img.shape[:2] == (H, W), (img.shape, (H, W))
     crops = {k.name: k for k in with_resolved_crops(c, P).report.crops}
     meta = json.loads((aligned_dir(c, P) / "meta.json").read_text(encoding="utf-8"))
@@ -65,12 +65,12 @@ def main() -> None:
         k = crops[name]
         return display_crop((H, W), k.x, k.y, k.size, b)
 
-    contact_sheet([shrink(img, 1600)[::-1], np.clip(shrink(img, 1600) * 5, 0, 1)[::-1]], ["целиком", "целиком ×5"],
+    contact_sheet([shrink(img, 1600), np.clip(shrink(img, 1600) * 5, 0, 1)], ["целиком", "целиком ×5"],
                   out / "30_целиком.png", cols=1, tile_inches=12, interpolation="lanczos",
                   title=f"{NAME} showcase bin {b}: целиком и ×5")
     tiles, labels = [], []
     for name, k in crops.items():
-        tiles.append(img[cut(name)][::-1]); labels.append(f"{name} · 100% · {k.size * SCALE:.0f}″")
+        tiles.append(img[cut(name)]); labels.append(f"{name} · 100% · {k.size * SCALE:.0f}″")
     contact_sheet(tiles, labels, out / "31_кропы_100.png", cols=4, tile_inches=4.2, interpolation="nearest",
                   title=f"{NAME} showcase bin {b}: кропы при 100%")
     tl = {f: np.load(aligned_dir(c, P) / f"{f}.tiles.npy") for f in CON_FILTERS}
@@ -78,12 +78,12 @@ def main() -> None:
     tiles, labels = [], []
     for name in SKY_CROPS:
         sl = cut(name)
-        tiles.append(np.clip(img[sl] * 5, 0, 1)[::-1]); labels.append(f"{name} · ×5")
+        tiles.append(np.clip(img[sl] * 5, 0, 1)); labels.append(f"{name} · ×5")
         for f, t_all in tl.items():
             t = t_all[sl]
             m = pal[np.where(t >= 0, t, -1).astype(int) % 4096]
             m[t < 0] = 0
-            tiles.append(m[::-1]); labels.append(f"{name} · области CON {f}")
+            tiles.append(m); labels.append(f"{name} · области CON {f}")
     contact_sheet(tiles, labels, out / "32_небо_щели_CON.png", cols=3, tile_inches=4.2, interpolation="nearest",
                   title=f"{NAME} showcase bin {b}: небо и край ×5 с картами CON ({', '.join(CON_FILTERS)})")
 
@@ -135,13 +135,13 @@ def main() -> None:
         for f, L in layers.items():
             t = np.nan_to_num(L[sl])
             lo, hi = np.percentile(t, [1, 99])
-            tiles.append(np.clip((t - lo) / max(hi - lo, 1e-6), 0, 1)[::-1])
+            tiles.append(np.clip((t - lo) / max(hi - lo, 1e-6), 0, 1))
             v, h = stripes(t * 255, ~stars[sl])
             labels.append(f"{name} · {f} после растяжки (1–99%)\nполосы верт./гориз. {v:.1f} / {h:.1f}")
             rows.append(f"полосы {f} в {name} после растяжки: верт. / гориз. (σ медиан / шум)\t{v:.1f} / {h:.1f}\t—")
         lum = img[sl] @ LUMA * 255
         v, h = stripes(lum, ~stars[sl])
-        tiles.append(img[sl][::-1]); labels.append(f"{name} · итог 100%\nполосы верт./гориз. {v:.1f} / {h:.1f}")
+        tiles.append(img[sl]); labels.append(f"{name} · итог 100%\nполосы верт./гориз. {v:.1f} / {h:.1f}")
         rows.append(f"полосы итога (яркость) в {name}: верт. / гориз.\t{v:.1f} / {h:.1f}\t—")
     contact_sheet(tiles, labels, out / "34_полосы_коротких.png", cols=len(layers) + 1, tile_inches=4.2,
                   interpolation="nearest", title=f"{NAME} bin {b}: полосы 1/f коротковолновых при 100% после растяжки")

@@ -25,7 +25,7 @@ app.add_typer(cache_app, name="cache")
 TargetArg = Annotated[str, typer.Argument(help="Object name (\"NGC 3132\") or path to a YAML config")]
 ConfigArg = Annotated[str, typer.Argument(help="YAML config: a path or a name from configs/ (ngc3132)")]
 BinOpt = Annotated[Optional[int], typer.Option("--bin", min=1, help="Override bin from the config")]
-MissionOpt = Annotated[Optional[str], typer.Option("--mission", "-m", help="jwst or hst")]
+MissionOpt = Annotated[Optional[str], typer.Option("--mission", "-m", help="jwst, hst or ground")]
 InstrOpt = Annotated[Optional[str], typer.Option("--instrument", "-i", help="nircam, miri, wfc3_uvis, acs…")]
 FiltersOpt = Annotated[Optional[str], typer.Option("--filters", "-f", help="Comma-separated: F090W,F187N")]
 StyleOpt = Annotated[Optional[str], typer.Option("--style", "-s", help="Style from configs/<object>/ (measured, showcase…)")]
@@ -82,6 +82,14 @@ def _target(target: str, paths: Paths, mission: str | None, instrument: str | No
     fl = [f for f in filters.split(",") if f.strip()] if filters else None
     if _config_path(target, paths):
         return _load(target, paths, mission=mission, instrument=instrument, filters=fl)
+    d = _style_dir(target, paths)
+    if d is not None:
+        # фаза 9: папка стилей — данные у стилей общие, берётся base.yaml (раньше имя папки уходило в MAST как имя
+        # цели с mission jwst, и fetch скачал чужие i2d)
+        cfg = Config.load(d / "base.yaml", None)
+        data = cfg.model_dump(mode="json")
+        data.update({k: v for k, v in {"mission": mission, "instrument": instrument, "filters": fl}.items() if v is not None})
+        return Config.model_validate(data)
     return Config(target=target, mission=mission or "jwst", instrument=instrument or "nircam", filters=fl or [])
 
 

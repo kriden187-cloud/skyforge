@@ -1,0 +1,41 @@
+# NGC 1365 («Большая спираль с перемычкой», скопление в Печи): ESO VST/OmegaCAM, Fornax Deep Survey (FDS, поле F17) —
+# сложенные тайлы Phase 3 (calib_level 3), u 11,6 / g 42,2 / r 39,6 / i 17,6 тыс. с, 0,2″/px, AB, PSF ~1,1″. Фаза 9:
+# первая наземная миссия (mission: ground) — разведка 2026-10-23, out/galaxies/разведка/отчёт_разведки.md.
+# Общее для стилей: объект, данные, геометрия, очистка, маски. Стили (extends: base) меняют растяжку, цвет и финиш.
+target: "NGC 1365"
+slug: ngc1365
+coords: "53.40155 -36.14040"  # центр галактики (NED)
+radius: "12.5 arcmin"     # вырезка на сервере ESO — круг 25′ (галактика 11,2′ × 6,2′ с внешними рукавами и небом)
+mission: ground
+instrument: omegacam
+archive_collection: FDS   # Fornax Deep Survey: глубина и сохранённый фон вокруг галактик
+filters: [u, g, r, i]
+calib_level: 3
+source: level3
+reference: g              # самая глубокая полоса; все четыре на одной сетке 0,2″/px
+credit: "ESO, VST/OmegaCAM Fornax Deep Survey (doi:10.1051/0004-6361/201833933)"
+align:
+  crop: union
+  require_all: true       # на краях все четыре полосы
+bin: 4                    # подбор параметров; финал — bin 1
+stars:
+  fill_cores: true        # насыщенные ядра звёзд (если в стеке дыры)
+  max_core_arcsec: 4.0
+clean:
+  destripe:
+    enabled: false        # стеки уже без полос детектора
+background:
+  subtract: true
+  tiles: false            # одна мозаика без областей CON
+  smooth: false
+finish:
+  north_up: false         # тайл FDS уже север вверх (TAN, без поворота)
+report:
+  crops:                  # центр на небе (ra, dec, градусы); размер — px при bin 1 (0,2″/px); север вверх
+    - { name: core, ra: 53.40155, dec: -36.14040, size: 200 }    # ядро (активное, в u/g ярче узлы рядом)
+    - { name: bar, ra: 53.40155, dec: -36.14040, size: 900 }     # перемычка целиком (3′)
+    - { name: arm, ra: 53.46030, dec: -36.06790, size: 800 }     # северный рукав с областями звездообразования
+    - { name: outer, ra: 53.35960, dec: -36.23100, size: 800 }   # внешняя оболочка за южным рукавом
+    - { name: sky, ra: 53.55560, dec: -36.00900, size: 600 }     # пустое небо, северо-восточный угол
+    - { name: sky2, ra: 53.23060, dec: -36.31710, size: 600 }    # пустое небо, юго-западный угол
+    - { name: star, ra: 53.15500, dec: -36.26040, size: 600 }    # яркая звезда у западного края: ореол, лучи

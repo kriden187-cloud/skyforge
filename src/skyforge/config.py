@@ -636,8 +636,11 @@ class Config(_Strict):
     slug: str | None = None  # имя папок; по умолчанию из target: "NGC 3132" → ngc3132
     coords: str | None = None  # "RA Dec" в градусах, если имя не резолвится
     radius: str = "3 arcmin"
-    mission: Literal["jwst", "hst"] = "jwst"
+    mission: Literal["jwst", "hst", "ground"] = "jwst"
     instrument: str = "nircam"
+    # Фаза 9: наземные данные (mission: ground) — сложенные тайлы ESO Phase 3 (calib_level 3) этой коллекции
+    # (FDS — Fornax Deep Survey); вырезка на сервере (SODA) кругом radius вокруг coords. В хеш — только если задано.
+    archive_collection: str | None = None
     proposal_id: str | None = None
     # Имя цели MAST (target_name): только её наблюдения — у программ с соседними полями (W3: 1A, 2, 3A в ~5′) поиск
     # по координатам возвращает все, а выбор по фильтру при равной выдержке брал бы чужое поле. В хеш — только если задано.
@@ -777,7 +780,7 @@ NON_PROCESSING = ("style", "reference_image", "sweep", "preview", "report", "fet
 OPTIONAL_WHEN_SET = (("mast_target",), ("level2_filters",), ("stretch", "sky_reference_crop"),
                      ("stretch", "exclude_point_sources"), ("color", "fill_gaps"), ("level2", "blend_large_scale"),
                      ("level2", "blend_sigma_px"), ("level2", "astrometry"), ("level2", "clip_error"),
-                     ("stretch", "exclude_dominant_spot"))
+                     ("stretch", "exclude_dominant_spot"), ("archive_collection",))
 
 
 def deep_merge(base: dict, over: dict) -> dict:
