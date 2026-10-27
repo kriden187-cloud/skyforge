@@ -450,7 +450,7 @@ objects:
           the open-source pipeline at {repo_line}. All four filters are rebuilt from the individual level-2 exposures and
           aligned to Gaia DR3: in the archive mosaics two of the four visits are offset by 1.2″, so stars and the outflow
           knot appear twice between filters (report:
-          https://github.com/kriden187-cloud/skyforge/blob/master/docs/reports/omc3n_i2d_offset.md). The white point of
+          https://github.com/kriden187-cloud/skyforge/blob/79d136f555ae1c2fb71ce3a9788087adf450667b/docs/reports/omc3n_i2d_offset.md). The white point of
           each filter is set on the nebula with the stars excluded and without a single bright spot setting it alone;
           the sky level on the darkest measured blocks (there is no empty sky in this field); nothing is painted by hand.
         - >-

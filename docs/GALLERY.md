@@ -11,7 +11,7 @@ not edited by hand. Русская версия: [GALLERY.ru.md](GALLERY.ru.md).
 - **Program:** 2733, PI Klaus M. Pontoppidan; observed 2022-06-03; data public since 2022-07-13
 - **Filters:** F090W 0.900 µm — blue (#0000ff); F187N 1.87 µm — cyan (#00ffff); F212N 2.12 µm — green (#00ff00); F356W 3.56 µm — yellow (#ffff00); F405N 4.05 µm — red (#ff0000); F470N 4.70 µm — red (#ff0000)
 - **Credit:** NASA, ESA, CSA, STScI; processing: Denis Krivosheev; license of the processing CC BY-SA 4.0
-- **Config:** [configs/ngc3132/measured.yaml](../configs/ngc3132/measured.yaml), tag [`phase-3k`](https://github.com/kriden187-cloud/skyforge/tree/phase-3k), accepted 2026-10-20
+- **Config:** [configs/ngc3132/measured.yaml](../configs/ngc3132/measured.yaml), tag [`phase-3k`](https://github.com/kriden187-cloud/skyforge/tree/phase-3k), commit [`0fc941e`](https://github.com/kriden187-cloud/skyforge/tree/0fc941e9f9e5f637adc5d52932d041ce3a1b7233), accepted 2026-10-20
 - **Final pixel hash (sha256):** `0f556d7667dbccca8ca49a82923d9bc79af94471caa7576f2c1fc1a49356f3b2`
 - **What is shown:** Six NIRCam filters in wavelength order, F212N weight 0.25 (the H₂ halo is real).
 - **Limitations:** Background steps along exposure-count boundaries up to ~0.6σ; cores of three saturated stars are white; bright-star spikes are outside the star mask.
@@ -31,7 +31,7 @@ not edited by hand. Русская версия: [GALLERY.ru.md](GALLERY.ru.md).
 - **Program:** 2733, PI Klaus M. Pontoppidan; observed 2022-06-03; data public since 2022-07-13
 - **Filters:** F090W 0.900 µm — blue (#0000ff); F187N 1.87 µm — cyan (#00ffff); F212N 2.12 µm — green (#00ff00); F356W 3.56 µm — orange (#ff9a20); F405N 4.05 µm — red (#ff0000); F470N 4.70 µm — red (#ff0000)
 - **Credit:** NASA, ESA, CSA, STScI; processing: Denis Krivosheev; license of the processing CC BY-SA 4.0
-- **Config:** [configs/ngc3132/showcase.yaml](../configs/ngc3132/showcase.yaml), tag [`phase-3k`](https://github.com/kriden187-cloud/skyforge/tree/phase-3k), accepted 2026-10-20
+- **Config:** [configs/ngc3132/showcase.yaml](../configs/ngc3132/showcase.yaml), tag [`phase-3k`](https://github.com/kriden187-cloud/skyforge/tree/phase-3k), commit [`0fc941e`](https://github.com/kriden187-cloud/skyforge/tree/0fc941e9f9e5f637adc5d52932d041ce3a1b7233), accepted 2026-10-20
 - **Final pixel hash (sha256):** `2e72fc9c06d71b12f33fc5eea9fc9f8dc03233b59476679ead8d7236e87c053f`
 - **What is shown:** Showcase in the spirit of the NASA release: sky pedestal and toe, sky polynomial tapered towards the nebula, shadows 2, saturation 1.2.
 - **Limitations:** Steps along exposure-count boundaries; three background details visible at ×2–×5; outer halo fainter than NASA's; one field star with a greenish core.
@@ -52,7 +52,7 @@ not edited by hand. Русская версия: [GALLERY.ru.md](GALLERY.ru.md).
 - **Program:** 6221, PI John Trauger; observed 1995-12-07; data public since 1996-12-08
 - **Filters:** F502N 0.502 µm — blue (#0000ff); F656N 0.656 µm — green (#00ff00); F658N 0.658 µm — red (#ff0000)
 - **Credit:** NASA, ESA, STScI; processing: Denis Krivosheev; license of the processing CC BY-SA 4.0
-- **Config:** [configs/ngc3132hst/showcase.yaml](../configs/ngc3132hst/showcase.yaml), tag [`phase-3b`](https://github.com/kriden187-cloud/skyforge/tree/phase-3b), accepted 2026-10-20
+- **Config:** [configs/ngc3132hst/showcase.yaml](../configs/ngc3132hst/showcase.yaml), tag [`phase-3b`](https://github.com/kriden187-cloud/skyforge/tree/phase-3b), commit [`dd32f42`](https://github.com/kriden187-cloud/skyforge/tree/dd32f4278ea93fbe2866ce3547c4c3edd5054eaf), accepted 2026-10-20
 - **Final pixel hash (sha256):** `827ebc2ecbb4149c77133c62679fc60f6f51640d3d2376147645e0e2afa82b26`
 - **What is shown:** WFPC2 data from 1995, three narrow-band filters ([O III], Hα, [N II]), final at bin 2.
 - **Limitations:** Bin 2 (bin 1 is drizzle oversampling); 65 cosmic-ray traces on the sky; 0.25% zeros in the blue sky channel; seams ≤ 6 px filled linearly, corners at sky level.
@@ -72,7 +72,7 @@ not edited by hand. Русская версия: [GALLERY.ru.md](GALLERY.ru.md).
 - **Program:** 4547, PI Mark J. McCaughrean; observed 2025-03-31; data public since 2026-04-02
 - **Filters:** F182M 1.82 µm — blue (#3050ff); F300M 3.00 µm — light blue (#40c0ff); F335M 3.35 µm — yellow-green (#c0ff40); F360M 3.60 µm — orange (#ff9020); F444W 4.44 µm — red (#ff2020)
 - **Credit:** NASA, ESA, CSA, STScI; processing: Denis Krivosheev; license of the processing CC BY-SA 4.0
-- **Config:** [configs/sh2305/showcase.yaml](../configs/sh2305/showcase.yaml), tag [`phase-4`](https://github.com/kriden187-cloud/skyforge/tree/phase-4), accepted 2026-10-21
+- **Config:** [configs/sh2305/showcase.yaml](../configs/sh2305/showcase.yaml), tag [`phase-4`](https://github.com/kriden187-cloud/skyforge/tree/phase-4), commit [`5a7355d`](https://github.com/kriden187-cloud/skyforge/tree/5a7355d094ffccf159dc6de027f7f677dee8f928), accepted 2026-10-21
 - **Final pixel hash (sha256):** `439762383405fb558353f75843485ff6bc04ae64279ee0b53e3e390ba270fe50`
 - **What is shown:** Five NIRCam filters (F182M and four long-wavelength), wavelength-ordered palette with a warm shift, sky reference from the darkest blocks, sky level 16.
 - **Limitations:** F182M 1/f stripes visible at ×5; the bright star's core is saturated; F212N not included (1/f stripes at level 3); PAH filaments are nearly one hue — texture is in brightness.
@@ -97,7 +97,7 @@ Published on the platforms as separate images — left half of field W3-JWST-2 �
 - **Program:** 5437, PI William Best; observed 2024-10-29; data public since 2025-10-30
 - **Filters:** F140M 1.40 µm — violet-blue (#6030ff); F182M 1.82 µm — blue (#3050ff); F210M 2.10 µm — light blue (#40c0ff); F300M 3.00 µm — cyan (#30ffb0); F335M 3.35 µm — yellow-green (#c0ff40); F360M 3.60 µm — yellow (#ffd820); F405N 4.05 µm — orange (#ff9020); F444W 4.44 µm — red (#ff2020)
 - **Credit:** NASA, ESA, CSA, STScI; processing: Denis Krivosheev; license of the processing CC BY-SA 4.0
-- **Config:** [configs/w3_2/showcase.yaml](../configs/w3_2/showcase.yaml), tag [`phase-6`](https://github.com/kriden187-cloud/skyforge/tree/phase-6), accepted 2026-10-22
+- **Config:** [configs/w3_2/showcase.yaml](../configs/w3_2/showcase.yaml), tag [`phase-6`](https://github.com/kriden187-cloud/skyforge/tree/phase-6), commit [`918afac`](https://github.com/kriden187-cloud/skyforge/tree/918afac764ce095ae401f582ea5bec768044deb5), accepted 2026-10-22
 - **Final pixel hash (sha256):** `6cfce60e995bc5fbef7e12c89d1e8c194c360cd3f1aa65e7d9c996e7007d8a11`
 - **What is shown:** Eight NIRCam filters (F140M, F182M, F210M and five long-wavelength), both detector modules with the real gap between them; wavelength-ordered palette with a warm shift; white point on the nebula without stars in each filter; sky reference from the darkest blocks; short-wave detector gaps filled from the neighbouring short-wave filter.
 - **Limitations:** Short-wave detector gaps (about 3.5″, 13% of a module) are filled by substituting the neighbouring filter — grain is visible at normal viewing; the program's dither is about 1″ against a 3.5″ gap, so a rebuild from the individual exposures (level 2) does not close the gaps; gap-free frames are published separately as fragments A2, A4, B3. About a dozen 4″ squares where gaps cross (0.2% of the area) are filled from F300M and differ in tone; dotted seams along the strip edges come from the source i2d. No empty sky in the field: the reference is the faintest nebula, sky at 18 instead of 16, the absolute level is nominal; short-wave 1/f stripes visible on the sky at 5×.
@@ -118,7 +118,7 @@ Published on the platforms as separate images — left half of field W3-JWST-2 �
 - **Program:** 7433, PI Mika Juvela; observed 2026-03-09; data public since 2026-09-09
 - **Filters:** F150W 1.50 µm — blue (#3050ff); F200W 2.00 µm — light blue (#40c0ff); F356W 3.56 µm — orange (#ff9020); F480M 4.80 µm — red (#ff2020)
 - **Credit:** NASA, ESA, CSA, STScI; processing: Denis Krivosheev; license of the processing CC BY-SA 4.0
-- **Config:** [configs/omc3n/showcase.yaml](../configs/omc3n/showcase.yaml), tag [`phase-8`](https://github.com/kriden187-cloud/skyforge/tree/phase-8), accepted 2026-10-23
+- **Config:** [configs/omc3n/showcase.yaml](../configs/omc3n/showcase.yaml), tag [`phase-8`](https://github.com/kriden187-cloud/skyforge/tree/phase-8), commit [`79d136f`](https://github.com/kriden187-cloud/skyforge/tree/79d136f555ae1c2fb71ce3a9788087adf450667b), accepted 2026-10-23
 - **Final pixel hash (sha256):** `b2b7afb728fdb5380421a831502a2521a95102f51efa8cbec90fb1c004a9c8ca`
 - **What is shown:** Four NIRCam filters (F150W, F200W, F356W, F480M), each rebuilt from the individual level-2 exposures and aligned to Gaia DR3 (in the archive mosaic visits 002 and 004 are offset by 1.2″ and stars double between filters — report docs/reports/omc3n_i2d_offset.md); wavelength-ordered palette; white point on the nebula without stars and without a single spot setting it alone; sky reference from the darkest blocks, sky level 16.
 - **Limitations:** The frame is the rectangle with all four filters on its edges: about 53% of the mosaic, the stepped edges are cut. No empty sky in the field: the reference is the darkest blocks (dust), the absolute level is nominal. The brightest place of the field — the nebula core next to the protostar — is excluded from the white point (otherwise it alone would set it in F200W and F356W) and is burnt out: 0.66% of the nebula, one area. The nebula hue next to the protostar is 13–18° warmer than in the processing of the archive mosaic (phase-7), where this place had patches of rejected pixels, so the comparison is nominal. Long straight spikes of bright stars, including stars just outside the frame, are NIRCam diffraction. Short-wave 1/f stripes are visible at 5× in the dark dust (weaker than in the archive mosaic).
@@ -139,7 +139,7 @@ Published on the platforms as separate images — left half of field W3-JWST-2 �
 - **Program:** Fornax Deep Survey (FDS), PI R. F. Peletier (NOVA GTO) and M. Capaccioli & E. Iodice (INAF VEGAS); observed 2011-10-30; data public since 2020-08-26
 - **Filters:** u 0.354 µm — violet-blue (#7040ff); g 0.475 µm — blue (#3060ff); r 0.625 µm — orange (#ff6020); i 0.770 µm — red (#ff2020)
 - **Credit:** ESO, VST/OmegaCAM Fornax Deep Survey (CC BY 4.0); processing: Denis Krivosheev; license of the processing CC BY-SA 4.0
-- **Config:** [configs/ngc1365/showcase.yaml](../configs/ngc1365/showcase.yaml), tag [`phase-9`](https://github.com/kriden187-cloud/skyforge/tree/phase-9), accepted 2026-10-24
+- **Config:** [configs/ngc1365/showcase.yaml](../configs/ngc1365/showcase.yaml), tag [`phase-9`](https://github.com/kriden187-cloud/skyforge/tree/phase-9), commit [`f6a7c5e`](https://github.com/kriden187-cloud/skyforge/tree/f6a7c5e630fdad88c4b71e47608bfcd17d42c7f4), accepted 2026-10-24
 - **Final pixel hash (sha256):** `4ebe1d719b78f3228c7b5826a640e397c1c864154d686c458686d82bd778b6f3`
 - **What is shown:** Four OmegaCAM bands (u, g, r, i; exposures 11.6 / 42.2 / 39.6 / 17.6 ks), wavelength-ordered palette with r shifted to red-orange (brown dust near the centre); saturated star cores and charge-bleed columns filled as gaps; white point of each band on the galaxy without point sources (a star is no wider than 1.5 PSF, star-forming knots stay part of the galaxy); a second white point for the bright centre following the smoothed brightness, so the structure of the centre is visible; sky reference from the darkest blocks.
 - **Limitations:** Weights from the data: the archive server does not cut out the survey weight maps (1.76 GB per band), zero pixels of the tile are treated as empty. Halos of bright stars are a property of ground-based data (scattering in the atmosphere and optics) and are not subtracted. Sky at 18 instead of 16: in the u band the sky toe reaches its limit (p = 8). The brightness of the centre is compressed relative to the arms (second white point 7 times higher, 0.17% of the frame).

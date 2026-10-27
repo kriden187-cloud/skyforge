@@ -42,6 +42,11 @@ def fetch_stage(cfg: Config, paths: Paths, offline: bool = False, max_gb: float 
         from skyforge.fetch import fetch_level2
 
         info["level2"] = fetch_level2(cfg, paths, max_gb=max_gb)
+    # аудит 2026-10-27, этап 2: файлы, которые прочитает конвейер, — те же, что в sources/<slug>.json принятого результата;
+    # иначе остановка (обновлённый архивом файл не подменяет исходник принятой картинки)
+    from skyforge.sources import verify
+
+    info["sources"] = verify(cfg, paths)
     return info
 
 

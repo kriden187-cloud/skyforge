@@ -1,0 +1,84 @@
+{
+ "version": 1,
+ "slug": "ngc1365",
+ "tag": "phase-9",
+ "commit": "f6a7c5e630fdad88c4b71e47608bfcd17d42c7f4",
+ "styles": [
+  "showcase"
+ ],
+ "storage": "data/raw (одна копия, решение владельца 2026-10-24)",
+ "total_bytes": 1989452160,
+ "files": [
+  {
+   "path": "data/raw/eso/ngc1365/ADP.2020-08-26T11-45-32.315_cut.fits.fz",
+   "role": "вырезка SODA с сервера ESO",
+   "filter": "g",
+   "origin": "ESO ADP.2020-08-26T11:45:32.315",
+   "size": 47347200,
+   "sha256": "9eb33b5a1fa19f263051bbb66e8484b5eb3abd74031868e7648d95da126c5325"
+  },
+  {
+   "path": "data/raw/eso/ngc1365/ADP.2020-08-26T11-45-32.317_cut.fits.fz",
+   "role": "вырезка SODA с сервера ESO",
+   "filter": "i",
+   "origin": "ESO ADP.2020-08-26T11:45:32.317",
+   "size": 47292480,
+   "sha256": "9c52e41724ece0e9edf58c33ad0640f1ecbdce7776b4ee2ef1403cc0166bc8c0"
+  },
+  {
+   "path": "data/raw/eso/ngc1365/ADP.2020-08-26T11-45-32.321_cut.fits.fz",
+   "role": "вырезка SODA с сервера ESO",
+   "filter": "r",
+   "origin": "ESO ADP.2020-08-26T11:45:32.321",
+   "size": 47410560,
+   "sha256": "3a3507a593a8ab77c5c7bfcf7dedd550c940f57ee020aee8a5b403cd0beb5bbc"
+  },
+  {
+   "path": "data/raw/eso/ngc1365/ADP.2020-08-26T11-45-32.327_cut.fits.fz",
+   "role": "вырезка SODA с сервера ESO",
+   "filter": "u",
+   "origin": "ESO ADP.2020-08-26T11:45:32.327",
+   "size": 47234880,
+   "sha256": "5ae4b33b9bc95e749bbd02780ffc27dcc0555fe45da9ef9bf1afcc8e29a0140b"
+  },
+  {
+   "path": "data/raw/eso/ngc1365/ngc1365_g.fits",
+   "role": "продукт ESO для конвейера (SCI/WHT из вырезки)",
+   "filter": "g",
+   "origin": "ESO ADP.2020-08-26T11:45:32.315",
+   "size": 450054720,
+   "sha256": "f8967ec4719afb13e445301fb57331901a0dbbde8fa3ddedf88f2db86b74b23f"
+  },
+  {
+   "path": "data/raw/eso/ngc1365/ngc1365_i.fits",
+   "role": "продукт ESO для конвейера (SCI/WHT из вырезки)",
+   "filter": "i",
+   "origin": "ESO ADP.2020-08-26T11:45:32.317",
+   "size": 450031680,
+   "sha256": "13a143abe06dfe9cf9f05e86a241b89e312af11abd7c2923813372a9c866f3eb"
+  },
+  {
+   "path": "data/raw/eso/ngc1365/ngc1365_r.fits",
+   "role": "продукт ESO для конвейера (SCI/WHT из вырезки)",
+   "filter": "r",
+   "origin": "ESO ADP.2020-08-26T11:45:32.321",
+   "size": 450054720,
+   "sha256": "30ea48dcf22a122b5324b079134d68603a79074aa7939239cf189553ff2dc0d4"
+  },
+  {
+   "path": "data/raw/eso/ngc1365/ngc1365_u.fits",
+   "role": "продукт ESO для конвейера (SCI/WHT из вырезки)",
+   "filter": "u",
+   "origin": "ESO ADP.2020-08-26T11:45:32.327",
+   "size": 450025920,
+   "sha256": "9f14c46a2de1d91d8a633df896ee24f1e96fb2bc9a0c23ace896bce4374fc117"
+  }
+ ],
+ "baseline": [
+  {
+   "path": "data/baselines/ngc1365/phase-9/showcase_bin1.png",
+   "file_sha256": "07df5637a11d26099c270a12bb46f5d44c849352448412ef6e699e75f1601fbc",
+   "pixels_sha256": "4ebe1d719b78f3228c7b5826a640e397c1c864154d686c458686d82bd778b6f3"
+  }
+ ]
+}

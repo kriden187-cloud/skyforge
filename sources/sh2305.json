@@ -1,0 +1,60 @@
+{
+ "version": 1,
+ "slug": "sh2305",
+ "tag": "phase-4",
+ "commit": "5a7355d094ffccf159dc6de027f7f677dee8f928",
+ "styles": [
+  "showcase"
+ ],
+ "storage": "data/raw (одна копия, решение владельца 2026-10-24)",
+ "total_bytes": 15294769920,
+ "files": [
+  {
+   "path": "data/raw/jwst/jw04547-o001_t001_nircam_clear-f182m/jw04547-o001_t001_nircam_clear-f182m_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F182M",
+   "origin": "mast:JWST/product/jw04547-o001_t001_nircam_clear-f182m_i2d.fits",
+   "size": 9298978560,
+   "sha256": "9779a540e36e983d6b3411c27fd8a2f2e19a5262cb4a1452bb4766058da7d247"
+  },
+  {
+   "path": "data/raw/jwst/jw04547-o001_t001_nircam_clear-f300m/jw04547-o001_t001_nircam_clear-f300m_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F300M",
+   "origin": "mast:JWST/product/jw04547-o001_t001_nircam_clear-f300m_i2d.fits",
+   "size": 1499051520,
+   "sha256": "ccee29a886c7320896959e52cfbf5d83fc0f31cf7a63f30505a43393dcb4c2ee"
+  },
+  {
+   "path": "data/raw/jwst/jw04547-o001_t001_nircam_clear-f335m/jw04547-o001_t001_nircam_clear-f335m_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F335M",
+   "origin": "mast:JWST/product/jw04547-o001_t001_nircam_clear-f335m_i2d.fits",
+   "size": 1498844160,
+   "sha256": "41e513f299cc5e1c63e4648d05f023e988c511fa149c9d7e5a63f93c3ec0ad17"
+  },
+  {
+   "path": "data/raw/jwst/jw04547-o001_t001_nircam_clear-f360m/jw04547-o001_t001_nircam_clear-f360m_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F360M",
+   "origin": "mast:JWST/product/jw04547-o001_t001_nircam_clear-f360m_i2d.fits",
+   "size": 1499051520,
+   "sha256": "a347c8c6d5ef7bb55109ed5a81774bf254d467b743d5c13c35f01ae1ef510fb7"
+  },
+  {
+   "path": "data/raw/jwst/jw04547-o001_t001_nircam_clear-f444w/jw04547-o001_t001_nircam_clear-f444w_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F444W",
+   "origin": "mast:JWST/product/jw04547-o001_t001_nircam_clear-f444w_i2d.fits",
+   "size": 1498844160,
+   "sha256": "4caa2b2adcf87d73b304d95a091918b3633a4b79bf5da78156d9e32cd6b5675d"
+  }
+ ],
+ "baseline": [
+  {
+   "path": "data/baselines/sh2305/phase-4/showcase_bin1.png",
+   "file_sha256": "0030b0559c54e6efa9952420f2f2459b4222b6650d26f35299d281d28e84dc95",
+   "pixels_sha256": "439762383405fb558353f75843485ff6bc04ae64279ee0b53e3e390ba270fe50"
+  }
+ ]
+}

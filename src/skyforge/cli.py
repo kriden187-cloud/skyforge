@@ -375,6 +375,27 @@ def baseline(config: ConfigArg,
 
 @app.command()
 @_handle
+def sources(config: ConfigArg,
+            lock: Annotated[bool, typer.Option("--lock", help="Write sources/<object>.json: sha256 of every source file, tag and commit")] = False,
+            tag: Annotated[Optional[str], typer.Option(help="Tag of the accepted result for --lock (default: report.baseline)")] = None) -> None:
+    """Source files of an object against sources/<object>.json: sha256 of everything the pipeline reads (--lock writes it)."""
+    from skyforge.sources import verify, write_lock
+
+    paths = _paths()
+    d = _style_dir(config, paths)
+    cfgs = [_load(config, paths, None, s) for s in list_styles(d)] if d else [_load(config, paths)]
+    if lock:
+        t = tag or cfgs[0].report.baseline
+        if not t:
+            raise SkyforgeError("--lock: нужен --tag или report.baseline в конфиге")
+        console.print(f"  {paths.rel(write_lock(cfgs, paths, t))}")
+        return
+    for c in cfgs:
+        verify(c, paths)
+
+
+@app.command()
+@_handle
 def publish(target: Annotated[str, typer.Argument(help="Object: folder configs/<object>/ and its section under objects in configs/publish.yaml")],
             style: StyleOpt = None) -> None:
     """Publish the accepted result (report.baseline): master PNG and TIFF, JPEG versions for platforms, RU/EN caption, texts for Wikimedia Commons and Flickr."""

@@ -1,0 +1,1034 @@
+{
+ "version": 1,
+ "slug": "ngc3132",
+ "tag": "phase-3k",
+ "commit": "0fc941e9f9e5f637adc5d52932d041ce3a1b7233",
+ "styles": [
+  "measured",
+  "showcase"
+ ],
+ "storage": "data/raw (одна копия, решение владельца 2026-10-24)",
+ "total_bytes": 16596552960,
+ "files": [
+  {
+   "path": "data/raw/jwst/jw02733-o001_t001_nircam_clear-f090w/jw02733-o001_t001_nircam_clear-f090w_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733-o001_t001_nircam_clear-f090w_i2d.fits",
+   "size": 673997760,
+   "sha256": "30c001663f4227b7673edca4a77ed025effe66adc8b1e2f16d83cc3b6ddf4f17"
+  },
+  {
+   "path": "data/raw/jwst/jw02733-o001_t001_nircam_clear-f187n/jw02733-o001_t001_nircam_clear-f187n_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733-o001_t001_nircam_clear-f187n_i2d.fits",
+   "size": 674118720,
+   "sha256": "8612720b5c4ae61e0332b511a4f3ba6ca5156091c7b39b5140f103d88b5c0537"
+  },
+  {
+   "path": "data/raw/jwst/jw02733-o001_t001_nircam_clear-f212n/jw02733-o001_t001_nircam_clear-f212n_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733-o001_t001_nircam_clear-f212n_i2d.fits",
+   "size": 674259840,
+   "sha256": "9a992365cbf43e196b91e28c40c6775090d46ad6dcc5d4422fff4bc03601632c"
+  },
+  {
+   "path": "data/raw/jwst/jw02733-o001_t001_nircam_clear-f356w/jw02733-o001_t001_nircam_clear-f356w_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F356W",
+   "origin": "mast:JWST/product/jw02733-o001_t001_nircam_clear-f356w_i2d.fits",
+   "size": 155134080,
+   "sha256": "8f984e511d913e61b82afea5d6d4e1f6ce2e60f62f2edb1000b8a3a2b9a16578"
+  },
+  {
+   "path": "data/raw/jwst/jw02733-o001_t001_nircam_f405n-f444w/jw02733-o001_t001_nircam_f405n-f444w_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F405N",
+   "origin": "mast:JWST/product/jw02733-o001_t001_nircam_f405n-f444w_i2d.fits",
+   "size": 155134080,
+   "sha256": "b538ac8404949a9e2385430a9dd1eb6765e8c99010743cd19c8bf15664258a73"
+  },
+  {
+   "path": "data/raw/jwst/jw02733-o001_t001_nircam_f444w-f470n/jw02733-o001_t001_nircam_f444w-f470n_i2d.fits",
+   "role": "уровень 3 (i2d)",
+   "filter": "F470N",
+   "origin": "mast:JWST/product/jw02733-o001_t001_nircam_f444w-f470n_i2d.fits",
+   "size": 155134080,
+   "sha256": "eff8fb673998887e4be8154c0a740ae6204451b9287013fcddb6f7e48313c025"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00001_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00001_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "2a1bf3b34d1d12bda7a51518feedb868a587066985480c53cd6aa4d91c23d287"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00001_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00001_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "62833b7c967ecb57c8d0ba5c8ebacc0f60a21990260318202e5bcefa60926638"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00001_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00001_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "8ee1e70193cfba8d2abeeaee5b1e82b3da4c9c51ddb1bbf045eaabc46c726b36"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00001_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00001_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "be0a7a689e54595c8faa33327834a570e963208efabada092f9f4449e0487dfb"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00001_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F405N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00001_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "28fbfe662e18b00a627b0a9df2624db98628d8ce8aa2645612d8a30fc38d5056"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00002_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00002_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "e38ad74927847af1c1a3980c8934cb6e6a4a2504bd9a402cb556e7d1d2fe6e06"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00002_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00002_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "0eb5dbe18c9d5dc53352c9e3954473979378698e6e4df90d7766341b660aa4c3"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00002_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00002_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "6038c6a2d38ed2b3babd33cc2226517100c9332a35ee255a1b480cf18498aa82"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00002_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00002_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "32de977072d2322346480a1f32ce2bbbc09d72022a790da552ebe6b6ee71d1bb"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00002_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F405N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00002_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "30299a81167f144342234810d6e7bfe0a751e36b61536b095f5d758a937bdcb8"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00003_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00003_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "e802eb9be01bcc16d325b461b8b77a87f732204f7856926896fcbe3d987a2e1e"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00003_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00003_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "3d5041a10ab144496b69f3f18943869211fe99e5c18f0f42ff3164d1f3cd88f7"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00003_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00003_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "df7ab4aa4d86e8fde1433a6b202006198f372dc22ce3222de4a75fdd23ecefd2"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00003_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00003_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "9614e69a23fbfe39fd510654833c9927e25617296837ac5485abf7aca34e8bb5"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00003_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F405N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00003_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "02af0ec227acdb3a7e2b40a29ddea0108874c9d55d35ba3590f5ff1570a8cca0"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00004_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00004_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "cf9b5780a41e11a52867dbf61e1b5948f694836c14e9918373ebdd6b45a36486"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00004_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00004_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "ad1b3b7f95fddeea83da7e2cf7e3d81537939fc79221cf7b53f89f7391adc582"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00004_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00004_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "f7f4f5718cf9bbc8a71ac55b01bf759cb5679f0488f1cb90ccdf31d79a759a1f"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00004_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00004_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "47c4d5ad5048a8f04137e4deb1789adf50ca49d1addb686d98c4751b1986598c"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00004_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F405N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00004_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "5aeec4e52a9d670372df9b05651c26cfad29177e01e729edd8d4f5cf7f1b5c3a"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00005_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00005_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "293df1f33921dd6bc94466b856b88226a58b7516c4ef22dcfa212c0fe15af21e"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00005_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00005_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "0969c21e83316ae2dca1f94f345f11841713ae331558ef36f4e9e2f761459a0d"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00005_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00005_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "725d7aeedca07450742026f2cbc080e670e3216bf3886c2d9efdec3d430a7f95"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00005_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00005_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "14db4484997778bf96ca19959a418f074a99afa8f2276974273ce4243b009157"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00005_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F405N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00005_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "698be71ed1b3f41a0f025e1365dc8577aa8f1e42e4f49bd7d32a15edeccb93f8"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00006_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00006_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "4570e5a35c163677447080be459aab0190f32cb2b3793b9ffc233fd739443427"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00006_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00006_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "302a6da04cb250ec4cd490ac65aae3615a70352324533f5837617d531f4e7ac8"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00006_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00006_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "0d4c2d7cf20bf3ff746418b5528a01ee61cd3cd9d3cb94dab10403aacc5c963e"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00006_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00006_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "8a914c69878d8d28505c4890a03fb0b53c7ee4a816342f687c180d02d70c4b77"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00006_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F405N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00006_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "50e06f01d1cc23ed931a032d42ca3b5b02c81ffaba0dc66f46db891e40c15321"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00007_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00007_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "a1f676643a6fba61728b4382f7c7b6dcc7dca3b29044d5c729df183a88e99966"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00007_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00007_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "3f2cbc16ee6a897d8e72f5f22f2afedf73a8c5baceff5cb52d53f70ed9b5fab1"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00007_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00007_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "a1e2dc654b41430c20537988414e7e8b4d151809618bf1545097f8768f83e165"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00007_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00007_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "5369ae379831ac8eb7c55651fd34716b4e56edd4260bf28e4a93c95db8305c47"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00007_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F405N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00007_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "e27865327cad11f7f771c2e04fed3a258a29decd6a91e218c2b33a22cd6af9aa"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00008_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00008_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "14744d5c1bd43c50ef5fdbaf48f38f34c5b263d2692281a329580fabe0c794d8"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00008_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00008_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "5c21e37086880edf8ebe727cae33e01a9564610c06a9c4c7217964c4c76f4b8b"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00008_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00008_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "6f76f222328153824197369412720f51d029951edb989d875edab48e8d41403d"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00008_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F212N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00008_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "a39e18547fd3e60805876da9002968e161d98cb9af81bb052fd132e953cdc5a6"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02101_00008_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F405N",
+   "origin": "mast:JWST/product/jw02733001001_02101_00008_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "12a4814e82e12e984b42a3e61083ab7c043ffb042d4f247796fb83a961fa0c81"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00001_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00001_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "2ef1f2cf8028a4b586d002a455d09bde33fb12a0020ce31c11fa0461f97a3d50"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00001_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00001_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "141782a2d91757b12b5c117149b6824dcf48a7df3fcc55bd1a92a650df16d010"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00001_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00001_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "6072f3a57d437339c54fb9e81bbdfe40744e507fcd68e3303a1588eac1aae4bf"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00001_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00001_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "6dbf43c55142b72393279540c1a592094b82eab4d05097c83a93a64ac00a529b"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00001_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F470N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00001_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "44f9ffdf18bdc39819930a7e94e76c4f3512d61d0eb9a1b2bcc0ad67c3cb2903"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00002_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00002_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "9b31c4a1fadf3c0c72e374a79196509ad4864308c9666943bdb4de070290c344"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00002_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00002_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "f65b19f07294ea217a9eafe0a7b6a79f3c2b44e5a8a18b672f37399cd6564f69"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00002_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00002_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "ecec6a2044bf8f98e77c73687ca434ccd1a38720f7fbc29135bb32febc2c077f"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00002_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00002_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "0ba244206a3c40bb3ce0f8be71a08753df20f561aaae37cef516bed514e6f54d"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00002_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F470N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00002_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "f54c252d2f01ad9aefec4577c6b44eab5d211c6767a1d9adf4d11f4e123233ef"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00003_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00003_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "f7c68fc1478dabd98c53358a15eba82d82ef1aacc1a31e8f889a95d5540db432"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00003_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00003_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "d69e4689039c47358479f72126ed2c1521d12500f5803e3ca7bc16d04553e504"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00003_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00003_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "24583b3455d3dbcd6e36a098c760e421ac42fbf566d1331beb0eee6b5a72fbbe"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00003_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00003_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "498231f6f737a3dbef68ba8a6993cb69a0cb4eb60c6fc3a47a118eb69594d4e8"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00003_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F470N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00003_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "a227c06d6e233ad1340d66e83d983ac0f99c35cce847de62930919cec6b852f1"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00004_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00004_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "dce9c301a9447c804a3b874e7bf42491a90297dff23db51d672a41d0f8f66bc3"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00004_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00004_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "2c3323318ab32f83da6c374d56d203b71bb676a6bfd3184ae50ec7edf58b56dc"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00004_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00004_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "c952b1d40c46c32b5e2fd998597674ccbfa728ab939b044a2aab70a1a4eb288b"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00004_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00004_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "fcb53dec4bae0a9790c61799d56091f9e9019fa194a9e5bc6aac8c0fb76fd9c1"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00004_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F470N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00004_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "de204bab65d08c1cb732d715caccab0e8bf1a9fcd890e77bdab5736f4e6ddbce"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00005_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00005_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "495440af9a89a7b3a12c26809ee5dabfd94051b790e47cacc8ac6951b63c3932"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00005_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00005_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "1212a475e04f1c6db1c24c9d83ba6394204ff41e00f693f04ea0c83266312453"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00005_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00005_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "37f4b651d6f344e7fd7bc3f2cd7e54cc05dfb4f4a098457c559f8eafc3dcc86d"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00005_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00005_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "9d99581dfc904121e360fd7c300fd9f613ac1a67c9db7fd48a432f22322b19c8"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00005_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F470N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00005_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "7283ce8f737ffdc847aef689f132f3096317685c7ede4754823b0aec3767e254"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00006_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00006_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "583490fa0ebd3f2a37e383efa3e353249d51b28de027e234662ea1e9b6fc7428"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00006_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00006_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "61f4288a45b09ee2b3da903a19c040840fcc36c9c30395ecf375c5541ce23dab"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00006_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00006_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "2b90863398df375d6f3b7817026d96eb846b8c62b91dee3a80bddc1ac4593728"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00006_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00006_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "c585f1eaf42ee93679d4412a12f0a874b24231a2418530a98acf7a917c28d40d"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00006_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F470N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00006_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "f19f363fe51c4ec44c10cf2532149f9c5139c177423501624fafb308f75469c5"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00007_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00007_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "b028845e73095613fc210e5e88f55295a40b548b229752c4f9d2ed9b7cd488e1"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00007_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00007_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "617d4414eb9864bfb5c1034e3cbcbe64f35fe2aae9a980dc252eb2f11a6815fb"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00007_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00007_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "66f5f7a947e107480c14d9afbfb1ac0de76767237666da2c3c22237e72a628f6"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00007_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00007_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "067c5e04f431e3268da13e09554950a73c3b07ba02c1921e12bada5bedcf808e"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00007_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F470N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00007_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "0a363780ea3acef13553a953942f232392da7b3421706a75ee7aff73d917adb8"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00008_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00008_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "9ccf47e24a71864fda47a4618edfe6d273a3df7a185ea3403477d15f4be33ae6"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00008_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00008_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "682da9541a257130b16d66b8bd49528eece36ef8de282be70178f4585341da41"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00008_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00008_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "444d89f1b4ae7f401839e69afe1b7b658ab7d8d751e1c97b3cea5e8dbdfd1ad9"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00008_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F187N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00008_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "5e913dd70926e5c03ae86699809abd498ef32ce0d54356da018e51c8b57a2082"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02103_00008_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F470N",
+   "origin": "mast:JWST/product/jw02733001001_02103_00008_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "c61ef8b65ad58626643b58797c3dd86a01d37bfa531788dab0caf4d77ae562bc"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00001_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00001_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "94cd0513d2054371879df2d983037679e6114d1067c37a56b7a5bf326c9590c9"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00001_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00001_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "321f11c5451beb4b422dce830ddcd4cf790916da558adc9aed599394d5ff14e2"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00001_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00001_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "1799e23d26a1f6158cb9697b116bc33322edfd62f24f65235fca724ac970e38f"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00001_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00001_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "cb756ab7b19aaa1705451a0f4d33a3ace10457ebaa5624ea50732a6a431e892c"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00001_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F356W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00001_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "4a3483bad9bc61a2acf0c71d17e73665b7530e2ee8f1385808497810518a672f"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00002_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00002_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "cf35826dfe108816ac55b514252a5df14fbe3e5494ea9783eb5fb3715d3f31ae"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00002_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00002_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "f43fdecbdd1ef43684b6b4446f2f768c4ef518af2dcd14f5a93dc5dd3fa25690"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00002_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00002_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "2a33acf2cf5f83411e0b04a1429d0075acb5e78c832e8e2617488373b1e0a8da"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00002_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00002_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "3cb00ab7d969b0e91f18d17044f88853c0f2a31638ac4bf0353feeca32aec999"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00002_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F356W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00002_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "807ffd402d6042783c50616bd23a166634faaeed51dd319b4c4ac42a75be9250"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00003_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00003_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "fc584593962bc77d13fd05569efd90cf623a01a53bc1b42d5271f1f11f6364cb"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00003_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00003_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "6936e27191a41e31951d355c3348afb00efc768a4f00885dbfb6ecd2325b4a4c"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00003_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00003_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "e2c146439701acd6bb5c3a8c82bca8e2737ca35e4054177585f43700fb68fcce"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00003_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00003_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "5bf7ae2fc5f34ddfeaa05f90c5970b33eefdd0c9e069b0b3faac414f7f0658f9"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00003_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F356W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00003_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "efff6b3375a7d73ad63c42890eaf21291a0f932b0f834bb116b1bf82acb9cd7f"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00004_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00004_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "b76a6aac11c8a3f93d135bf33599451d47aae457c7dc148c1913a0608c9512d4"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00004_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00004_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "1ea22cbc41aa2386f19cbac0de35b535b622bf93161ff57a009fde545bd48273"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00004_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00004_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "f248a2038cb7c40b803afac3548da5d05c9052c6ba27e6722da1b31423ff2319"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00004_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00004_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "4dae467092de0a42514bb742e89a7c362dc59749ec5dc2d6e02ccd5df3d8c934"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00004_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F356W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00004_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "b7020794d1a95948f5a007a0ddad0849ed92e3c75d6c5030eb8c9a9a205e0c09"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00005_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00005_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "acacad30be9a814cb948fe90901691c009bdc42fb8c9dd08f3dc18a253807957"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00005_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00005_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "d2e17010bb02beb4e34fe0cb2ceea4a2e40e117233649d65e3c4b76f49b5933d"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00005_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00005_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "5312916ddb5be4ac641a78e4dd5456d3b7bb8c83d1b581e2551c01a69ce9296c"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00005_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00005_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "d4d277bfefcdbd227dcfca15693aa0f78e4e8b628bb19d7ff02ec8d3580f3b95"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00005_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F356W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00005_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "16a88f56cf195c24704838076a919826b3d1b1e544fc028374f249b9f8974b88"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00006_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00006_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "96091b841ca0f0d305d6232017bda4aea9a43a61d8d6533877ae739a2b74d98b"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00006_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00006_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "7505a939b9f81dbd2b5304838f8728b6f61ebeedecdbd8edec9c36523d914d4a"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00006_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00006_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "59422f7d07547f695942460974d501b68fb80ee707753224951d5cf8d36d2af5"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00006_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00006_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "276eaf8af1e9b645282b101cdce75a25096249c2b93fda0887e26126dced7146"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00006_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F356W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00006_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "28594838929d8a7c0adb584bc4ea80a2f46d95ca53a7887c8e826df2d5f26c7a"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00007_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00007_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "b9f27544e5f94ef436e472c8ee28f8d97ce92590a1cceb3836593f1d03382163"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00007_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00007_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "7ae8cad98bf9e3e77f07ec911c261ad349a64d0b36976a0552d4721b5cd0c76e"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00007_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00007_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "eab2001368dc85b5fbceca58afd8eaf5ce72e4cecbb9b2d4ae9109b3d2d2c1b8"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00007_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00007_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "6795b96c1e736c93bd640de16ac0e94e1c9013b2d5aba8b8f0d49a5d6a6c0429"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00007_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F356W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00007_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "34820953649e61d82a3f9311d99c97d3740a15d95230aeb6683d7b40ce975064"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00008_nrcb1_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00008_nrcb1_cal.fits",
+   "size": 117573120,
+   "sha256": "03346e0e3b6fecebfe2f50e6715d476a0a24dd78e89ac5ce1747d205072b7904"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00008_nrcb2_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00008_nrcb2_cal.fits",
+   "size": 117573120,
+   "sha256": "21527332547ef8c051341aa876ec3dde7186c0ff1673a32e66c049deb3fea931"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00008_nrcb3_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00008_nrcb3_cal.fits",
+   "size": 117573120,
+   "sha256": "5e64931f0a2f77e59f950c76efd5f3153ec0da736a4c9a0d5d38bcfcc09377d4"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00008_nrcb4_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F090W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00008_nrcb4_cal.fits",
+   "size": 117573120,
+   "sha256": "66fd6e70bbe81a3dc4b9010c04a39af281f058da0b4b33d6e909e7b44ff86aba"
+  },
+  {
+   "path": "data/raw/ngc3132/l2/jw02733001001_02105_00008_nrcblong_cal.fits",
+   "role": "уровень 2 (_cal)",
+   "filter": "F356W",
+   "origin": "mast:JWST/product/jw02733001001_02105_00008_nrcblong_cal.fits",
+   "size": 117573120,
+   "sha256": "82493fe63411c4dfe96da5e3b662354e1455c22de6b49f93ba4625d7ac995e89"
+  }
+ ],
+ "baseline": [
+  {
+   "path": "data/baselines/ngc3132/phase-3k/measured_bin1.png",
+   "file_sha256": "8b5aa23f5943a30d3bd213d71448c99a561549accb6fd05f5fab0984044ccb59",
+   "pixels_sha256": "0f556d7667dbccca8ca49a82923d9bc79af94471caa7576f2c1fc1a49356f3b2"
+  },
+  {
+   "path": "data/baselines/ngc3132/phase-3k/showcase_bin1.png",
+   "file_sha256": "d3a5d161011cb4a586d5d87fdc49cebd03e420633a301354172d41878ae7c3f5",
+   "pixels_sha256": "2e72fc9c06d71b12f33fc5eea9fc9f8dc03233b59476679ead8d7236e87c053f"
+  }
+ ]
+}

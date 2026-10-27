@@ -1,0 +1,44 @@
+{
+ "version": 1,
+ "slug": "ngc3132hst",
+ "tag": "phase-3b",
+ "commit": "dd32f4278ea93fbe2866ce3547c4c3edd5054eaf",
+ "styles": [
+  "showcase"
+ ],
+ "storage": "data/raw (одна копия, решение владельца 2026-10-24)",
+ "total_bytes": 629032320,
+ "files": [
+  {
+   "path": "data/raw/hst/hst_6221_02_wfpc2_pc_f502n_u2rc02/hst_6221_02_wfpc2_pc_f502n_u2rc02_drz.fits",
+   "role": "уровень 3 (drz)",
+   "filter": "F502N",
+   "origin": "mast:HST/product/hst_6221_02_wfpc2_pc_f502n_u2rc02_drz.fits",
+   "size": 209672640,
+   "sha256": "00ac5b4078cae7f4754ab779f639abe3346127c31b086ecd5e821d80aa1151d8"
+  },
+  {
+   "path": "data/raw/hst/hst_6221_02_wfpc2_pc_f656n_u2rc02/hst_6221_02_wfpc2_pc_f656n_u2rc02_drz.fits",
+   "role": "уровень 3 (drz)",
+   "filter": "F656N",
+   "origin": "mast:HST/product/hst_6221_02_wfpc2_pc_f656n_u2rc02_drz.fits",
+   "size": 209672640,
+   "sha256": "79dd60a990dbf24cc8753b6f016477da5128cb9d0f2fc95d8556415a27c9c552"
+  },
+  {
+   "path": "data/raw/hst/hst_6221_02_wfpc2_pc_f658n_u2rc02/hst_6221_02_wfpc2_pc_f658n_u2rc02_drz.fits",
+   "role": "уровень 3 (drz)",
+   "filter": "F658N",
+   "origin": "mast:HST/product/hst_6221_02_wfpc2_pc_f658n_u2rc02_drz.fits",
+   "size": 209687040,
+   "sha256": "b2c68bd277ace1f22c8692ebb53a79d78c6d89431f2bfd93518b197de5d03ec8"
+  }
+ ],
+ "baseline": [
+  {
+   "path": "data/baselines/ngc3132hst/phase-3b/showcase_bin2.png",
+   "file_sha256": "4c2e38b008f098ce03b4ef131a0f78ae47c3c01a91c88b44faeb28834f00e712",
+   "pixels_sha256": "827ebc2ecbb4149c77133c62679fc60f6f51640d3d2376147645e0e2afa82b26"
+  }
+ ]
+}

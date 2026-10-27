@@ -235,6 +235,7 @@ class Facts:
     author: str
     accepted: str
     extra: dict[str, Any] = field(default_factory=dict)
+    commit: str = ""                               # SHA коммита тега (аудит 2026-10-27): ссылки — по коммиту, не по тегу
 
 
 TELESCOPE = {"jwst": ("JWST", "космический телескоп «Джеймс Уэбб» (JWST)", "James Webb Space Telescope (JWST)"),
@@ -302,11 +303,30 @@ def object_facts(paths: Paths, cfg: Config, style: str, pub: PublishConfig, base
         slug=cfg.slug, style=style, target=cfg.target, mission=cfg.mission, telescope=TELESCOPE[cfg.mission][0],
         instrument=INSTRUMENT.get(cfg.instrument.lower(), cfg.instrument.upper()), program=program,
         program_title=po.program_title if po.program_title is not None else get("TITLE"), pi=po.pi or get("PI_NAME"),
-        obs_start=beg[0], obs_end=end[-1],
+        obs_start=beg[0], obs_end=end[-1], commit=_tag_commit(paths, cfg.report.baseline or ""),
         release=min((p.get("release") or "") for f, p in prods.items() if f in cfg.filters),
         filters=filt, config=f"configs/{cfg.slug}/{style}.yaml", tag=cfg.report.baseline or "",
         config_digest=meta.get("config_digest", ""), bin=int(re.search(r"_bin(\d+)\.png$", base_png.name).group(1)),
         master_sha256=sha, author=pub.author or cfg.author, accepted=po.accepted)
+
+
+def _tag_commit(paths: Paths, tag: str) -> str:
+    """Полный SHA коммита тега; пусто, если тега нет (тесты, объект до приёмки)."""
+    import subprocess
+
+    if not tag:
+        return ""
+    r = subprocess.run(["git", "rev-list", "-n", "1", tag], cwd=paths.root, capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def repo_line(f: Facts, pub: PublishConfig) -> str:
+    """Строка репозитория в текстах площадок: ссылка на коммит (тег можно переставить, коммит — нет), рядом тег."""
+    if not pub.repo:
+        return f"tag {f.tag}"
+    if f.commit:
+        return f"{pub.repo}/tree/{f.commit} (tag {f.tag}, commit {f.commit[:7]}, {f.config})"
+    return f"{pub.repo} (tag {f.tag}, {f.config})"
 
 
 def _mjd_date(mjd: float) -> str:
@@ -356,8 +376,11 @@ def caption_md(f: Facts, pub: PublishConfig, lang: str) -> str:
     prog = f"{f.program}" + (f" «{f.program_title}»" if ru and f.program_title else f" “{f.program_title}”" if f.program_title else "")
     fl = "; ".join(f"{n} {_um(w, lang)} — {color_name(c, lang)} ({c})" for n, w, c in f.filters)
     run = f"skyforge run {f.slug} -s {f.style} --bin {f.bin}"
-    cfg_ref = f"[`{f.config}`]({pub.repo}/blob/{f.tag}/{f.config})" if pub.repo else f"`{f.config}`"
+    cfg_ref = f"[`{f.config}`]({pub.repo}/blob/{f.commit or f.tag}/{f.config})" if pub.repo else f"`{f.config}`"
     tag_ref = f"[`{f.tag}`]({pub.repo}/tree/{f.tag})" if pub.repo else f"`{f.tag}`"
+    if f.commit:   # аудит 2026-10-27: коммит рядом с тегом
+        tag_ref += (", коммит " if ru else ", commit ") + (f"[`{f.commit[:7]}`]({pub.repo}/tree/{f.commit})"
+                                                       if pub.repo else f"`{f.commit[:7]}`")
     if ru:
         lines = [f"# {f.target} — {f.telescope} {f.instrument}, стиль {f.style}", "",
                  f"- **Объект:** {f.target}",
@@ -430,7 +453,7 @@ def commons_wikitext(f: Facts, pub: PublishConfig, part: PartSpec | None = None,
     if co.others:
         en += " Other processings of the same data on Commons: " + ", ".join(f"[[:File:{o.file}|{o.en}]]" for o in co.others) + "."
         ru += " Другие обработки тех же данных на Commons: " + ", ".join(f"[[:File:{o.file}|{o.ru}]]" for o in co.others) + "."
-    repo = f"{pub.repo}/tree/{f.tag}" if pub.repo else f"tag {f.tag}"
+    repo = f"{pub.repo}/tree/{f.commit or f.tag}" if pub.repo else f"tag {f.tag}"
     data = data_credit(f, pub)
     other = " ".join([f"* [[:File:{fn}|{label}]]" for fn, label in siblings]
                      + [f"* [{e.url} {e.platform} ({e.date})]" for e in po.published
@@ -445,7 +468,8 @@ def commons_wikitext(f: Facts, pub: PublishConfig, part: PartSpec | None = None,
         f"{{{{ru|1={ru}}}}}",
         f"|date={f.obs_start}",
         f"|source={{{{own}}}}: processing of public {f.telescope} data from {ARCHIVE[f.mission]}, "
-        f"program {f.program}. Pipeline and configuration: {repo} ({f.config})",
+        f"program {f.program}. Pipeline and configuration: {repo} ({f.config}"
+        + (f", tag {f.tag}, commit {f.commit[:7]})" if f.commit else ")"),
         f"|author={f.author}; data: {data}",
         "|permission=",
         f"|other versions={other}",
@@ -475,7 +499,7 @@ def flickr_text(f: Facts, pub: PublishConfig, stem: str, master_size: tuple[int,
             s += f" ({fs.filter_notes[n]})"
         parts.append(s)
     subs = {"program": f.program, "pi": _person(f.pi), "obs": f.obs_start, "release": f.release,
-            "filters": " · ".join(parts), "repo_line": f"{pub.repo} (tag {f.tag}, {f.config})" if pub.repo else f"tag {f.tag}",
+            "filters": " · ".join(parts), "repo_line": repo_line(f, pub),
             "stem": stem, "master_size": f"{master_size[0]}×{master_size[1]}", "master_mb": f"{master_mb:.0f}"}
     ext = "png" if fs.file == "master" else "jpg"
     head = f"FILE TO UPLOAD: {stem}_{fs.file}.{ext}" + (f"  {fs.file_note.format(**subs)}" if fs.file_note else "")
@@ -505,7 +529,7 @@ def reddit_text(f: Facts, pub: PublishConfig, stem: str, part: PartSpec | None =
             s += f" ({rs.filter_notes[n]})"
         parts.append(s)
     subs = {"program": f.program, "pi": _person(f.pi), "obs": f.obs_start, "release": f.release,
-            "filters": " · ".join(parts), "repo_line": f"{pub.repo} (tag {f.tag}, {f.config})" if pub.repo else f"tag {f.tag}"}
+            "filters": " · ".join(parts), "repo_line": repo_line(f, pub)}
     ext = "png" if rs.file == "master" else "jpg"
     paras = [p.format(**subs).strip() for p in rs.paragraphs]
     part_para = ([f"This image: {part.label_en}; {part.full_field_en} is published separately as a diptych."] if part is not None else [])
@@ -887,7 +911,7 @@ GALLERY_TEXT = {
            "filters": "Filters", "credit": "Credit", "license": "license of the processing", "config": "Config", "tag": "tag",
            "accepted": "accepted", "hash": "Final pixel hash (sha256)", "shown": "What is shown", "limits": "Limitations",
            "note": "Note", "published": "Published", "howto": "How to get the same file",
-           "run_note": "# downloads from {archive} if the data is not on disk"},
+           "run_note": "# downloads from {archive} if the data is not on disk", "commit": "commit"},
     "ru": {"file": "GALLERY.ru.md", "title": "# Галерея конфигов Skyforge",
            "intro": ["Каждый раздел — принятый результат: превью, подпись, конфиг, тег и команда, которой получить тот же файл.",
                      "Файл создаёт `skyforge gallery` из `configs/publish.yaml`, принятых PNG (`data/baselines/`) и заголовков данных;",
@@ -896,7 +920,7 @@ GALLERY_TEXT = {
            "filters": "Фильтры", "credit": "Указание источника", "license": "лицензия на обработку —", "config": "Конфиг",
            "tag": "тег", "accepted": "принято", "hash": "Хеш пикселей итога (sha256)", "shown": "Что показано",
            "limits": "Ограничения", "note": "Примечание", "published": "Опубликовано", "howto": "Как получить тот же файл",
-           "run_note": "# если данных нет на диске, скачает из {archive}"},
+           "run_note": "# если данных нет на диске, скачает из {archive}", "commit": "коммит"},
 }
 
 
@@ -925,6 +949,7 @@ def build_gallery(paths: Paths, pub: PublishConfig) -> Path:
                                                      spec.long // 2, po.jpeg_quality or spec.quality)))
             stt = po.styles[st]
             tag = f"[`{f.tag}`]({pub.repo}/tree/{f.tag})" if pub.repo else f"`{f.tag}`"
+            commit = (f"[`{f.commit[:7]}`]({pub.repo}/tree/{f.commit})" if pub.repo else f"`{f.commit[:7]}`") if f.commit else ""
             pubd = [e for e in po.published if e.style == st and e.url]
             for lang, t in GALLERY_TEXT.items():
                 fl = "; ".join(f"{n} {_um(w, lang)} — {color_name(c, lang)} ({c})" for n, w, c in f.filters)
@@ -942,7 +967,8 @@ def build_gallery(paths: Paths, pub: PublishConfig) -> Path:
                                 f"{t['public']} {f.release}",
                                 f"- **{t['filters']}:** {fl}",
                                 f"- **{t['credit']}:** {credit_line(f, pub, lang)}; {t['license']} {pub.license}",
-                                f"- **{t['config']}:** [{f.config}](../{f.config}), {t['tag']} {tag}, {t['accepted']} {f.accepted}",
+                                f"- **{t['config']}:** [{f.config}](../{f.config}), {t['tag']} {tag}"
+                                + (f", {t['commit']} {commit}" if commit else "") + f", {t['accepted']} {f.accepted}",
                                 f"- **{t['hash']}:** `{f.master_sha256}`",
                                 f"- **{t['shown']}:** {shown}", f"- **{t['limits']}:** {limits}"]
                 parts[lang] += [f"- **{t['note']}:** {n}" for n in notes]
