@@ -150,7 +150,9 @@ objects:
     published:
       - { style: showcase, platform: Flickr, url: "https://www.flickr.com/photos/205062605@N07/55603618036/",
           date: 2026-10-21, license: CC BY-SA 4.0 }
-      - { style: showcase, platform: Wikimedia Commons, note: "ждёт: сервер логина недоступен 2026-10-21" }
+      - { style: showcase, platform: Wikimedia Commons, date: 2026-10-21, license: CC BY-SA 4.0,   # аудит 2026-10-27: файл на
+          url: "https://commons.wikimedia.org/wiki/File:Star-forming_region_Sharpless_305_(Sh_2-305)_imaged_by_JWST_NIRCam_in_five_filters;_own_processing_of_public_MAST_data,_program_4547.png" }
+                             # Commons = sh2305_showcase_master.png (SHA-1); имя на Commons длиннее, чем commons.filename
     commons:
       style: showcase
       filename: "Sharpless 305 JWST NIRCam 5 filters (Krivosheev).png"
@@ -481,6 +483,11 @@ objects:
           outside the frame; faint short-wave 1/f stripes at 5× in dark dust.
     published:
       - { style: showcase, platform: Reddit, note: "ждёт аккаунта" }
+      - { style: showcase, platform: Wikimedia Commons, date: 2026-10-23, license: CC BY-SA 4.0,   # аудит 2026-10-27: файл
+          url: "https://commons.wikimedia.org/wiki/File:OMC-3_Orion_Molecular_Cloud_3_JWST_NIRCam_4_filters_(Krivosheev).png" }
+                             # на Commons = omc3n_showcase_master.png phase-8 (SHA-1)
+      - { style: showcase, platform: Flickr, date: 2026-10-23, license: CC BY-SA 4.0,
+          url: "https://www.flickr.com/photos/205062605@N07/55607200896/" }
     commons:
       style: showcase
       filename: "OMC-3 Orion Molecular Cloud 3 JWST NIRCam 4 filters (Krivosheev).png"   # свободно на 2026-10-22 (API)
@@ -548,6 +555,15 @@ objects:
           the u band; the centre is compressed in brightness relative to the arms.
     published:
       - { style: showcase, platform: Reddit, note: "ждёт аккаунта" }
+      # выложен вариант с подавлением цветного шума: сценарий scripts/chroma_denoise.py в коммите 4e47cf6 (цвет σ 2,5 px,
+      # яркость σ 0,6 px по мастеру TIFF phase-9); воспроизводимо на этом коммите, не на теге phase-9 (аудит 2026-10-27:
+      # файл на Commons = ngc1365_showcase_master_dn.png по SHA-1, повтор сценарием — те же пиксели, sha256 2af0648c…)
+      - { style: showcase, platform: Wikimedia Commons, date: 2026-10-24, license: CC BY-SA 4.0,
+          url: "https://commons.wikimedia.org/wiki/File:NGC_1365_ESO_VST_OmegaCAM_ugri_(Krivosheev).png",
+          note: "выложен вариант с подавлением цветного шума, сценарий scripts/chroma_denoise.py в коммите 4e47cf6; воспроизводимо на этом коммите, не на теге phase-9" }
+      - { style: showcase, platform: Flickr, date: 2026-10-24, license: CC BY-SA 4.0,
+          url: "https://www.flickr.com/photos/205062605@N07/55608895941/",
+          note: "выложен вариант с подавлением цветного шума, сценарий scripts/chroma_denoise.py в коммите 4e47cf6; воспроизводимо на этом коммите, не на теге phase-9" }
     commons:
       style: showcase
       filename: "NGC 1365 ESO VST OmegaCAM ugri (Krivosheev).png"   # свободно на 2026-10-24 (API)
