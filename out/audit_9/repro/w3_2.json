@@ -1,0 +1,19 @@
+{
+ "slug": "w3_2",
+ "tag": "phase-6",
+ "commit": "918afac764ce095ae401f582ea5bec768044deb5",
+ "versions": "3.12.14 2.5.4 1.18.1 8.0.2 0.21.0 13.0.0 0.26.0 2026.10.15",
+ "runs": [
+  {
+   "style": "showcase",
+   "bin": 1,
+   "run_dir": "out\\w3_2\\2026-10-27_20-15-49_showcase",
+   "png": "w3_2_showcase.png",
+   "seconds": 242.3,
+   "pixels_equal": true,
+   "file_equal": true,
+   "file_sha256": "133b065e69ebd536dd1ecf7d76f74c1e9d4ebcfc77072f9591d020cbabfbae92"
+  }
+ ],
+ "total_s": 244.5
+}

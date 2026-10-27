@@ -1,0 +1,19 @@
+{
+ "slug": "omc3n",
+ "tag": "phase-8",
+ "commit": "79d136f555ae1c2fb71ce3a9788087adf450667b",
+ "versions": "3.12.14 2.5.4 1.18.1 8.0.2 0.21.0 13.0.0 0.26.0 2026.10.15",
+ "runs": [
+  {
+   "style": "showcase",
+   "bin": 1,
+   "run_dir": "out\\omc3n\\2026-10-27_21-40-58_showcase",
+   "png": "omc3n_showcase.png",
+   "seconds": 2682.6,
+   "pixels_equal": true,
+   "file_equal": true,
+   "file_sha256": "86b36e3c0ee999a6f787e1c3550cab00ffdc80901771ee7c42eaf66a93ffa5fe"
+  }
+ ],
+ "total_s": 2684.5
+}

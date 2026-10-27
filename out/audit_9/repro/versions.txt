@@ -1,0 +1,8 @@
+Python 3.12.14
+numpy 2.5.4
+scipy 1.18.1
+astropy 8.0.2
+reproject 0.21.0
+Pillow 13.0.0
+scikit-image 0.26.0
+tifffile 2026.10.15

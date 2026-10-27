@@ -1,0 +1,19 @@
+{
+ "slug": "sh2305",
+ "tag": "phase-4",
+ "commit": "5a7355d094ffccf159dc6de027f7f677dee8f928",
+ "versions": "3.12.14 2.5.4 1.18.1 8.0.2 0.21.0 13.0.0 0.26.0 2026.10.15",
+ "runs": [
+  {
+   "style": "showcase",
+   "bin": 1,
+   "run_dir": "out\\sh2305\\2026-10-27_20-20-47_showcase",
+   "png": "sh2305_showcase.png",
+   "seconds": 566.9,
+   "pixels_equal": true,
+   "file_equal": true,
+   "file_sha256": "0030b0559c54e6efa9952420f2f2459b4222b6650d26f35299d281d28e84dc95"
+  }
+ ],
+ "total_s": 570.5
+}

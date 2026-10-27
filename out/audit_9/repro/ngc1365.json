@@ -1,0 +1,19 @@
+{
+ "slug": "ngc1365",
+ "tag": "phase-9",
+ "commit": "f6a7c5e630fdad88c4b71e47608bfcd17d42c7f4",
+ "versions": "3.12.14 2.5.4 1.18.1 8.0.2 0.21.0 13.0.0 0.26.0 2026.10.15",
+ "runs": [
+  {
+   "style": "showcase",
+   "bin": 1,
+   "run_dir": "out\\ngc1365\\2026-10-27_20-30-18_showcase",
+   "png": "ngc1365_showcase.png",
+   "seconds": 4237.2,
+   "pixels_equal": true,
+   "file_equal": true,
+   "file_sha256": "07df5637a11d26099c270a12bb46f5d44c849352448412ef6e699e75f1601fbc"
+  }
+ ],
+ "total_s": 4240.6
+}

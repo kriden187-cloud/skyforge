@@ -1,0 +1,19 @@
+{
+ "slug": "ngc3132hst",
+ "tag": "phase-3b",
+ "commit": "dd32f4278ea93fbe2866ce3547c4c3edd5054eaf",
+ "versions": "3.12.14 2.5.4 1.18.1 8.0.2 0.21.0 13.0.0 0.26.0 2026.10.15",
+ "runs": [
+  {
+   "style": "showcase",
+   "bin": 2,
+   "run_dir": "out\\ngc3132hst\\2026-10-27_20-14-38_showcase",
+   "png": "ngc3132hst_showcase_bin2.png",
+   "seconds": 69.3,
+   "pixels_equal": true,
+   "file_equal": true,
+   "file_sha256": "4c2e38b008f098ce03b4ef131a0f78ae47c3c01a91c88b44faeb28834f00e712"
+  }
+ ],
+ "total_s": 71.0
+}

@@ -1,0 +1,29 @@
+{
+ "slug": "ngc3132",
+ "tag": "phase-3k",
+ "commit": "0fc941e9f9e5f637adc5d52932d041ce3a1b7233",
+ "versions": "3.12.14 2.5.4 1.18.1 8.0.2 0.21.0 13.0.0 0.26.0 2026.10.15",
+ "runs": [
+  {
+   "style": "measured",
+   "bin": 1,
+   "run_dir": "out\\ngc3132\\2026-10-27_22-25-42_measured",
+   "png": "ngc3132_measured.png",
+   "seconds": 1086.6,
+   "pixels_equal": true,
+   "file_equal": true,
+   "file_sha256": "8b5aa23f5943a30d3bd213d71448c99a561549accb6fd05f5fab0984044ccb59"
+  },
+  {
+   "style": "showcase",
+   "bin": 1,
+   "run_dir": "out\\ngc3132\\2026-10-27_22-43-49_showcase",
+   "png": "ngc3132_showcase.png",
+   "seconds": 59.8,
+   "pixels_equal": true,
+   "file_equal": true,
+   "file_sha256": "d3a5d161011cb4a586d5d87fdc49cebd03e420633a301354172d41878ae7c3f5"
+  }
+ ],
+ "total_s": 1148.3
+}
