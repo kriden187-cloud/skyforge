@@ -162,7 +162,9 @@ def test_flickr_text_and_published_registry():
     assert "PI John Trauger" in h and "CSA" not in h
     md = published_md(f, pub)
     assert "| Flickr | https://www.flickr.com/photos/205062605@N07/55603618036/ | 2026-10-21 | CC BY-SA 4.0 |" in md
-    assert "| Wikimedia Commons | (ждёт:" in md
+    assert "| Wikimedia Commons | https://commons.wikimedia.org/wiki/File:Star-forming_region_Sharpless_305" in md
+    # запись без ссылки (не опубликовано, с причиной) — Hubble на Flickr (реестр по аудиту 2026-10-27: Sh2-305 на Commons есть)
+    assert "| Flickr | (не публикуется" in published_md(_sh_facts(slug="ngc3132hst"), pub)
     assert published_md(_sh_facts(slug="ngc3132", style="measured"), pub) is None      # стиль нигде не публиковался
     assert "|other versions=* [https://www.flickr.com/photos/205062605@N07/55603618036/ Flickr (2026-10-21)]" in commons_wikitext(f, pub)
 
